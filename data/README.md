@@ -28,6 +28,10 @@ python3 scripts/build_standalone.py   # optional single-file build
 
 ### Scope — read this before quoting any total
 
+The occupations sheet covers **all 13 sub-sectors**, not mining alone: each
+sector draws on 277–415 occupations, 569 of the 921 rows serve no mining
+sector at all, and only 108 are mining-exclusive.
+
 The university workbook is **not** all Saudi university graduates. Its
 `الصفحة_الرئيسية` sheet states the request as:
 
@@ -93,8 +97,16 @@ shape are kept with their text intact and a null level, rather than dropped.
 
 ### Mining sector sheets (`قطاع التعدين 1` and `قطاع التعدين 2`)
 
-These two sheets, which the first version of this dashboard did not use, map
-occupations to the **universities and colleges whose programmes match them** —
+**These sheets were authored by the project owner, not supplied with the source
+data.** They are a worked example of the intended output shape for one sector,
+and they are the reason this dashboard groups occupations the way it does. They
+cover 77 mining-exclusive occupations at one row per (occupation,
+specialization). Their `الجامعات/الكليات المطابقة` values and `الحالة` flags are
+therefore owner-produced judgements, not ministry source data, and the UI
+labels them as coming from that sheet.
+
+They map occupations to the **universities and colleges whose programmes match
+them** —
 the "where is it taught" answer for mining occupations. Sheet 2 carries up to
 four `المجال التعليمي` / `الجامعات/الكليات المطابقة` pairs per occupation;
 sheet 1 carries one pair plus a `الحالة` status column.
@@ -343,18 +355,53 @@ bookmarked or shared:
 | `#voc/detail/<i>` | one specialization: KPIs, year trend, by qualification, **where it is taught**, regions, gender |
 | `#uni` → `#uni/n/g/<i>` → `#uni/d/n/<i>` → `#uni/m/d/<i>` | drill through the four-level major hierarchy: General → Narrow → Detailed → Major |
 | `#uni/detail/<i>` | one major: KPIs, trend, by education level, **which universities teach it**, regions, gender, related occupations |
-| `#occ` | all 921 occupations, searchable by Arabic/English name or code, filterable by main group, NQF level and sub-sector |
-| `#occ/<i>` | one occupation: summary, full classification, 5 main tasks, sub-sectors, education fields, skills with proficiency meters, matching universities, and graduate figures for linked majors |
+| `#occ` | all **548 occupations**, searchable by Arabic/English name, code or specialization, filterable by main group, NQF level and sub-sector |
+| `#occ/<رمز المهنة>` | one occupation: its specializations, summary, full classification, main tasks, sub-sectors, education fields, skills with proficiency meters, matching universities, and graduate figures for linked majors |
+| `#occ/<رمز المهنة>/<n>` | one specialization, in its own page under its occupation, with its own summary, tasks, skills, sectors and fields, and sibling navigation |
 | `#nqf` | the framework's levels with the qualifications, occupations and graduates at each |
 | `#data` | the flat source table |
 
 The year and measure (graduates / employed) filters in the header apply to
 every view.
 
-Occupations are addressed by array index rather than `رمز المهنة`, because
-occupation codes are **not unique** in the sheet — the same code appears on
-several rows when an occupation has multiple education fields or
-specializations.
+### The occupation hierarchy
+
+The sheet's 921 rows are **548 occupations**. `رمز المهنة` repeats for 129 of
+them because the occupation has one or more `التخصص المهني`, and the sheet
+gives each specialization its own row, restating the occupation's identity
+every time. Read flat, `أخصائي بيئي` (213301) looks like four occupations. It
+is one occupation with three specializations.
+
+The project owner's own `قطاع التعدين` sheet confirms the intended grain: 108
+rows, 108 unique (occupation, specialization) pairs, zero duplicates on that
+key, covering 77 occupations — one row per specialization, never one per
+occupation alone.
+
+The split is not cosmetic. Within a repeated code the identity columns agree —
+the `المهنة` name matches in 128 of the 129 groups — while the descriptive
+columns differ:
+
+| Column | Differs within a repeated code |
+|---|---|
+| `ملخص المهنة` | 129 of 129 groups |
+| `المهام الرئيسية` | 129 of 129 |
+| skills | 128 of 129 |
+| sub-sectors | 68 of 129 |
+| education fields | 58 of 129 |
+| `المجموعة الوظيفية` | 43 of 129 |
+
+So the parent owns the classification and each child owns its own description.
+`occupationTree` stores **indexes** into the flat `occupations` list rather than
+copies: 61 KB for all 548 entries, and it cannot drift from the rows it
+describes. Verified lossless — all 921 rows are referenced exactly once.
+
+The row with no `التخصص المهني` is the occupation's own base description. Every
+group in this data has one, so the `baseFromChild` fallback never fires; it is
+kept so a future export lacking a base row degrades visibly rather than
+silently borrowing a specialization's text.
+
+Occupations are addressed by `رمز المهنة` in the URL and specializations by
+their position within the occupation, so both are stable across re-parses.
 
 ---
 
