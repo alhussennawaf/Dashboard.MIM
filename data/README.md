@@ -72,9 +72,47 @@ not present its totals as national university output.
 ### Master occupations (header on **row 3**, not row 1)
 
 Rows 1–2 are merged title banners. The parser reads the header from row 3 and
-data from row 4. Columns used: `المهنة`, `Occupations`, `المجموعة الرئيسية`,
-`مستوى المؤهل بحسب ISCED 11 …`,
-`مستوى المؤهل بحسب الإطار الوطني للمؤهلات`, and `المجال التعليمي 1`–`4`.
+data from row 4, and uses 46 of the sheet's 64 columns:
+
+| Group | Columns |
+|---|---|
+| Classification | `رمز/المجموعة الرئيسية`, `المجموعة الفرعية`, `المجموعة الثانوية`, `الوحدة`, `رمز المهنة`, `المهنة`, `Occupations` |
+| Specialization | `رمز التخصص المهني`, `التخصص المهني`, `Occupational Specializations` (373 of 921 rows have one) |
+| Classification aids | `نوع المهنة/التخصص المهني`, `المجموعة الوظيفية` |
+| Sub-sectors | the 13 columns `السيارات` … `صناعات تحويلية أخرى`; a filled cell means the occupation serves that sector |
+| Description | `ملخص المهنة`, `المهام الرئيسية للمهنة 1`–`5` |
+| Levels | `مستوى المؤهل بحسب ISCED 11 …`, `مستوى المؤهل بحسب الإطار الوطني للمؤهلات`, `مستوى المهنة / التخصص المهني` |
+| Education fields | `المجال التعليمي 1`–`4` |
+| Skills | `المهارات الأساسية/القيادية/العامة/الفنية والمستوى الخاص بها` |
+
+**Skills parsing.** Each skills cell is a bulleted run such as
+`• الإلمام الرقمي - المستوى 2: متوسط • التخطيط - المستوى 3: متقدم`, with the
+bullet character, tabs and spacing varying row to row. The parser splits on the
+bullet and reads `name - المستوى N: label`. Entries that do not match that
+shape are kept with their text intact and a null level, rather than dropped.
+
+### Mining sector sheets (`قطاع التعدين 1` and `قطاع التعدين 2`)
+
+These two sheets, which the first version of this dashboard did not use, map
+occupations to the **universities and colleges whose programmes match them** —
+the "where is it taught" answer for mining occupations. Sheet 2 carries up to
+four `المجال التعليمي` / `الجامعات/الكليات المطابقة` pairs per occupation;
+sheet 1 carries one pair plus a `الحالة` status column.
+
+Institution cells are newline-separated `اسم الجامعة – المنطقة` pairs and are
+split into name/region.
+
+**127 of 921 occupations have a programme match** — the sheets cover mining
+occupations only, so the other 794 legitimately show "no match recorded".
+The `الحالة` values are carried through and shown on the occupation page:
+
+| Status | Count | Shown as |
+|---|---|---|
+| `مطابق` | 71 | normal |
+| `غير متوفر - المستوى أدنى من الدبلوم` | 51 | normal |
+| `تقديري - يحتاج مراجعة` | 5 | **flagged in the UI as an estimate needing review** |
+
+Those 5 estimated matches are not silently presented as fact.
 
 ---
 
@@ -272,7 +310,55 @@ itself — a dark, desaturated aubergine — and the brand takes precedence.
 
 ---
 
-## 8. Output format
+## 8. Linking occupations to graduate numbers
+
+An occupation page shows graduate figures for the majors that teach it. The
+bridge is the occupation's `المجال التعليمي` matched against the university
+sheet's `DetailedMajorName`.
+
+**Only exact string matches are linked.** 18 of the 41 education fields match a
+university detailed major outright (`الكيمياء`, `الفيزياء`, `المناجم والتنقيب`,
+`علوم الأرض`, `الإلكترونيات والأتمتة` and 13 others). The remaining 23 are left
+unlinked and the page says so. Fuzzy matching was deliberately not used: a
+near-miss would produce a graduate count that looks authoritative and is not.
+
+**Vocational majors do not link at all** — zero of the 336 vocational
+specialization names match an education field, because the two sheets use
+different vocabularies entirely (`ميكانيكا السيارات` vs `الميكانيك والحرف
+المعدنية`). A crosswalk table would be needed, and inventing one is out of
+scope. Vocational majors therefore have their own detail pages driven by their
+own data, with no occupation link.
+
+---
+
+## 9. Dashboard structure
+
+Six tabs, all deep-linkable through `location.hash`, so any view can be
+bookmarked or shared:
+
+| Route | View |
+|---|---|
+| `#overview` | KPIs, year trend, gender, NQF distribution, regions, top specializations |
+| `#voc` | all 336 vocational specializations, searchable |
+| `#voc/detail/<i>` | one specialization: KPIs, year trend, by qualification, **where it is taught**, regions, gender |
+| `#uni` → `#uni/n/g/<i>` → `#uni/d/n/<i>` → `#uni/m/d/<i>` | drill through the four-level major hierarchy: General → Narrow → Detailed → Major |
+| `#uni/detail/<i>` | one major: KPIs, trend, by education level, **which universities teach it**, regions, gender, related occupations |
+| `#occ` | all 921 occupations, searchable by Arabic/English name or code, filterable by main group, NQF level and sub-sector |
+| `#occ/<i>` | one occupation: summary, full classification, 5 main tasks, sub-sectors, education fields, skills with proficiency meters, matching universities, and graduate figures for linked majors |
+| `#nqf` | the framework's levels with the qualifications, occupations and graduates at each |
+| `#data` | the flat source table |
+
+The year and measure (graduates / employed) filters in the header apply to
+every view.
+
+Occupations are addressed by array index rather than `رمز المهنة`, because
+occupation codes are **not unique** in the sheet — the same code appears on
+several rows when an occupation has multiple education fields or
+specializations.
+
+---
+
+## 10. Output format
 
 `scripts/parse_sources.py` writes `dashboard-data.js` (a `window.MIM_DATA`
 assignment) and `dashboard-data.json` (identical payload).
@@ -283,5 +369,13 @@ The dashboard loads the **`.js`** file via `<script src>`. This is deliberate:
 kept for inspection and diffing.
 
 Facts are index-encoded against dimension tables — each row is a list of small
-integers plus its two measures — which keeps the payload at ~628 KB for 10,921
-source rows.
+integers plus its two measures.
+
+**String interning.** The occupation records dominate the payload once the
+skills, tasks and programme matches are included: 3.9 MB uncompressed, of which
+2.1 MB was skill entries alone, because the same skill names recur across
+hundreds of occupations and the 469 programme institution lists have only 17
+distinct values between them. `intern_occupations()` replaces those repeated
+strings with indexes into shared lexicons (`lexicon.skillNames`,
+`skillLevels`, `sectors`, `fields`, `instLists`), which the dashboard resolves
+back at load. This is lossless and takes the file from 5.7 MB to 3.1 MB.

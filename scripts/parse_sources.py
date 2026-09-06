@@ -225,8 +225,105 @@ def parse_university(report):
     return dims, facts
 
 
+SECTOR_COLUMNS = ["السيارات", "الطيران", "الصناعات البحرية", "الآلات والمعدات",
+                  "الكيماويات", "مواد البناء", "المعادن", "التعدين",
+                  "الأجهزة الطبية", "الأدوية", "الأغذية", "الطاقة المتجددة",
+                  "صناعات تحويلية أخرى"]
+
+
+def parse_skills(cell):
+    """
+    Split a skills cell into structured entries.
+
+    Source form is a bulleted run like
+        "• الإلمام الرقمي - المستوى 2: متوسط • التخطيط - المستوى 3: متقدم"
+    with the bullet, tabs and spacing varying between rows.
+    """
+    text = clean(cell)
+    if not text:
+        return []
+    out = []
+    for chunk in re.split(r"[•·]", text):
+        chunk = clean(chunk)
+        if not chunk:
+            continue
+        m = re.search(r"^(.*?)\s*-\s*المستوى\s*(\d+)\s*[:：]?\s*(.*)$", chunk)
+        if m:
+            out.append({"name": clean(m.group(1)), "level": int(m.group(2)),
+                        "levelLabel": clean(m.group(3))})
+        else:
+            out.append({"name": chunk, "level": None, "levelLabel": None})
+    return out
+
+
+def split_institutions(cell):
+    """'جامعة س – المنطقة\\nجامعة ص – المنطقة' -> [{name, region}]."""
+    text = clean(cell)
+    if not text or text == "N/A":
+        return []
+    out = []
+    for line in re.split(r"\n|(?<=\S)\s{2,}(?=جامعة|كلية|المعهد|معهد)", str(cell)):
+        line = clean(line)
+        if not line or line == "N/A":
+            continue
+        parts = re.split(r"\s+[–—-]\s+", line, maxsplit=1)
+        out.append({"name": clean(parts[0]),
+                    "region": clean(parts[1]) if len(parts) > 1 else None})
+    return out
+
+
+def parse_mining_matches():
+    """
+    The 'قطاع التعدين' sheets name, per occupation, the education field and the
+    universities/colleges whose programmes match it. Sheet 2 carries up to four
+    field/institution pairs per occupation; sheet 1 carries one pair plus a
+    status column saying how firm the match is.
+
+    Returns {occupation code: {"matches": [...], "status": str|None}}.
+    """
+    matches = {}
+
+    header, body = sheet_rows(MASTER_XLSX, "قطاع التعدين 2", header_row=1)
+    col = {name: i for i, name in enumerate(header) if name}
+    for row in body:
+        code = clean(row[col["رمز المهنة"]])
+        if not code:
+            continue
+        entry = matches.setdefault(code, {"matches": [], "status": None})
+        for n in (1, 2, 3, 4):
+            f_key, i_key = f"المجال التعليمي {n}", f"الجامعات/الكليات المطابقة {n}"
+            if f_key not in col or i_key not in col:
+                continue
+            field = clean(row[col[f_key]])
+            if not field or field == "N/A":
+                continue
+            entry["matches"].append({
+                "field": field,
+                "institutions": split_institutions(row[col[i_key]]),
+            })
+
+    # Sheet 1 adds the الحالة flag; some matches are marked estimated.
+    header, body = sheet_rows(MASTER_XLSX, "قطاع التعدين 1", header_row=1)
+    col = {name: i for i, name in enumerate(header) if name}
+    for row in body:
+        code = clean(row[col["رمز المهنة"]])
+        if not code:
+            continue
+        entry = matches.setdefault(code, {"matches": [], "status": None})
+        status = clean(row[col["الحالة"]]) if "الحالة" in col else None
+        if status and entry["status"] is None:
+            entry["status"] = status
+        field = clean(row[col["المجال التعليمي"]])
+        if field and field != "N/A" and not any(m["field"] == field for m in entry["matches"]):
+            entry["matches"].append({
+                "field": field,
+                "institutions": split_institutions(row[col["الجامعات/الكليات المطابقة"]]),
+            })
+    return matches
+
+
 def parse_master(report):
-    """Occupations, with their NQF level and education fields."""
+    """Occupations, in full: hierarchy, sectors, tasks, skills, NQF level."""
     header, body = sheet_rows(MASTER_XLSX, "قائمة المهن المشمولة Master", header_row=3)
     col = {name: i for i, name in enumerate(header) if name}
 
@@ -236,6 +333,9 @@ def parse_master(report):
     c_isced = col["مستوى المؤهل بحسب ISCED 11 والمطبق في التصنيف السعودي للمهن"]
     c_group = col["المجموعة الرئيسية"]
     fields = [col[f"المجال التعليمي {n}"] for n in (1, 2, 3, 4)]
+    tasks = [col[f"المهام الرئيسية للمهنة {n}"] for n in (1, 2, 3, 4, 5)]
+    sectors = [(name, col[name]) for name in SECTOR_COLUMNS if name in col]
+    mining = parse_mining_matches()
 
     occupations, unmapped = [], Counter()
     for row in body:
@@ -246,14 +346,38 @@ def parse_master(report):
         level = NQF_MAP.get(nqf_label)
         if nqf_label and level is None:
             unmapped[nqf_label] += 1
+        code = clean(row[col["رمز المهنة"]])
+        match = mining.get(code, {})
         occupations.append({
+            "code": code,
             "ar": name_ar,
             "en": clean(row[c_en]),
             "group": clean(row[c_group]),
+            "groupCode": clean(row[col["رمز المجموعة الرئيسية"]]),
+            "subGroup": clean(row[col["المجموعة الفرعية"]]),
+            "minorGroup": clean(row[col["المجموعة الثانوية"]]),
+            "unit": clean(row[col["الوحدة"]]),
+            "specCode": clean(row[col["رمز التخصص المهني"]]),
+            "specAr": clean(row[col["التخصص المهني"]]),
+            "specEn": clean(row[col["Occupational Specializations"]]),
+            "type": clean(row[col["نوع المهنة/ التخصص المهني"]]),
+            "functionalGroup": clean(row[col["المجموعة الوظيفية"]]),
+            "sectors": [name for name, i in sectors if clean(row[i])],
+            "summary": clean(row[col["ملخص المهنة"]]),
+            "tasks": [t for t in (clean(row[i]) for i in tasks) if t],
             "isced": clean(row[c_isced]),
             "nqfLabel": nqf_label,
             "nqfLevel": level,
+            "occLevel": clean(row[col["مستوى المهنة / التخصص المهني"]]),
             "fields": [f for f in (clean(row[i]) for i in fields) if f],
+            "skills": {
+                "basic": parse_skills(row[col["المهارات الأساسية والمستوى الخاص بها"]]),
+                "leadership": parse_skills(row[col["المهارات القيادية والمستوى الخاص بها"]]),
+                "general": parse_skills(row[col["المهارات العامة والمستوى الخاص بها"]]),
+                "technical": parse_skills(row[col["المهارات الفنية والمستوى الخاص بها"]]),
+            },
+            "programMatches": match.get("matches", []),
+            "matchStatus": match.get("status"),
         })
 
     by_level = Counter(o["nqfLevel"] for o in occupations)
@@ -263,8 +387,59 @@ def parse_master(report):
         "mapped_to_nqf": sum(1 for o in occupations if o["nqfLevel"] is not None),
         "unmapped_labels": dict(unmapped),
         "by_nqf_level": {str(k): v for k, v in sorted(by_level.items(), key=lambda x: (x[0] is None, x[0]))},
+        "with_program_matches": sum(1 for o in occupations if o["programMatches"]),
+        "match_statuses": dict(Counter(o["matchStatus"] for o in occupations if o["matchStatus"])),
+        "with_specialization": sum(1 for o in occupations if o["specAr"]),
     }
     return occupations
+
+
+def intern_occupations(occupations):
+    """
+    Replace repeated strings inside the occupation records with indexes into
+    shared lexicons.
+
+    Skill entries dominate the payload (2.1 MB of 3.9 MB) because the same
+    skill names recur across hundreds of occupations, and the 469 programme
+    institution lists have only 17 distinct values between them. Interning
+    both cuts the file by roughly 4x with no loss: the dashboard resolves the
+    indexes back to the identical strings at load.
+
+    Returns the lexicon; mutates the occupation records in place.
+    """
+    skill_names, skill_levels, sectors, fields, inst_lists = {}, {}, {}, {}, {}
+
+    def key(store, value):
+        if value is None:
+            return None
+        if value not in store:
+            store[value] = len(store)
+        return store[value]
+
+    def pack_skills(entries):
+        return [[key(skill_names, s["name"]), s["level"],
+                 key(skill_levels, s["levelLabel"])] for s in entries]
+
+    for occ in occupations:
+        occ["sectors"] = [key(sectors, s) for s in occ["sectors"]]
+        occ["fields"] = [key(fields, f) for f in occ["fields"]]
+        occ["skills"] = {k: pack_skills(v) for k, v in occ["skills"].items()}
+        packed = []
+        for m in occ["programMatches"]:
+            blob = json.dumps(m["institutions"], ensure_ascii=False, sort_keys=True)
+            packed.append([key(fields, m["field"]), key(inst_lists, blob)])
+        occ["programMatches"] = packed
+
+    def order(store):
+        return [k for k, _ in sorted(store.items(), key=lambda kv: kv[1])]
+
+    return {
+        "skillNames": order(skill_names),
+        "skillLevels": order(skill_levels),
+        "sectors": order(sectors),
+        "fields": order(fields),
+        "instLists": [json.loads(b) for b in order(inst_lists)],
+    }
 
 
 def nqf_for_labels(labels):
@@ -291,7 +466,29 @@ def main():
     voc_qual_levels, voc_unresolved = nqf_for_labels(voc_dims["qualification"].labels())
     uni_level_levels, uni_unresolved = nqf_for_labels(uni_dims["level"].labels())
 
+    # Occupation -> graduate data bridge. An occupation's "المجال التعليمي" is
+    # matched against the university sheet's DetailedMajorName. Only exact
+    # string matches are linked; near-misses are left unlinked rather than
+    # fuzzy-matched into a number that would look authoritative and not be.
+    detailed_majors = set(uni_dims["detailedMajor"].labels())
+    all_fields = set()
+    for occ in occupations:
+        all_fields.update(occ["fields"])
+        for m in occ["programMatches"]:
+            all_fields.add(m["field"])
+    field_links = {f: f for f in sorted(all_fields) if f in detailed_majors}
+    report["links"] = {
+        "education_fields": len(all_fields),
+        "linked_to_university_major": len(field_links),
+        "vocational_major_overlap": len(
+            all_fields & set(voc_dims["major"].labels())),
+    }
+
+    # Interning must run after field_links, which needs the plain strings.
+    lexicon = intern_occupations(occupations)
+
     payload = {
+        "lexicon": lexicon,
         "meta": {
             "generatedBy": "scripts/parse_sources.py",
             "years": sorted({l for l in voc_dims["year"].labels()} |
@@ -337,6 +534,7 @@ def main():
             "rows": uni_facts,
         },
         "occupations": occupations,
+        "fieldLinks": field_links,
     }
 
     json_path = DATA / "dashboard-data.json"
@@ -365,8 +563,16 @@ def main():
     print(f"  occupations      {m['occupations']:,}")
     print(f"  mapped to NQF    {m['mapped_to_nqf']:,}")
     print(f"  by NQF level     {m['by_nqf_level']}")
+    print(f"  with specialization  {m['with_specialization']:,}")
+    print(f"  with programme match {m['with_program_matches']:,}   statuses={m['match_statuses']}")
     if m["unmapped_labels"]:
         print(f"  UNMAPPED labels  {m['unmapped_labels']}")
+
+    lk = report["links"]
+    print(f"\noccupation -> graduate bridge:")
+    print(f"  education fields          {lk['education_fields']}")
+    print(f"  linked to a university major {lk['linked_to_university_major']}")
+    print(f"  overlap with vocational majors {lk['vocational_major_overlap']}")
 
     if voc_unresolved or uni_unresolved:
         print("\nqualifications with no unambiguous NQF level (shown as غير مصنّف):")
