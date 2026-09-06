@@ -396,79 +396,52 @@ def parse_master(report):
 
 def nest_occupations(occupations):
     """
-    Collapse the sheet's 921 rows into the 548 occupations they actually are.
+    Describe the 921 occupation rows as the 548 occupations they actually are.
 
-    رمز المهنة is not unique: 129 codes repeat because the occupation has one or
-    more التخصص المهني (occupational specializations). The sheet stores each
-    specialization as its own row, repeating the occupation's identity every
-    time. Read as a flat list that looks like duplicate occupations; it is
-    really a class/sub-class hierarchy.
+    رمز المهنة is not unique. 129 codes repeat because the occupation has one or
+    more التخصص المهني (occupational specializations), and the sheet gives each
+    specialization its own row, restating the occupation's identity every time.
+    Read flat, those look like duplicate occupations; they are a class/sub-class
+    hierarchy. The project owner's own قطاع التعدين sheet confirms the intended
+    grain: one row per (occupation, specialization), never per occupation alone.
 
-    Within a repeated code the identity columns agree (the المهنة name matches
-    in 128 of the 129 groups) while the descriptive columns differ: summary and
-    tasks in all 129, skills in 128, sectors in 68, education fields in 58. So
-    the parent owns the classification and each child owns its own description.
+    Within a repeated code the identity columns agree (the المهنة name matches in
+    128 of the 129 groups) while the descriptive columns differ: summary and
+    tasks in all 129 groups, skills in 128, sectors in 68, education fields in
+    58. So the parent owns the classification and each child owns its own
+    description.
+
+    This emits indexes into the flat `occupations` list rather than copies, so
+    the tree costs a few KB and stays the single source of truth: nothing is
+    duplicated and nothing can drift.
 
     The row carrying no التخصص المهني is the occupation's own base description.
-    Where a group has no such row, the parent falls back to its first child's
-    summary so the occupation page is never empty, and `baseFromChild` records
-    that so the UI can say where the text came from.
+    Where a group has none, `baseFromChild` marks that the parent is showing its
+    first specialization's text, so the UI can say so rather than implying the
+    sheet described the occupation itself.
     """
-    IDENTITY = ("code", "ar", "en", "group", "groupCode", "subGroup",
-                "minorGroup", "unit")
     groups = OrderedDict()
-    for occ in occupations:
-        groups.setdefault(occ["code"], []).append(occ)
+    for i, occ in enumerate(occupations):
+        groups.setdefault(occ["code"], []).append(i)
 
-    out = []
-    for code, rows in groups.items():
-        base = next((r for r in rows if not r["specAr"]), None)
-        source = base or rows[0]
-        children = [r for r in rows if r["specAr"]]
-
-        parent = {k: source[k] for k in IDENTITY}
-        parent.update({
-            "type": source["type"],
-            "functionalGroup": source["functionalGroup"],
-            "isced": source["isced"],
-            "nqfLabel": source["nqfLabel"],
-            "nqfLevel": source["nqfLevel"],
-            "occLevel": source["occLevel"],
-            "summary": source["summary"],
-            "tasks": source["tasks"],
-            "skills": source["skills"],
-            "sectors": source["sectors"],
-            "fields": source["fields"],
-            "programMatches": source["programMatches"],
-            "matchStatus": source["matchStatus"],
+    tree = []
+    for code, idxs in groups.items():
+        base = next((i for i in idxs if not occupations[i]["specAr"]), None)
+        source = occupations[base if base is not None else idxs[0]]
+        children = [i for i in idxs if occupations[i]["specAr"]]
+        tree.append({
+            "code": code,
+            # Identity lives on occupations[base]; repeating it here would be
+            # the same duplication this function exists to remove.
+            "base": base if base is not None else idxs[0],
             "baseFromChild": base is None,
-            # A child differs from its parent only where the sheet says it does;
-            # storing just the deltas keeps the payload from repeating identity.
-            "specializations": [{
-                "specCode": c["specCode"],
-                "ar": c["specAr"],
-                "en": c["specEn"],
-                "type": c["type"],
-                "functionalGroup": c["functionalGroup"],
-                "isced": c["isced"],
-                "nqfLabel": c["nqfLabel"],
-                "nqfLevel": c["nqfLevel"],
-                "occLevel": c["occLevel"],
-                "summary": c["summary"],
-                "tasks": c["tasks"],
-                "skills": c["skills"],
-                "sectors": c["sectors"],
-                "fields": c["fields"],
-                "programMatches": c["programMatches"],
-                "matchStatus": c["matchStatus"],
-            } for c in children],
+            "children": children,
+            # The union over parent and children: what the occupation covers as
+            # a whole, so a sector or field filter finds it via any child.
+            "allSectors": sorted({s for i in idxs for s in occupations[i]["sectors"]}),
+            "allFields": sorted({f for i in idxs for f in occupations[i]["fields"]}),
         })
-        # The union across parent and children — what the occupation covers as
-        # a whole, so filtering by sector or field finds it via any child.
-        parent["allSectors"] = sorted({s for r in rows for s in r["sectors"]})
-        parent["allFields"] = sorted({f for r in rows for f in r["fields"]})
-        out.append(parent)
-    return out
+    return tree
 
 
 def intern_occupations(occupations):
@@ -563,6 +536,15 @@ def main():
 
     # Interning must run after field_links, which needs the plain strings.
     lexicon = intern_occupations(occupations)
+    # The hierarchy indexes into the flat list, so it must be built from the
+    # same list the payload ships. Additive: the flat list stays authoritative.
+    occupation_tree = nest_occupations(occupations)
+    report["tree"] = {
+        "occupations": len(occupation_tree),
+        "with_specializations": sum(1 for t in occupation_tree if t["children"]),
+        "max_specializations": max((len(t["children"]) for t in occupation_tree), default=0),
+        "base_from_child": sum(1 for t in occupation_tree if t["baseFromChild"]),
+    }
 
     payload = {
         "lexicon": lexicon,
@@ -611,6 +593,7 @@ def main():
             "rows": uni_facts,
         },
         "occupations": occupations,
+        "occupationTree": occupation_tree,
         "fieldLinks": field_links,
     }
 
@@ -644,6 +627,13 @@ def main():
     print(f"  with programme match {m['with_program_matches']:,}   statuses={m['match_statuses']}")
     if m["unmapped_labels"]:
         print(f"  UNMAPPED labels  {m['unmapped_labels']}")
+
+    tr = report["tree"]
+    print(f"\noccupation hierarchy:")
+    print(f"  rows -> occupations       {len(occupations):,} -> {tr['occupations']:,}")
+    print(f"  with specializations      {tr['with_specializations']:,}")
+    print(f"  largest occupation        {tr['max_specializations']} specializations")
+    print(f"  base text from a child    {tr['base_from_child']}")
 
     lk = report["links"]
     print(f"\noccupation -> graduate bridge:")
