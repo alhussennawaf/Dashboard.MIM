@@ -394,6 +394,83 @@ def parse_master(report):
     return occupations
 
 
+def nest_occupations(occupations):
+    """
+    Collapse the sheet's 921 rows into the 548 occupations they actually are.
+
+    رمز المهنة is not unique: 129 codes repeat because the occupation has one or
+    more التخصص المهني (occupational specializations). The sheet stores each
+    specialization as its own row, repeating the occupation's identity every
+    time. Read as a flat list that looks like duplicate occupations; it is
+    really a class/sub-class hierarchy.
+
+    Within a repeated code the identity columns agree (the المهنة name matches
+    in 128 of the 129 groups) while the descriptive columns differ: summary and
+    tasks in all 129, skills in 128, sectors in 68, education fields in 58. So
+    the parent owns the classification and each child owns its own description.
+
+    The row carrying no التخصص المهني is the occupation's own base description.
+    Where a group has no such row, the parent falls back to its first child's
+    summary so the occupation page is never empty, and `baseFromChild` records
+    that so the UI can say where the text came from.
+    """
+    IDENTITY = ("code", "ar", "en", "group", "groupCode", "subGroup",
+                "minorGroup", "unit")
+    groups = OrderedDict()
+    for occ in occupations:
+        groups.setdefault(occ["code"], []).append(occ)
+
+    out = []
+    for code, rows in groups.items():
+        base = next((r for r in rows if not r["specAr"]), None)
+        source = base or rows[0]
+        children = [r for r in rows if r["specAr"]]
+
+        parent = {k: source[k] for k in IDENTITY}
+        parent.update({
+            "type": source["type"],
+            "functionalGroup": source["functionalGroup"],
+            "isced": source["isced"],
+            "nqfLabel": source["nqfLabel"],
+            "nqfLevel": source["nqfLevel"],
+            "occLevel": source["occLevel"],
+            "summary": source["summary"],
+            "tasks": source["tasks"],
+            "skills": source["skills"],
+            "sectors": source["sectors"],
+            "fields": source["fields"],
+            "programMatches": source["programMatches"],
+            "matchStatus": source["matchStatus"],
+            "baseFromChild": base is None,
+            # A child differs from its parent only where the sheet says it does;
+            # storing just the deltas keeps the payload from repeating identity.
+            "specializations": [{
+                "specCode": c["specCode"],
+                "ar": c["specAr"],
+                "en": c["specEn"],
+                "type": c["type"],
+                "functionalGroup": c["functionalGroup"],
+                "isced": c["isced"],
+                "nqfLabel": c["nqfLabel"],
+                "nqfLevel": c["nqfLevel"],
+                "occLevel": c["occLevel"],
+                "summary": c["summary"],
+                "tasks": c["tasks"],
+                "skills": c["skills"],
+                "sectors": c["sectors"],
+                "fields": c["fields"],
+                "programMatches": c["programMatches"],
+                "matchStatus": c["matchStatus"],
+            } for c in children],
+        })
+        # The union across parent and children — what the occupation covers as
+        # a whole, so filtering by sector or field finds it via any child.
+        parent["allSectors"] = sorted({s for r in rows for s in r["sectors"]})
+        parent["allFields"] = sorted({f for r in rows for f in r["fields"]})
+        out.append(parent)
+    return out
+
+
 def intern_occupations(occupations):
     """
     Replace repeated strings inside the occupation records with indexes into
