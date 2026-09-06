@@ -357,12 +357,21 @@ bookmarked or shared:
 | `#uni/detail/<i>` | one major: KPIs, trend, by education level, **which universities teach it**, regions, gender, related occupations |
 | `#occ` | all **548 occupations**, searchable by Arabic/English name, code or specialization, filterable by main group, NQF level and sub-sector |
 | `#occ/<رمز المهنة>` | one occupation: its specializations, summary, full classification, main tasks, sub-sectors, education fields, skills with proficiency meters, matching universities, and graduate figures for linked majors |
-| `#occ/<رمز المهنة>/<n>` | one specialization, in its own page under its occupation, with its own summary, tasks, skills, sectors and fields, and sibling navigation |
+| `#occ/<رمز المهنة>/<n>` | one specialization, opened in a window **over** its occupation: its own stats, skill-mix and university charts, summary, tasks, skills, sectors and fields |
 | `#nqf` | the framework's levels with the qualifications, occupations and graduates at each |
 | `#data` | the flat source table |
 
 The year and measure (graduates / employed) filters in the header apply to
 every view.
+
+**Occupations are pages; a specialization is a window over its occupation.** The
+occupation stays rendered behind, so closing returns you to your place in a list
+of twenty-five rather than to the top of a fresh page. The window is still
+driven by the route, so `#occ/722301/3` opens it directly and the URL stays
+shareable, browser back closes it, and `Esc` / backdrop / `✕` all return to
+`#occ/<رمز المهنة>`. `←` and `→` step between siblings. A specialization number
+outside the occupation's range renders the occupation with a notice rather than
+an error.
 
 ### The occupation hierarchy
 
