@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>لوحة خريجي التعليم المهني والجامعي | MIM Graduates Dashboard</title>
+<link rel="icon" href="assets/mim-emblem.svg">
+<link rel="stylesheet" href="assets/brand.css">
+<style>
+/* ==========================================================================
+   Layout. All colour comes from assets/brand.css, which carries the MIM
+   guideline values and their provenance. Per guidelines p.34 the greys carry
+   the layout (~75%) and purple/teal appear only as accents.
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--mim-black-100);
+  color: var(--mim-grey-darkest);
+  font-family: var(--mim-font-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-family: var(--mim-font-primary); font-weight: 400; margin: 0; }
+
+/* ---------- header ---------- */
+.masthead {
+  background: #fff;
+  border-bottom: 3px solid var(--mim-purple);
+  padding: 18px clamp(16px, 3vw, 40px);
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 3vw, 36px);
+  flex-wrap: wrap;
+}
+.masthead img { height: clamp(38px, 4.6vw, 58px); width: auto; flex: none; }
+.masthead .titles { flex: 1 1 320px; min-width: 0; }
+.masthead h1 { font-size: clamp(19px, 2.1vw, 29px); line-height: 1.35; }
+.masthead .en {
+  font-family: var(--mim-font-secondary);
+  color: var(--mim-grey-dark);
+  font-size: clamp(11px, 1.05vw, 14px);
+  letter-spacing: .015em;
+  direction: ltr; text-align: right;
+}
+.masthead .period {
+  font-variant-numeric: tabular-nums;
+  background: var(--mim-purple); color: #fff;
+  padding: 7px 16px; border-radius: 2px;
+  font-size: clamp(13px, 1.3vw, 17px); letter-spacing: .06em;
+  direction: ltr; flex: none;
+}
+
+/* ---------- shell ---------- */
+main { padding: clamp(16px, 2.4vw, 32px); max-width: 2100px; margin: 0 auto; }
+
+.scope-note {
+  background: #fff;
+  border-inline-start: 3px solid var(--mim-blue-600);
+  padding: 13px 18px; margin-bottom: 20px;
+  font-size: clamp(12.5px, 1.05vw, 14px);
+  color: var(--mim-grey-dark);
+}
+.scope-note strong { color: var(--mim-grey-darkest); font-weight: 600; }
+
+/* ---------- filters ---------- */
+.filters {
+  background: #fff; padding: 16px clamp(14px, 1.6vw, 22px);
+  margin-bottom: 20px;
+  display: flex; flex-wrap: wrap; gap: clamp(16px, 2vw, 34px);
+  align-items: flex-start;
+  border: 1px solid var(--mim-black-200);
+}
+.fgroup { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.fgroup > label {
+  font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--mim-grey-dark); font-weight: 600;
+}
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  font: inherit; font-size: 13px; font-variant-numeric: tabular-nums;
+  padding: 6px 15px; cursor: pointer;
+  border: 1px solid var(--mim-black-300);
+  background: #fff; color: var(--mim-grey-dark);
+  border-radius: 2px; transition: background .12s, color .12s, border-color .12s;
+}
+.chip:hover { border-color: var(--mim-purple); color: var(--mim-purple); }
+.chip[aria-pressed="true"] {
+  background: var(--mim-purple); border-color: var(--mim-purple); color: #fff;
+}
+.chip:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 2px; }
+
+input[type="search"] {
+  font: inherit; font-size: 14px; padding: 7px 12px;
+  border: 1px solid var(--mim-black-300); border-radius: 2px;
+  min-width: 230px; background: #fff; color: inherit;
+}
+input[type="search"]:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 1px; }
+
+.btn-reset {
+  font: inherit; font-size: 13px; padding: 6px 15px; cursor: pointer;
+  background: none; border: 1px solid var(--mim-black-300);
+  color: var(--mim-grey-dark); border-radius: 2px;
+}
+.btn-reset:hover { border-color: var(--mim-grey-dark); color: var(--mim-grey-darkest); }
+
+/* ---------- KPI tiles ---------- */
+.kpis {
+  display: grid; gap: 14px; margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+}
+.kpi {
+  background: #fff; padding: 18px 20px;
+  border: 1px solid var(--mim-black-200);
+  border-top: 3px solid var(--mim-grey-medium);
+}
+.kpi.is-voc { border-top-color: var(--mim-purple); }
+.kpi.is-uni { border-top-color: var(--mim-blue-600); }
+.kpi .label { font-size: 12.5px; color: var(--mim-grey-dark); margin-bottom: 6px; }
+.kpi .value {
+  font-family: var(--mim-font-primary);
+  font-size: clamp(27px, 3.1vw, 42px); line-height: 1.1;
+  font-variant-numeric: tabular-nums; direction: ltr; text-align: right;
+}
+.kpi .sub {
+  font-size: 12px; color: var(--mim-grey-dark); margin-top: 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- charts ---------- */
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(12, 1fr); }
+.card {
+  background: #fff; border: 1px solid var(--mim-black-200);
+  padding: 16px clamp(12px, 1.4vw, 20px) 12px;
+  min-width: 0; grid-column: span 12;
+}
+.card > h2 {
+  font-size: clamp(15px, 1.35vw, 19px); margin-bottom: 2px;
+}
+.card > .hint {
+  font-size: 12px; color: var(--mim-grey-dark); margin-bottom: 10px;
+}
+.chart { width: 100%; height: 340px; }
+.chart.tall { height: 460px; }
+
+@media (min-width: 900px)  { .span6  { grid-column: span 6; } }
+@media (min-width: 1400px) { .span4  { grid-column: span 4; }
+                             .span8  { grid-column: span 8; } }
+
+/* ---------- table ---------- */
+.table-wrap { overflow-x: auto; max-height: 460px; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 7px 12px; text-align: right; border-bottom: 1px solid var(--mim-black-200); }
+thead th {
+  position: sticky; top: 0; background: var(--mim-black-100);
+  font-weight: 600; font-size: 11.5px; letter-spacing: .05em;
+  color: var(--mim-grey-dark); text-transform: uppercase; z-index: 1;
+}
+td.num { font-variant-numeric: tabular-nums; direction: ltr; }
+tbody tr:hover { background: var(--mim-purple-50); }
+
+/* ---------- footer ---------- */
+footer {
+  padding: 22px clamp(16px, 3vw, 40px) 40px;
+  color: var(--mim-grey-dark); font-size: 12px; line-height: 1.75;
+  border-top: 1px solid var(--mim-black-200); margin-top: 26px;
+}
+footer code {
+  font-size: 11.5px; background: var(--mim-black-200);
+  padding: 1px 5px; border-radius: 2px; direction: ltr; display: inline-block;
+}
+.nodata {
+  padding: 40px 16px; text-align: center; color: var(--mim-grey-dark); font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <img src="assets/mim-logo-primary.svg"
+       alt="وزارة الصناعة والثروة المعدنية — Ministry of Industry and Mineral Resources">
+  <div class="titles">
+    <h1>خريجو التعليم المهني والجامعي في تخصصات قطاع الصناعة والتعدين</h1>
+    <div class="en">Vocational &amp; University Graduates — Industry and Mining Sector</div>
+  </div>
+  <div class="period">2020 – 2025</div>
+</header>
+
+<main>
+  <p class="scope-note" id="scopeNote"></p>
+
+  <section class="filters" aria-label="عوامل التصفية">
+    <div class="fgroup">
+      <label id="lbl-year">سنة التخرج</label>
+      <div class="chips" id="fYears" role="group" aria-labelledby="lbl-year"></div>
+    </div>
+    <div class="fgroup">
+      <label id="lbl-track">المسار</label>
+      <div class="chips" id="fTracks" role="group" aria-labelledby="lbl-track"></div>
+    </div>
+    <div class="fgroup">
+      <label id="lbl-measure">المؤشر</label>
+      <div class="chips" id="fMeasure" role="group" aria-labelledby="lbl-measure"></div>
+    </div>
+    <div class="fgroup">
+      <label for="fSearch">بحث في التخصصات</label>
+      <input type="search" id="fSearch" placeholder="مثال: كهرباء، تعدين، هندسة…"
+             autocomplete="off">
+    </div>
+    <div class="fgroup">
+      <label>&nbsp;</label>
+      <button class="btn-reset" id="fReset" type="button">إعادة تعيين</button>
+    </div>
+  </section>
+
+  <section class="kpis" id="kpis" aria-label="المؤشرات الرئيسية"></section>
+
+  <div class="grid">
+    <section class="card span8">
+      <h2>الخريجون حسب سنة التخرج</h2>
+      <p class="hint">Graduates by year — التعليم المهني مقابل الجامعي</p>
+      <div class="chart" id="cTrend"></div>
+    </section>
+
+    <section class="card span4">
+      <h2>التوزيع حسب الجنس</h2>
+      <p class="hint">By gender — الفئة غير المتوفرة مميزة بنقش مائل</p>
+      <div class="chart" id="cGender"></div>
+    </section>
+
+    <section class="card span6">
+      <h2>الخريجون حسب مستوى الإطار الوطني للمؤهلات</h2>
+      <p class="hint" id="nqfHint">Graduates mapped to National Qualifications Framework levels</p>
+      <div class="chart" id="cNqf"></div>
+    </section>
+
+    <section class="card span6">
+      <h2>المهن المشمولة حسب مستوى الإطار الوطني للمؤهلات</h2>
+      <p class="hint">Occupations in the master sheet, by NQF level (921 مهنة)</p>
+      <div class="chart" id="cOccNqf"></div>
+    </section>
+
+    <section class="card span6">
+      <h2>أعلى التخصصات</h2>
+      <p class="hint">Top specializations by graduate count</p>
+      <div class="chart tall" id="cMajors"></div>
+    </section>
+
+    <section class="card span6">
+      <h2>التوزيع الجغرافي</h2>
+      <p class="hint">By region — المناطق الإدارية</p>
+      <div class="chart tall" id="cRegions"></div>
+    </section>
+
+    <section class="card">
+      <h2>جدول البيانات</h2>
+      <p class="hint" id="tableHint"></p>
+      <div class="table-wrap">
+        <table id="dataTable">
+          <thead><tr>
+            <th>المسار</th><th>السنة</th><th>التخصص</th><th>المنطقة</th>
+            <th>المؤهل</th><th>مستوى الإطار</th>
+            <th>الخريجون</th><th>المتوظفون</th><th>نسبة التوظيف</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div id="provenance"></div>
+</footer>
+
+<script src="assets/echarts.min.js"></script>
+<script src="data/dashboard-data.js"></script>
+<script>
+(function () {
+"use strict";
+
+var D = window.MIM_DATA;
+if (!D) { document.body.innerHTML = "<p class='nodata'>تعذّر تحميل البيانات.</p>"; return; }
+
+/* ---------------------------------------------------------------------------
+   Colour. Two categorical slots only.
+
+   The MIM palette yields exactly two hues that stay distinguishable under
+   colour-vision deficiency: brand purple #413258 and teal #14B8B8
+   (ΔE 35.8 deutan / 38.9 normal). Adding brand pink or a grey as a third
+   collapses against the teal (ΔE 4.0 protan), so nothing here encodes more
+   than two categories by colour at once. The third gender value is carried by
+   a diagonal decal plus its legend entry, never by hue alone.
+   NQF level is a magnitude, so it uses one hue light->dark, not categories.
+--------------------------------------------------------------------------- */
+var C = {
+  voc:      "#413258",
+  uni:      "#14B8B8",
+  neutral:  "#B3B3B3",
+  ink:      "#1A1A1A",
+  muted:    "#666666",
+  grid:     "#E6E6E6",
+  surface:  "#FFFFFF"
+};
+var NQF_RAMP = ["#EDE1F6","#DAC5EE","#B197CC","#7E689A","#5A4775",
+                "#413258","#32244B","#25193F","#190F33"];
+
+var FONT = getComputedStyle(document.body).fontFamily;
+var BASE_TEXT = { color: C.ink, fontFamily: FONT, fontSize: 12 };
+
+function fmt(n) { return (n || 0).toLocaleString("en-US"); }
+function pct(part, whole) { return whole ? (part / whole * 100).toFixed(1) + "%" : "—"; }
+
+/* --------------------------- source shaping ------------------------------ */
+function indexer(block) {
+  var map = {};
+  block.cols.forEach(function (name, i) { map[name] = i; });
+  return map;
+}
+var VI = indexer(D.vocational), UI = indexer(D.university);
+
+var UNCLASSIFIED = "غير مصنّف";
+
+/* One flat fact list across both tracks, so filtering and totals share a path. */
+var FACTS = [];
+D.vocational.rows.forEach(function (r) {
+  FACTS.push({
+    track: "voc",
+    year: D.vocational.dims.year[r[VI.year]],
+    major: D.vocational.dims.major[r[VI.major]],
+    region: D.vocational.dims.region[r[VI.region]],
+    regionKey: D.vocational.regionKeys[r[VI.region]],
+    gender: D.vocational.dims.gender[r[VI.gender]],
+    qual: D.vocational.dims.qualification[r[VI.qualification]],
+    nqf: D.vocational.qualificationNqf[r[VI.qualification]],
+    grads: r[VI.graduates],
+    emp: r[VI.employed]
+  });
+});
+D.university.rows.forEach(function (r) {
+  FACTS.push({
+    track: "uni",
+    year: D.university.dims.year[r[UI.year]],
+    major: D.university.dims.major[r[UI.major]],
+    region: D.university.dims.region[r[UI.region]],
+    regionKey: D.university.regionKeys[r[UI.region]],
+    gender: D.university.dims.gender[r[UI.gender]],
+    qual: D.university.dims.level[r[UI.level]],
+    nqf: D.university.levelNqf[r[UI.level]],
+    grads: r[UI.graduates],
+    emp: r[UI.employed]
+  });
+});
+
+var YEARS = D.meta.years.slice().sort();
+var TRACK_LABEL = { voc: "التعليم المهني والتقني", uni: "الجامعات" };
+var TRACK_EN    = { voc: "Vocational", uni: "University" };
+
+/* Both sources spell "not available" differently; group for display only. */
+function genderLabel(g) {
+  if (g === "ذكر") return "ذكر";
+  if (g === "أنثى") return "أنثى";
+  return "غير متوفر";
+}
+var GENDERS = ["ذكر", "أنثى", "غير متوفر"];
+
+/* ------------------------------- state ---------------------------------- */
+var state = {
+  years: YEARS.slice(),
+  tracks: ["voc", "uni"],
+  measure: "grads",
+  search: ""
+};
+
+function measureLabel() { return state.measure === "grads" ? "الخريجون" : "المتوظفون"; }
+
+function filtered() {
+  var q = state.search.trim();
+  return FACTS.filter(function (f) {
+    if (state.tracks.indexOf(f.track) === -1) return false;
+    if (state.years.indexOf(f.year) === -1) return false;
+    if (q && (!f.major || f.major.indexOf(q) === -1)) return false;
+    return true;
+  });
+}
+function val(f) { return state.measure === "grads" ? f.grads : f.emp; }
+
+function rollup(rows, keyFn) {
+  var map = new Map();
+  rows.forEach(function (f) {
+    var k = keyFn(f);
+    if (k === null || k === undefined) return;
+    var cur = map.get(k) || { grads: 0, emp: 0 };
+    cur.grads += f.grads; cur.emp += f.emp;
+    map.set(k, cur);
+  });
+  return map;
+}
+function sortedEntries(map, measure) {
+  return Array.from(map.entries()).sort(function (a, b) {
+    return b[1][measure] - a[1][measure];
+  });
+}
+
+/* ------------------------------ charts ---------------------------------- */
+var charts = {};
+function chart(id) {
+  if (!charts[id]) charts[id] = echarts.init(document.getElementById(id), null, { renderer: "canvas" });
+  return charts[id];
+}
+
+var AXIS = {
+  axisLine:  { lineStyle: { color: C.grid } },
+  axisTick:  { show: false },
+  axisLabel: { color: C.muted, fontFamily: FONT, fontSize: 11.5 },
+  splitLine: { lineStyle: { color: C.grid, type: "dashed" } }
+};
+function tooltipBase() {
+  return {
+    backgroundColor: "#fff",
+    borderColor: C.grid,
+    borderWidth: 1,
+    padding: [9, 13],
+    textStyle: { color: C.ink, fontFamily: FONT, fontSize: 13 },
+    extraCssText: "box-shadow:0 3px 14px rgba(26,26,26,.13);direction:rtl;"
+  };
+}
+
+function drawTrend(rows) {
+  var series = state.tracks.map(function (t) {
+    var m = rollup(rows.filter(function (f) { return f.track === t; }), function (f) { return f.year; });
+    return {
+      name: TRACK_LABEL[t],
+      type: "line",
+      smooth: false,
+      symbol: "circle",
+      symbolSize: 9,
+      lineStyle: { width: 2, color: t === "voc" ? C.voc : C.uni },
+      itemStyle: { color: t === "voc" ? C.voc : C.uni, borderColor: "#fff", borderWidth: 2 },
+      emphasis: { focus: "series" },
+      data: YEARS.map(function (y) { return m.has(y) ? m.get(y)[state.measure] : 0; })
+    };
+  });
+  chart("cTrend").setOption({
+    textStyle: BASE_TEXT,
+    grid: { left: 14, right: 22, top: 52, bottom: 26, containLabel: true },
+    legend: series.length > 1
+      ? { top: 6, right: 0, textStyle: { color: C.muted, fontFamily: FONT, fontSize: 12.5 }, icon: "roundRect", itemWidth: 13, itemHeight: 9 }
+      : { show: false },
+    tooltip: Object.assign(tooltipBase(), {
+      trigger: "axis",
+      axisPointer: { type: "line", lineStyle: { color: C.neutral, width: 1 } },
+      valueFormatter: fmt
+    }),
+    xAxis: Object.assign({ type: "category", data: YEARS, boundaryGap: false }, AXIS),
+    yAxis: Object.assign({ type: "value", name: measureLabel(), nameTextStyle: { color: C.muted, fontFamily: FONT, fontSize: 11.5 }, axisLabel: { color: C.muted, fontFamily: FONT, fontSize: 11.5, formatter: fmt } }, AXIS, { axisLine: { show: false } }),
+    series: series
+  }, true);
+}
+
+function drawGender(rows) {
+  var m = rollup(rows, function (f) { return genderLabel(f.gender); });
+  var data = GENDERS.map(function (g) {
+    var v = m.has(g) ? m.get(g)[state.measure] : 0;
+    var style = { color: g === "ذكر" ? C.voc : g === "أنثى" ? C.uni : C.neutral, borderRadius: [0, 4, 4, 0] };
+    if (g === "غير متوفر") style.decal = { symbol: "rect", color: "rgba(255,255,255,.55)", dashArrayX: [1, 0], dashArrayY: [2, 5], rotation: -Math.PI / 4 };
+    return { value: v, name: g, itemStyle: style };
+  });
+  var total = data.reduce(function (s, d) { return s + d.value; }, 0);
+  chart("cGender").setOption({
+    textStyle: BASE_TEXT,
+    grid: { left: 8, right: 78, top: 14, bottom: 10, containLabel: true },
+    tooltip: Object.assign(tooltipBase(), {
+      trigger: "item",
+      formatter: function (p) { return p.name + "<br><b>" + fmt(p.value) + "</b> (" + pct(p.value, total) + ")"; }
+    }),
+    xAxis: Object.assign({ type: "value", axisLabel: { show: false }, splitLine: { show: false } }, AXIS, { axisLine: { show: false } }),
+    yAxis: Object.assign({ type: "category", data: GENDERS, inverse: true }, AXIS, { splitLine: { show: false }, axisLine: { show: false } }),
+    series: [{
+      type: "bar", barWidth: "45%", data: data,
+      label: { show: true, position: "right", formatter: function (p) { return fmt(p.value); },
+               color: C.ink, fontFamily: FONT, fontSize: 12, fontWeight: 600 }
+    }]
+  }, true);
+}
+
+function nqfName(level) {
+  var hit = D.nqf.levels.filter(function (l) { return l.level === level; })[0];
+  return hit ? level + " · " + hit.ar : UNCLASSIFIED;
+}
+
+function drawNqf(rows) {
+  var m = rollup(rows, function (f) { return f.nqf === null || f.nqf === undefined ? "x" : f.nqf; });
+  var keys = Array.from(m.keys()).sort(function (a, b) {
+    if (a === "x") return 1; if (b === "x") return -1; return a - b;
+  });
+  var maxLevel = 8;
+
+  /* Say plainly how much of the total could not be placed, and why. The
+     framework names three diploma tiers; a bare "دبلوم" does not identify
+     which, so those rows are shown as unclassified rather than guessed. */
+  var total = 0, unplaced = m.has("x") ? m.get("x")[state.measure] : 0;
+  m.forEach(function (v) { total += v[state.measure]; });
+  var hint = document.getElementById("nqfHint");
+  if (hint) {
+    hint.textContent = unplaced
+      ? "Graduates mapped to NQF levels — " + fmt(unplaced) + " (" + pct(unplaced, total) +
+        ") بمؤهلات لا يحددها الإطار بمستوى واحد (مثل «دبلوم» دون تصنيف)، تظهر كـ«غير مصنّف» ولم تُقدَّر."
+      : "Graduates mapped to National Qualifications Framework levels";
+  }
+  chart("cNqf").setOption({
+    textStyle: BASE_TEXT,
+    grid: { left: 8, right: 74, top: 14, bottom: 10, containLabel: true },
+    tooltip: Object.assign(tooltipBase(), {
+      trigger: "item",
+      formatter: function (p) { return p.name + "<br><b>" + fmt(p.value) + "</b>"; }
+    }),
+    xAxis: Object.assign({ type: "value", axisLabel: { show: false }, splitLine: { show: false } }, AXIS, { axisLine: { show: false } }),
+    yAxis: Object.assign({ type: "category", inverse: true,
+      data: keys.map(function (k) { return k === "x" ? UNCLASSIFIED : nqfName(k); }) },
+      AXIS, { splitLine: { show: false }, axisLine: { show: false } }),
+    series: [{
+      type: "bar", barWidth: "58%",
+      data: keys.map(function (k) {
+        var style = { borderRadius: [0, 4, 4, 0] };
+        if (k === "x") {
+          style.color = C.neutral;
+          style.decal = { symbol: "rect", color: "rgba(255,255,255,.55)", dashArrayX: [1, 0], dashArrayY: [2, 5], rotation: -Math.PI / 4 };
+        } else {
+          style.color = NQF_RAMP[Math.round(k / maxLevel * (NQF_RAMP.length - 1))];
+        }
+        return { value: m.get(k)[state.measure], name: k === "x" ? UNCLASSIFIED : nqfName(k), itemStyle: style };
+      }),
+      label: { show: true, position: "right", formatter: function (p) { return fmt(p.value); },
+               color: C.ink, fontFamily: FONT, fontSize: 12, fontWeight: 600 }
+    }]
+  }, true);
+}
+
+function drawOccNqf() {
+  var counts = new Map();
+  D.occupations.forEach(function (o) {
+    var k = (o.nqfLevel === null || o.nqfLevel === undefined) ? "x" : o.nqfLevel;
+    counts.set(k, (counts.get(k) || 0) + 1);
+  });
+  var keys = Array.from(counts.keys()).sort(function (a, b) {
+    if (a === "x") return 1; if (b === "x") return -1; return a - b;
+  });
+  chart("cOccNqf").setOption({
+    textStyle: BASE_TEXT,
+    grid: { left: 8, right: 60, top: 14, bottom: 10, containLabel: true },
+    tooltip: Object.assign(tooltipBase(), {
+      trigger: "item",
+      formatter: function (p) { return p.name + "<br><b>" + fmt(p.value) + "</b> مهنة"; }
+    }),
+    xAxis: Object.assign({ type: "value", axisLabel: { show: false }, splitLine: { show: false } }, AXIS, { axisLine: { show: false } }),
+    yAxis: Object.assign({ type: "category", inverse: true,
+      data: keys.map(function (k) { return k === "x" ? UNCLASSIFIED : nqfName(k); }) },
+      AXIS, { splitLine: { show: false }, axisLine: { show: false } }),
+    series: [{
+      type: "bar", barWidth: "58%",
+      data: keys.map(function (k) {
+        return {
+          value: counts.get(k),
+          name: k === "x" ? UNCLASSIFIED : nqfName(k),
+          itemStyle: { borderRadius: [0, 4, 4, 0],
+            color: k === "x" ? C.neutral : NQF_RAMP[Math.round(k / 8 * (NQF_RAMP.length - 1))] }
+        };
+      }),
+      label: { show: true, position: "right", formatter: function (p) { return fmt(p.value); },
+               color: C.ink, fontFamily: FONT, fontSize: 12, fontWeight: 600 }
+    }]
+  }, true);
+}
+
+function drawRanked(id, rows, keyFn, limit) {
+  var entries = sortedEntries(rollup(rows, keyFn), state.measure).slice(0, limit).reverse();
+  chart(id).setOption({
+    textStyle: BASE_TEXT,
+    grid: { left: 8, right: 74, top: 10, bottom: 10, containLabel: true },
+    tooltip: Object.assign(tooltipBase(), {
+      trigger: "item",
+      formatter: function (p) { return p.name + "<br><b>" + fmt(p.value) + "</b>"; }
+    }),
+    xAxis: Object.assign({ type: "value", axisLabel: { show: false }, splitLine: { show: false } }, AXIS, { axisLine: { show: false } }),
+    yAxis: Object.assign({ type: "category",
+      data: entries.map(function (e) { return e[0]; }),
+      axisLabel: { color: C.muted, fontFamily: FONT, fontSize: 11.5, width: 190, overflow: "truncate" } },
+      AXIS, { splitLine: { show: false }, axisLine: { show: false } }),
+    series: [{
+      type: "bar", barWidth: "62%",
+      itemStyle: { color: C.voc, borderRadius: [0, 4, 4, 0] },
+      data: entries.map(function (e) { return e[1][state.measure]; }),
+      label: { show: true, position: "right", formatter: function (p) { return fmt(p.value); },
+               color: C.ink, fontFamily: FONT, fontSize: 11.5, fontWeight: 600 }
+    }]
+  }, true);
+}
+
+/* ------------------------------- KPIs ----------------------------------- */
+function drawKpis(rows) {
+  var voc = rows.filter(function (f) { return f.track === "voc"; });
+  var uni = rows.filter(function (f) { return f.track === "uni"; });
+  function sum(list, key) { return list.reduce(function (s, f) { return s + f[key]; }, 0); }
+
+  var gAll = sum(rows, "grads"), eAll = sum(rows, "emp");
+  var tiles = [
+    { cls: "", label: "إجمالي الخريجين", value: gAll,
+      sub: "All graduates · " + state.years.length + " سنوات" },
+    { cls: "is-voc", label: "خريجو التعليم المهني والتقني", value: sum(voc, "grads"),
+      sub: "Vocational · " + pct(sum(voc, "grads"), gAll) + " من الإجمالي" },
+    { cls: "is-uni", label: "خريجو الجامعات", value: sum(uni, "grads"),
+      sub: "University · " + pct(sum(uni, "grads"), gAll) + " من الإجمالي" },
+    { cls: "", label: "المتوظفون", value: eAll,
+      sub: "Employed · نسبة التوظيف " + pct(eAll, gAll) },
+    { cls: "", label: "المهن المشمولة", value: D.occupations.length,
+      sub: "Occupations mapped to NQF levels" }
+  ];
+  document.getElementById("kpis").innerHTML = tiles.map(function (t) {
+    return '<div class="kpi ' + t.cls + '">' +
+      '<div class="label">' + t.label + '</div>' +
+      '<div class="value">' + fmt(t.value) + '</div>' +
+      '<div class="sub">' + t.sub + '</div></div>';
+  }).join("");
+}
+
+/* ------------------------------- table ---------------------------------- */
+var TABLE_LIMIT = 400;
+function drawTable(rows) {
+  var agg = new Map();
+  rows.forEach(function (f) {
+    var k = [f.track, f.year, f.major, f.region, f.qual].join("");
+    var cur = agg.get(k);
+    if (!cur) { cur = { f: f, grads: 0, emp: 0 }; agg.set(k, cur); }
+    cur.grads += f.grads; cur.emp += f.emp;
+  });
+  var list = Array.from(agg.values()).sort(function (a, b) { return b.grads - a.grads; });
+  var shown = list.slice(0, TABLE_LIMIT);
+
+  document.getElementById("tableHint").textContent =
+    "يعرض " + fmt(shown.length) + " من " + fmt(list.length) +
+    " صفًا مجمّعًا (المسار، السنة، التخصص، المنطقة، المؤهل) — مرتبة تنازليًا حسب عدد الخريجين.";
+
+  document.querySelector("#dataTable tbody").innerHTML = shown.map(function (r) {
+    var f = r.f;
+    return "<tr>" +
+      "<td>" + TRACK_LABEL[f.track] + "</td>" +
+      "<td class='num'>" + f.year + "</td>" +
+      "<td>" + (f.major || "—") + "</td>" +
+      "<td>" + (f.region || "—") + "</td>" +
+      "<td>" + (f.qual || "—") + "</td>" +
+      "<td>" + (f.nqf === null || f.nqf === undefined ? UNCLASSIFIED : f.nqf) + "</td>" +
+      "<td class='num'>" + fmt(r.grads) + "</td>" +
+      "<td class='num'>" + fmt(r.emp) + "</td>" +
+      "<td class='num'>" + pct(r.emp, r.grads) + "</td>" +
+      "</tr>";
+  }).join("") || "<tr><td colspan='9' class='nodata'>لا توجد بيانات مطابقة للتصفية.</td></tr>";
+}
+
+/* ------------------------------- render --------------------------------- */
+function render() {
+  var rows = filtered();
+  drawKpis(rows);
+  drawTrend(rows);
+  drawGender(rows);
+  drawNqf(rows);
+  drawOccNqf();   /* master-sheet occupations: not affected by the filters */
+  drawRanked("cMajors", rows, function (f) { return f.major; }, 15);
+  drawRanked("cRegions", rows, function (f) { return f.regionKey || f.region; }, 15);
+  drawTable(rows);
+}
+
+/* ------------------------------ controls -------------------------------- */
+function chipRow(container, items, isOn, toggle) {
+  container.innerHTML = "";
+  items.forEach(function (item) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip";
+    b.textContent = item.label;
+    b.setAttribute("aria-pressed", String(isOn(item.value)));
+    b.addEventListener("click", function () { toggle(item.value); });
+    container.appendChild(b);
+  });
+}
+
+function buildControls() {
+  chipRow(document.getElementById("fYears"),
+    YEARS.map(function (y) { return { label: y, value: y }; }),
+    function (y) { return state.years.indexOf(y) !== -1; },
+    function (y) {
+      var i = state.years.indexOf(y);
+      if (i === -1) state.years.push(y);
+      else if (state.years.length > 1) state.years.splice(i, 1);
+      refresh();
+    });
+
+  chipRow(document.getElementById("fTracks"),
+    [{ label: TRACK_LABEL.voc, value: "voc" }, { label: TRACK_LABEL.uni, value: "uni" }],
+    function (t) { return state.tracks.indexOf(t) !== -1; },
+    function (t) {
+      var i = state.tracks.indexOf(t);
+      if (i === -1) state.tracks.push(t);
+      else if (state.tracks.length > 1) state.tracks.splice(i, 1);
+      refresh();
+    });
+
+  chipRow(document.getElementById("fMeasure"),
+    [{ label: "الخريجون", value: "grads" }, { label: "المتوظفون", value: "emp" }],
+    function (m) { return state.measure === m; },
+    function (m) { state.measure = m; refresh(); });
+}
+
+function refresh() { buildControls(); render(); }
+
+var searchTimer;
+document.getElementById("fSearch").addEventListener("input", function (e) {
+  clearTimeout(searchTimer);
+  var v = e.target.value;
+  searchTimer = setTimeout(function () { state.search = v; render(); }, 180);
+});
+document.getElementById("fReset").addEventListener("click", function () {
+  state = { years: YEARS.slice(), tracks: ["voc", "uni"], measure: "grads", search: "" };
+  document.getElementById("fSearch").value = "";
+  refresh();
+});
+
+/* ---------------------------- static copy ------------------------------- */
+document.getElementById("scopeNote").innerHTML =
+  "<strong>نطاق البيانات:</strong> " + D.meta.scope.university.ar +
+  " — بيانات الجامعات تغطي مجالين عامين فقط ولا تمثل جميع خريجي الجامعات. " +
+  "بيانات التعليم المهني تغطي " + D.meta.scope.vocational.ar + ".";
+
+document.getElementById("provenance").innerHTML =
+  "المصادر: <code>" + D.meta.sources.vocational + "</code>, <code>" +
+  D.meta.sources.university + "</code>, <code>" + D.meta.sources.master +
+  "</code>, <code>" + D.meta.sources.nqf + "</code>. " +
+  "مستويات الإطار الوطني للمؤهلات مأخوذة من " + D.nqf.source + ". " +
+  "الهوية البصرية وفق إرشادات العلامة التجارية لوزارة الصناعة والثروة المعدنية (الإصدار 1.1). " +
+  "تفاصيل التحليل ومصادر كل قيمة في <code>data/README.md</code>.";
+
+/* ------------------------------- boot ----------------------------------- */
+refresh();
+
+var resizeTimer;
+window.addEventListener("resize", function () {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function () {
+    Object.keys(charts).forEach(function (k) { charts[k].resize(); });
+  }, 120);
+});
+
+})();
+</script>
+</body>
+</html>
