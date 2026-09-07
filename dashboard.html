@@ -305,10 +305,10 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5p
 
 <header class="masthead">
   <img src="assets/mim-logo-primary.svg"
-       alt="وزارة الصناعة والثروة المعدنية — Ministry of Industry and Mineral Resources">
+       alt="وزارة الصناعة والثروة المعدنية، Ministry of Industry and Mineral Resources">
   <div class="titles">
     <h1>خريجو التعليم المهني والجامعي في تخصصات قطاع الصناعة والتعدين</h1>
-    <div class="en">Vocational &amp; University Graduates — Industry and Mining Sector</div>
+    <div class="en">Vocational &amp; University Graduates · Industry and Mining Sector</div>
   </div>
   <div class="period">2020 – 2025</div>
 </header>
@@ -318,8 +318,8 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5p
 <div class="globalbar">
   <span class="lab">سنة التخرج</span>
   <div class="chips" id="fYears" role="group" aria-label="سنة التخرج"></div>
-  <span class="lab">المؤشر</span>
-  <div class="chips" id="fMeasure" role="group" aria-label="المؤشر"></div>
+  <span class="lab">الترتيب حسب</span>
+  <div class="chips" id="fMeasure" role="group" aria-label="الترتيب حسب"></div>
 </div>
 
 <main id="view"></main>
@@ -358,7 +358,7 @@ var L = D.lexicon;
 
 /* ------------------------------- helpers -------------------------------- */
 function fmt(n) { return (n || 0).toLocaleString("en-US"); }
-function pct(a, b) { return b ? (a / b * 100).toFixed(1) + "%" : "—"; }
+function pct(a, b) { return b ? (a / b * 100).toFixed(1) + "%" : "غير متوفر"; }
 function esc(s) {
   return String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -417,8 +417,9 @@ function genderLabel(g) { return (g === "ذكر" || g === "أنثى") ? g : "غ�
 var GENDERS = ["ذكر", "أنثى", "غير متوفر"];
 
 /* ------------------------------- state ---------------------------------- */
+/* Both measures are drawn in every chart that has them, so `measure` now only
+   decides which one the ranked lists and top-N charts are ordered by. */
 var state = { years: YEARS.slice(), measure: "grads" };
-function measureLabel() { return state.measure === "grads" ? "الخريجون" : "المتوظفون"; }
 function inYears(f) { return state.years.indexOf(f.year) !== -1; }
 function vocRows() { return VOC.filter(inYears); }
 function uniRows() { return UNI.filter(inYears); }
@@ -441,6 +442,14 @@ function total(rows) {
 }
 function ranked(m, measure) {
   return Array.from(m.entries()).sort(function (a, b) { return b[1][measure] - a[1][measure]; });
+}
+/* A ranked entry ([key, {grads, emp}]) as the [label, graduates, employed]
+   triple the bar charts draw. Extra arguments are ignored so these can be
+   handed straight to Array.map, which also passes an index. */
+function pair(e) { return [e[0], e[1].grads, e[1].emp]; }
+/* Same, for keys that are dimension indexes rather than the label itself. */
+function pairBy(nameFn) {
+  return function (e) { return [nameFn(e[0]), e[1].grads, e[1].emp]; };
 }
 
 /* ------------------------------- charts --------------------------------- */
@@ -471,41 +480,121 @@ function tip(extra) {
 }
 function baseText() { return { color: C.ink, fontFamily: FONT, fontSize: 12 }; }
 
-/* Horizontal ranked bars, one colour, every bar directly labelled. */
+/* Mix a hex colour towards white. `keep` is the share of the hue retained, so
+   the graduates bar reads as the same category as the employed bar drawn on
+   top of it — one hue, two strengths, no second colour to decode. */
+function tint(hex, keep) {
+  if (hex.charAt(0) !== "#") return hex;
+  var n = parseInt(hex.slice(1), 16);
+  function mix(c) { return Math.round(c * keep + 255 * (1 - keep)); }
+  return "rgb(" + mix((n >> 16) & 255) + "," + mix((n >> 8) & 255) + "," + mix(n & 255) + ")";
+}
+var TINT = 0.32;
+
+/* Horizontal ranked bars, every bar directly labelled.
+   entries are [label, value] or, where the row also has an employment count,
+   [label, graduates, employed]: the second form draws the employed figure as a
+   narrower bar inside the graduates bar, since the employed are a subset of
+   the graduates rather than a separate quantity to stack beside them. */
 function barChart(id, entries, opts) {
   var c = mount(id); if (!c) return;
   opts = opts || {};
+  var dual = entries.some(function (e) { return typeof e[2] === "number"; });
+  var maxV = entries.reduce(function (a, e) { return Math.max(a, e[1] || 0); }, 0) || 1;
+  var plotWidth = Math.max(40, c.getWidth() - (opts.labelRoom || 72) -
+                               (opts.labelWidth || 200) - 30);
+  var base = opts.legendColor || C.voc;
+
+  function colourAt(e, i) { return opts.colorFn ? opts.colorFn(e, i) : C.voc; }
   var data = entries.map(function (e, i) {
-    var style = { borderRadius: [0, 4, 4, 0], color: opts.colorFn ? opts.colorFn(e, i) : C.voc };
+    var style = { borderRadius: [0, 4, 4, 0],
+                  color: dual ? tint(colourAt(e, i), TINT) : colourAt(e, i) };
     if (opts.hatchFn && opts.hatchFn(e, i)) style.decal = HATCH;
     return { value: e[1], name: e[0], itemStyle: style };
   });
+  var series = [{ name: "الخريجون", type: "bar", barWidth: opts.barWidth || "62%", data: data,
+    itemStyle: dual ? { color: tint(base, TINT) } : undefined,
+    label: { show: true, position: "right", formatter: function (p) { return fmt(p.value); },
+             color: C.ink, fontFamily: FONT, fontSize: 11.5, fontWeight: 600 } }];
+
+  if (dual) {
+    /* Same width as the bar underneath, drawn from the same zero: the employed
+       read as a filled part of the graduates bar, not a segment stacked onto
+       it. A narrower bar would sit against the top edge, not centred. */
+    series.push({ name: "المتوظفون", type: "bar", barWidth: opts.barWidth || "62%",
+      barGap: "-100%", z: 3,
+      itemStyle: { color: base },
+      data: entries.map(function (e, i) {
+        return { value: e[2] || 0, name: e[0],
+                 itemStyle: { borderRadius: [0, 4, 4, 0], color: colourAt(e, i) } };
+      }),
+      /* Only label a bar wide enough to hold the number, measured against the
+         plot area this chart actually got: the same bar holds its label on a
+         wide card and would spill past its own left edge on a narrow one. */
+      label: { show: true, position: "insideRight", distance: 6,
+               formatter: function (p) {
+                 var text = fmt(p.value);
+                 return p.value / maxV * plotWidth > text.length * 7 + 16 ? text : "";
+               },
+               color: "#fff", fontFamily: FONT, fontSize: 11, fontWeight: 600 } });
+  }
+
   c.setOption({
     textStyle: baseText(),
-    grid: { left: 8, right: opts.labelRoom || 72, top: 8, bottom: 8, containLabel: true },
-    tooltip: tip({ trigger: "item", formatter: function (p) {
-      return esc(p.name) + "<br><b>" + fmt(p.value) + "</b>" + (opts.unit ? " " + opts.unit : ""); } }),
-    xAxis: Object.assign({ type: "value", axisLabel: { show: false }, splitLine: { show: false } },
-                         AXIS, { axisLine: { show: false } }),
+    grid: { left: 8, right: opts.labelRoom || 72, top: dual ? 30 : 8, bottom: 8,
+            containLabel: true },
+    legend: dual
+      ? { top: 0, right: 2, left: 2, icon: "roundRect", itemWidth: 13, itemHeight: 9,
+          type: "scroll", textStyle: { color: C.muted, fontFamily: FONT, fontSize: 12 } }
+      : { show: false },
+    tooltip: dual
+      ? tip({ trigger: "axis", axisPointer: { type: "shadow" }, formatter: function (ps) {
+          var g = 0, e = 0;
+          ps.forEach(function (p) {
+            if (p.seriesName === "المتوظفون") e = p.value; else g = p.value; });
+          return esc(ps[0].name) + "<br>الخريجون <b>" + fmt(g) + "</b><br>المتوظفون <b>" +
+                 fmt(e) + "</b><br>نسبة التوظيف <b>" + pct(e, g) + "</b>"; } })
+      : tip({ trigger: "item", formatter: function (p) {
+          return esc(p.name) + "<br><b>" + fmt(p.value) + "</b>" +
+                 (opts.unit ? " " + opts.unit : ""); } }),
+    /* axisLabel last: AXIS carries a visible one, and the value ticks collide
+       with each other on a narrow card while every bar is already labelled. */
+    xAxis: Object.assign({ type: "value" }, AXIS,
+                         { axisLine: { show: false }, splitLine: { show: false },
+                           axisLabel: { show: false } }),
     yAxis: Object.assign({ type: "category", data: entries.map(function (e) { return e[0]; }) },
       AXIS, { splitLine: { show: false }, axisLine: { show: false },
               axisLabel: { color: C.muted, fontFamily: FONT, fontSize: 11.5,
                            width: opts.labelWidth || 200, overflow: "truncate" } }),
-    series: [{ type: "bar", barWidth: opts.barWidth || "62%", data: data,
-      label: { show: true, position: "right", formatter: function (p) { return fmt(p.value); },
-               color: C.ink, fontFamily: FONT, fontSize: 11.5, fontWeight: 600 } }]
+    series: series
   }, true);
 }
 
-/* Year trend. One or two series; two use the validated purple/teal pair. */
+/* Year trend. Tracks use the validated purple/teal pair; where a series also
+   carries an employed count it is drawn in the same hue, dashed and with
+   hollow markers, so the two measures never cost a third colour. */
 function trendChart(id, series) {
   var c = mount(id); if (!c) return;
+  var lines = [];
+  series.forEach(function (s) {
+    lines.push({ name: s.name, type: "line", symbol: "circle", symbolSize: 9,
+                 lineStyle: { width: 2, color: s.color },
+                 itemStyle: { color: s.color, borderColor: "#fff", borderWidth: 2 },
+                 emphasis: { focus: "series" }, data: s.data });
+    if (s.emp) {
+      lines.push({ name: s.empName || ("المتوظفون · " + s.name), type: "line",
+                   symbol: "circle", symbolSize: 7,
+                   lineStyle: { width: 2, color: s.color, type: "dashed" },
+                   itemStyle: { color: "#fff", borderColor: s.color, borderWidth: 2 },
+                   emphasis: { focus: "series" }, data: s.emp });
+    }
+  });
   c.setOption({
     textStyle: baseText(),
-    grid: { left: 12, right: 20, top: series.length > 1 ? 46 : 18, bottom: 22, containLabel: true },
-    legend: series.length > 1
-      ? { top: 4, right: 0, icon: "roundRect", itemWidth: 13, itemHeight: 9,
-          textStyle: { color: C.muted, fontFamily: FONT, fontSize: 12.5 } }
+    grid: { left: 12, right: 20, top: lines.length > 1 ? 46 : 18, bottom: 22, containLabel: true },
+    legend: lines.length > 1
+      ? { top: 4, right: 2, left: 2, icon: "roundRect", itemWidth: 13, itemHeight: 9,
+          type: "scroll", textStyle: { color: C.muted, fontFamily: FONT, fontSize: 12.5 } }
       : { show: false },
     tooltip: tip({ trigger: "axis", valueFormatter: fmt,
                    axisPointer: { type: "line", lineStyle: { color: C.neutral, width: 1 } } }),
@@ -513,12 +602,7 @@ function trendChart(id, series) {
     yAxis: Object.assign({ type: "value",
       axisLabel: { color: C.muted, fontFamily: FONT, fontSize: 11.5, formatter: fmt } },
       AXIS, { axisLine: { show: false } }),
-    series: series.map(function (s) {
-      return { name: s.name, type: "line", symbol: "circle", symbolSize: 9,
-               lineStyle: { width: 2, color: s.color },
-               itemStyle: { color: s.color, borderColor: "#fff", borderWidth: 2 },
-               emphasis: { focus: "series" }, data: s.data };
-    })
+    series: lines
   }, true);
 }
 
@@ -538,6 +622,25 @@ function card(title, hint, body, span) {
 function chartCard(title, hint, id, span, cls) {
   return card(title, hint, '<div class="chart ' + (cls || "") + '" id="' + id + '"></div>', span);
 }
+/* Which qualifications land in «غير مصنّف», and how big each one is. The bar
+   is large because one source qualification is large, not because the mapping
+   gave up wholesale, so the chart says which ones and how many. */
+function unclassifiedNote(v, u) {
+  var m = new Map();
+  function add(name, f) {
+    if (!name) return;
+    var c = m.get(name);
+    if (!c) { c = { grads: 0, emp: 0 }; m.set(name, c); }
+    c.grads += f.grads; c.emp += f.emp;
+  }
+  v.forEach(function (f) { if (f.nqf === null || f.nqf === undefined) add(f.qual, f); });
+  u.forEach(function (f) { if (f.nqf === null || f.nqf === undefined) add(f.level, f); });
+  if (!m.size) return "";
+  return "«" + UNCLASSIFIED + "» مؤهلات لا يربطها الإطار بمستوى واحد: " +
+    ranked(m, "grads").map(function (e) {
+      return e[0] + " (" + fmt(e[1].grads) + ")"; }).join(" · ") + ".";
+}
+
 function nqfName(level) {
   if (level === null || level === undefined) return UNCLASSIFIED;
   var hit = D.nqf.levels.filter(function (l) { return l.level === level; })[0];
@@ -548,20 +651,22 @@ function nqfName(level) {
 function detailCharts(rows, prefix, colour) {
   var byYear = agg(rows, function (f) { return f.year; });
   trendChart(prefix + "Trend", [{
-    name: measureLabel(), color: colour,
-    data: YEARS.map(function (y) { return byYear.has(y) ? byYear.get(y)[state.measure] : 0; })
+    name: "الخريجون", empName: "المتوظفون", color: colour,
+    data: YEARS.map(function (y) { return byYear.has(y) ? byYear.get(y).grads : 0; }),
+    emp:  YEARS.map(function (y) { return byYear.has(y) ? byYear.get(y).emp : 0; })
   }]);
 
   var byGender = agg(rows, function (f) { return genderLabel(f.gender); });
   barChart(prefix + "Gender", GENDERS.map(function (g) {
-    return [g, byGender.has(g) ? byGender.get(g)[state.measure] : 0];
+    var v = byGender.get(g);
+    return [g, v ? v.grads : 0, v ? v.emp : 0];
   }), { colorFn: function (e) { return e[0] === "غير متوفر" ? C.neutral : colour; },
-        hatchFn: function (e) { return e[0] === "غير متوفر"; }, labelWidth: 90 });
+        hatchFn: function (e) { return e[0] === "غير متوفر"; },
+        legendColor: colour, labelWidth: 90 });
 
   var byRegion = ranked(agg(rows, function (f) { return f.regionKey || f.region; }), state.measure);
-  barChart(prefix + "Region",
-    byRegion.slice(0, 13).reverse().map(function (e) { return [e[0], e[1][state.measure]]; }),
-    { colorFn: function () { return colour; }, labelWidth: 150 });
+  barChart(prefix + "Region", byRegion.slice(0, 13).reverse().map(pair),
+    { colorFn: function () { return colour; }, legendColor: colour, labelWidth: 150 });
 }
 
 /* ========================================================================= */
@@ -574,7 +679,7 @@ function viewOverview() {
   var html =
     '<p class="scope-note"><strong>نطاق البيانات:</strong> ' +
       esc(D.meta.scope.university.ar) +
-      ' — بيانات الجامعات تغطي مجالين عامين فقط ولا تمثل جميع خريجي الجامعات.</p>' +
+      '. بيانات الجامعات تغطي مجالين عامين فقط ولا تمثل جميع خريجي الجامعات.</p>' +
     kpiHtml([
       { label: "إجمالي الخريجين", value: ta.grads, sub: "All graduates · " + state.years.length + " سنوات" },
       { cls: "is-voc", label: "خريجو التعليم المهني والتقني", value: tv.grads,
@@ -588,10 +693,11 @@ function viewOverview() {
         sub: VD.major.length + " مهني · " + UD.major.length + " جامعي" }
     ]) +
     '<div class="grid">' +
-      chartCard("الخريجون حسب سنة التخرج", "Graduates by year — المهني مقابل الجامعي", "oTrend", "span8") +
-      chartCard("التوزيع حسب الجنس", "By gender — الفئة غير المتوفرة بنقش مائل", "oGender", "span4") +
-      chartCard("حسب مستوى الإطار الوطني للمؤهلات", "", "oNqf", "span6") +
-      chartCard("التوزيع الجغرافي", "By region — المناطق الإدارية", "oRegion", "span6", "tall") +
+      chartCard("الخريجون حسب سنة التخرج", "Graduates by year · المهني مقابل الجامعي", "oTrend", "span8") +
+      chartCard("التوزيع حسب الجنس", "By gender · الفئة غير المتوفرة بنقش مائل", "oGender", "span4") +
+      card("حسب مستوى الإطار الوطني للمؤهلات", "",
+        '<p class="hint" id="oNqfNote"></p><div class="chart" id="oNqf"></div>', "span6") +
+      chartCard("التوزيع الجغرافي", "By region · المناطق الإدارية", "oRegion", "span6", "tall") +
       chartCard("أعلى التخصصات المهنية", "Top vocational specializations", "oVocMaj", "span6", "tall") +
       chartCard("أعلى التخصصات الجامعية", "Top university specializations", "oUniMaj", "span6", "tall") +
     '</div>';
@@ -599,15 +705,17 @@ function viewOverview() {
 
   var vY = agg(v, function (f) { return f.year; }), uY = agg(u, function (f) { return f.year; });
   trendChart("oTrend", [
-    { name: "التعليم المهني والتقني", color: C.voc,
-      data: YEARS.map(function (y) { return vY.has(y) ? vY.get(y)[state.measure] : 0; }) },
-    { name: "الجامعات", color: C.uni,
-      data: YEARS.map(function (y) { return uY.has(y) ? uY.get(y)[state.measure] : 0; }) }
+    { name: "خريجو المهني والتقني", empName: "متوظفو المهني والتقني", color: C.voc,
+      data: YEARS.map(function (y) { return vY.has(y) ? vY.get(y).grads : 0; }),
+      emp:  YEARS.map(function (y) { return vY.has(y) ? vY.get(y).emp : 0; }) },
+    { name: "خريجو الجامعات", empName: "متوظفو الجامعات", color: C.uni,
+      data: YEARS.map(function (y) { return uY.has(y) ? uY.get(y).grads : 0; }),
+      emp:  YEARS.map(function (y) { return uY.has(y) ? uY.get(y).emp : 0; }) }
   ]);
 
   var g = agg(all, function (f) { return genderLabel(f.gender); });
   barChart("oGender", GENDERS.map(function (x) {
-    return [x, g.has(x) ? g.get(x)[state.measure] : 0]; }), {
+    var c0 = g.get(x); return [x, c0 ? c0.grads : 0, c0 ? c0.emp : 0]; }), {
     colorFn: function (e) { return e[0] === "ذكر" ? C.voc : e[0] === "أنثى" ? C.uni : C.neutral; },
     hatchFn: function (e) { return e[0] === "غير متوفر"; }, labelWidth: 90 });
 
@@ -615,21 +723,22 @@ function viewOverview() {
   var keys = Array.from(nq.keys()).sort(function (a, b) {
     if (a === "x") return 1; if (b === "x") return -1; return a - b; });
   barChart("oNqf", keys.map(function (k) {
-    return [k === "x" ? UNCLASSIFIED : nqfName(k), nq.get(k)[state.measure]]; }), {
+    var c0 = nq.get(k);
+    return [k === "x" ? UNCLASSIFIED : nqfName(k), c0.grads, c0.emp]; }), {
     labelWidth: 235, labelRoom: 84,
     colorFn: function (e, i) { return e[0] === UNCLASSIFIED ? C.neutral
       : NQF_RAMP[Math.round(keys[i] / 8 * (NQF_RAMP.length - 1))] || C.voc; },
     hatchFn: function (e) { return e[0] === UNCLASSIFIED; } });
+  var uncNote = document.getElementById("oNqfNote");
+  if (uncNote) uncNote.textContent = unclassifiedNote(v, u);
 
   barChart("oRegion", ranked(agg(all, function (f) { return f.regionKey || f.region; }), state.measure)
-    .slice(0, 13).reverse().map(function (e) { return [e[0], e[1][state.measure]]; }),
-    { labelWidth: 150 });
+    .slice(0, 13).reverse().map(pair), { labelWidth: 150 });
   barChart("oVocMaj", ranked(agg(v, function (f) { return f.major; }), state.measure)
-    .slice(0, 14).reverse().map(function (e) { return [e[0], e[1][state.measure]]; }),
-    { labelWidth: 190 });
+    .slice(0, 14).reverse().map(pair), { labelWidth: 190 });
   barChart("oUniMaj", ranked(agg(u, function (f) { return f.m; }), state.measure)
-    .slice(0, 14).reverse().map(function (e) { return [e[0], e[1][state.measure]]; }),
-    { labelWidth: 190, colorFn: function () { return C.uni; } });
+    .slice(0, 14).reverse().map(pair),
+    { labelWidth: 190, colorFn: function () { return C.uni; }, legendColor: C.uni });
 }
 
 /* ========================================================================= */
@@ -741,7 +850,7 @@ function viewUniDetail(majorIdx) {
     '<div class="grid">' +
       chartCard("الخريجون حسب السنة", "", "dTrend", "span6") +
       chartCard("حسب المستوى التعليمي", "", "dLevel", "span6") +
-      chartCard("الجامعات", "Where it is taught — بترتيب عدد الخريجين", "dUni", "span6", "tall") +
+      chartCard("الجامعات", "Where it is taught · بترتيب عدد الخريجين", "dUni", "span6", "tall") +
       chartCard("التوزيع الجغرافي", "", "dRegion", "span6", "tall") +
       chartCard("حسب الجنس", "", "dGender", "span6", "short") +
       card("المهن المرتبطة بهذا المجال التعليمي",
@@ -765,10 +874,10 @@ function viewUniDetail(majorIdx) {
   document.getElementById("view").innerHTML = html;
 
   detailCharts(rows, "d", C.uni);
-  barChart("dLevel", levels.slice().reverse().map(function (e) { return [e[0], e[1][state.measure]]; }),
-    { colorFn: function () { return C.uni; }, labelWidth: 130 });
-  barChart("dUni", unis.slice(0, 26).reverse().map(function (e) { return [e[0], e[1][state.measure]]; }),
-    { colorFn: function () { return C.uni; }, labelWidth: 230, labelRoom: 78 });
+  barChart("dLevel", levels.slice().reverse().map(pair),
+    { colorFn: function () { return C.uni; }, legendColor: C.uni, labelWidth: 130 });
+  barChart("dUni", unis.slice(0, 26).reverse().map(pair),
+    { colorFn: function () { return C.uni; }, legendColor: C.uni, labelWidth: 230, labelRoom: 78 });
 }
 
 /* ========================================================================= */
@@ -841,9 +950,8 @@ function viewVocDetail(majorIdx) {
     '</div>';
 
   detailCharts(rows, "d", C.voc);
-  barChart("dQual", quals.slice().reverse().map(function (e) { return [e[0], e[1][state.measure]]; }),
-    { labelWidth: 180 });
-  barChart("dInst", insts.slice(0, 26).reverse().map(function (e) { return [e[0], e[1][state.measure]]; }),
+  barChart("dQual", quals.slice().reverse().map(pair), { labelWidth: 180 });
+  barChart("dInst", insts.slice(0, 26).reverse().map(pair),
     { labelWidth: 230, labelRoom: 78 });
 }
 
@@ -890,7 +998,7 @@ function describe(rec, tree, specIdx, skipKpis) {
     (skipKpis ? "" :
     '<section class="kpis">' +
       '<div class="kpi"><div class="label">مستوى المهنة</div><div class="value">' +
-        esc(rec.occLevel || "—") + '</div><div class="sub">Occupation level</div></div>' +
+        esc(rec.occLevel || "غير متوفر") + '</div><div class="sub">Occupation level</div></div>' +
       '<div class="kpi"><div class="label">القطاعات التي تخدمها</div><div class="value">' +
         rec.sectors.length + '</div><div class="sub">من 13 قطاعًا فرعيًا</div></div>' +
       '<div class="kpi"><div class="label">المهارات</div><div class="value">' +
@@ -904,7 +1012,7 @@ function describe(rec, tree, specIdx, skipKpis) {
     '<div class="grid">' +
       card("ملخص المهنة", tree && tree.baseFromChild && specIdx === undefined
           ? "المصدر لا يحمل صفًا للمهنة دون تخصص؛ النص معروض من أول تخصص" : "",
-        '<p style="font-size:14px;margin:0">' + esc(rec.summary || "—") + '</p>', "span6") +
+        '<p style="font-size:14px;margin:0">' + esc(rec.summary || "غير متوفر") + '</p>', "span6") +
 
       card("التصنيف", "", '<dl class="deflist">' +
         '<div><dt>المجموعة الرئيسية</dt><dd>' + esc(rec.group) +
@@ -912,10 +1020,10 @@ function describe(rec, tree, specIdx, skipKpis) {
         '<div><dt>المجموعة الفرعية</dt><dd>' + esc(rec.subGroup) + '</dd></div>' +
         '<div><dt>المجموعة الثانوية</dt><dd>' + esc(rec.minorGroup) + '</dd></div>' +
         '<div><dt>الوحدة</dt><dd>' + esc(rec.unit) + '</dd></div>' +
-        '<div><dt>نوع المهنة</dt><dd>' + esc(rec.type || "—") + '</dd></div>' +
-        '<div><dt>المجموعة الوظيفية</dt><dd>' + esc(rec.functionalGroup || "—") + '</dd></div>' +
-        '<div><dt>مستوى ISCED 11</dt><dd>' + esc(rec.isced || "—") + '</dd></div>' +
-        '<div><dt>مستوى الإطار الوطني</dt><dd>' + esc(rec.nqfLabel || "—") + '</dd></div>' +
+        '<div><dt>نوع المهنة</dt><dd>' + esc(rec.type || "غير متوفر") + '</dd></div>' +
+        '<div><dt>المجموعة الوظيفية</dt><dd>' + esc(rec.functionalGroup || "غير متوفر") + '</dd></div>' +
+        '<div><dt>مستوى ISCED 11</dt><dd>' + esc(rec.isced || "غير متوفر") + '</dd></div>' +
+        '<div><dt>مستوى الإطار الوطني</dt><dd>' + esc(rec.nqfLabel || "غير متوفر") + '</dd></div>' +
       '</dl>', "span6") +
 
       card("المهام الرئيسية", "", rec.tasks.length
@@ -950,7 +1058,7 @@ function describe(rec, tree, specIdx, skipKpis) {
         progInst.length
           ? '<ul class="instlist">' + progInst.map(function (x) {
               return '<li>' + esc(x.name) +
-                (x.region ? ' <span class="rg">— ' + esc(x.region) + '</span>' : "") + '</li>';
+                (x.region ? ' <span class="rg">· ' + esc(x.region) + '</span>' : "") + '</li>';
             }).join("") + '</ul>'
           : '<p class="empty">لم يُسجَّل برنامج مطابق في المصدر. جداول المطابقة تغطي مهن قطاع التعدين فقط.</p>',
         "span6") +
@@ -1065,7 +1173,7 @@ function skillBlock(title, entries) {
       return '<div class="skillrow"><span class="nm">' + esc(name) + '</span>' +
         '<span class="lv"><span class="meter"><i style="width:' +
         (lvl ? Math.round(lvl / 5 * 100) : 0) + '%"></i></span>' +
-        esc(lvl ? lvl + " · " + (lab || "") : "—") + '</span></div>';
+        esc(lvl ? lvl + " · " + (lab || "") : "غير متوفر") + '</span></div>';
     }).join("");
 }
 
@@ -1210,7 +1318,7 @@ function viewOccSpec(code, idx) {
               (levelled.length ? avgLevel.toFixed(1) + " من 5" : "غير محدد") + '</div></div>' +
             '<div class="kpi"><div class="label">المهام الرئيسية</div><div class="value">' +
               c.tasks.length + '</div><div class="sub">مستوى المهنة ' +
-              esc(c.occLevel || "—") + '</div></div>' +
+              esc(c.occLevel || "غير متوفر") + '</div></div>' +
             '<div class="kpi is-uni"><div class="label">خريجو المجالات المرتبطة</div><div class="value">' +
               fmt(lt.grads) + '</div><div class="sub">' +
               (linked.length
@@ -1239,9 +1347,9 @@ function viewOccSpec(code, idx) {
       { unit: "مهارة", labelWidth: 130, labelRoom: 56 });
   }
   if (linked.length) {
-    barChart("wUni", unis.slice(0, 8).reverse().map(function (e) {
-      return [e[0], e[1][state.measure]]; }),
-      { colorFn: function () { return C.uni; }, labelWidth: 190, labelRoom: 74 });
+    barChart("wUni", unis.slice(0, 8).reverse().map(pair),
+      { colorFn: function () { return C.uni; }, legendColor: C.uni,
+        labelWidth: 190, labelRoom: 74 });
   }
   specCharts = live.splice(mountedBefore);
 
@@ -1288,10 +1396,10 @@ function viewNqf() {
       '<td>' + esc(l.ar) + '<div style="font-size:11px;color:#666;direction:ltr;text-align:right">' +
         esc(l.en) + '</div></td>' +
       '<td>' + ((qualsFor[l.level] || []).map(function (q) {
-        return '<span class="tag">' + esc(q) + '</span>'; }).join(" ") || '<span style="color:#999">—</span>') + '</td>' +
+        return '<span class="tag">' + esc(q) + '</span>'; }).join(" ") || '<span style="color:#999">غير متوفر</span>') + '</td>' +
       '<td class="num">' + fmt(oc) + '</td>' +
       '<td class="num">' + fmt(g ? g.grads : 0) + '</td>' +
-      '<td class="num">' + (g ? pct(g.emp, g.grads) : "—") + '</td></tr>';
+      '<td class="num">' + (g ? pct(g.emp, g.grads) : "غير متوفر") + '</td></tr>';
   }).join("");
 
   var unc = byLevel.get("x");
@@ -1304,7 +1412,8 @@ function viewNqf() {
       pct(unc.grads, uncTotal) + ') غير مصنّفين.</strong> ' +
       'الإطار يميّز بين الدبلوم المشارك (المستوى 4) والدبلوم المتوسط والمتقدم (المستوى 5)، ' +
       'بينما تسجّل بيانات التعليم المهني «دبلوم» دون تحديد الفئة. تُعرض هذه الصفوف كما هي ' +
-      'ولم تُوزَّع على المستويات تقديرًا.</p>' : "") +
+      'ولم تُوزَّع على المستويات تقديرًا.<br>' + esc(unclassifiedNote(vocRows(), uniRows())) +
+      '</p>' : "") +
     card("مستويات الإطار الوطني للمؤهلات",
       "عدد المهن والخريجين المسكّنين في كل مستوى",
       '<div class="table-wrap"><table><thead><tr>' +
@@ -1317,8 +1426,9 @@ function viewNqf() {
     '</div>';
 
   var keys = D.nqf.levels.map(function (l) { return l.level; }).filter(function (k) { return byLevel.has(k); });
-  barChart("nGrad", keys.map(function (k) { return [nqfName(k), byLevel.get(k)[state.measure]]; })
-    , { labelWidth: 235, labelRoom: 84,
+  barChart("nGrad", keys.map(function (k) {
+      var c0 = byLevel.get(k); return [nqfName(k), c0.grads, c0.emp]; }),
+    { labelWidth: 235, labelRoom: 84,
         colorFn: function (e) { var lv = parseInt(e[0], 10);
           return NQF_RAMP[Math.round(lv / 8 * (NQF_RAMP.length - 1))]; } });
   var okeys = Array.from(occByLevel.keys()).filter(function (k) { return k !== "x"; })

@@ -195,6 +195,19 @@ across levels. **If the vocational data can be re-exported with the diploma
 tier spelled out (مشارك / متوسط / متقدم), that single change would place the
 majority of these graduates on the framework.**
 
+The NQF charts on `#overview` and `#nqf` print the composition of the bar
+underneath the title, recomputed from the rows currently in scope, so the size
+of `غير مصنّف` reads as "one big source qualification" rather than as a
+mapping that gave up. Over the full six years that line is:
+
+| Qualification | Sheet | Graduates |
+|---|---|---|
+| `دبلوم` | vocational + university | 306,040 |
+| `دبلوم معاهد ثانوي صناعي` | vocational | 20,875 |
+| `أخرى` | university | 370 |
+| `زمالة` | university | 4 |
+| **Total** | | **327,289** |
+
 ---
 
 ## 5. Verification
@@ -315,6 +328,31 @@ sub-3:1 contrast of teal on white.
 NQF level is a magnitude, not a set of categories, so it uses a single-hue
 purple ramp light→dark rather than categorical colours.
 
+### Graduates and employed in the same chart
+
+Every chart that counts graduates also draws the employed count, and neither
+measure costs a colour. The employed are a **subset** of the graduates, so they
+are drawn as a fill rather than as a second quantity beside them:
+
+- **Bar charts** — one bar per row, the same width for both series, both
+  starting at zero, the employed drawn on top at `barGap: -100%`. The graduates
+  bar is the row's own hue mixed 32% into white, the employed bar is that hue at
+  full strength. Same hue, two strengths: no second colour to decode and it
+  survives greyscale. The employed number is printed inside its bar only where
+  the bar is wide enough to hold it, measured against the plot width this chart
+  actually got, and is in the tooltip either way along with the rate.
+- **Trend lines** — the employed series repeats its track's hue as a dashed
+  line with hollow markers. The overview trend therefore carries four lines in
+  two hues, distinguished within each hue by line style rather than by a third
+  and fourth colour that CVD would collapse.
+
+Charts that count something other than graduates (occupations per NQF level,
+skills per category) stay single-series.
+
+Because both measures are now always on screen, the header's measure chips no
+longer switch what is drawn — they are labelled `الترتيب حسب` and decide only
+which measure the ranked lists and top-N charts are ordered by.
+
 Two of the validator's checks fail against the brand colours and are accepted
 deliberately: `#413258` sits outside the generic lightness band (0.351) and
 below the chroma floor (0.067). Both are properties of the brand colour
@@ -361,8 +399,9 @@ bookmarked or shared:
 | `#nqf` | the framework's levels with the qualifications, occupations and graduates at each |
 | `#data` | the flat source table |
 
-The year and measure (graduates / employed) filters in the header apply to
-every view.
+The year filter in the header applies to every view. The `الترتيب حسب` chips
+set which measure ranks the top-N charts and the browse lists; both measures
+are drawn regardless (see §7).
 
 **Occupations are pages; a specialization is a window over its occupation.** The
 occupation stays rendered behind, so closing returns you to your place in a list
