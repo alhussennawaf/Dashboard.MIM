@@ -96,6 +96,29 @@ AMBIGUOUS = {
     "زمالة": "Fellowship. Not named as a qualification type in the p.40 table.",
 }
 
+# INTERIM, NOT FROM THE FRAMEWORK.
+# Three of the labels above were given a level by the project owner on 2026-09-07
+# as a working assumption, pending a confirmation email from the data owner. They
+# are kept separate from NQF_MAP on purpose: NQF_MAP is what p.40 states, this is
+# a decision made outside the document, and the dashboard labels every figure
+# that depends on it as مبدئي. To retire it, move an entry into NQF_MAP once the
+# confirmation arrives, or change the level here if the answer differs.
+PROVISIONAL_NQF = {
+    "دبلوم": 4,
+    "دبلوم معاهد ثانوي صناعي": 3,
+    "زمالة": 8,
+}
+# "أخرى" is deliberately not here: it names no qualification, so there is
+# nothing to place. It stays غير مصنّف. In the university sheet it is 13 rows,
+# 370 graduates, 145 employed.
+
+
+def nqf_level(label):
+    """The p.40 level for a label, else the interim one, else None."""
+    if label in NQF_MAP:
+        return NQF_MAP[label]
+    return PROVISIONAL_NQF.get(label)
+
 
 def clean(value):
     """Trim and collapse whitespace. Preserves the Arabic text itself."""
@@ -343,7 +366,7 @@ def parse_master(report):
         if not name_ar:
             continue
         nqf_label = clean(row[c_nqf])
-        level = NQF_MAP.get(nqf_label)
+        level = nqf_level(nqf_label)
         if nqf_label and level is None:
             unmapped[nqf_label] += 1
         code = clean(row[col["رمز المهنة"]])
@@ -496,7 +519,7 @@ def nqf_for_labels(labels):
     """Map a dimension's labels to NQF levels, flagging what will not map."""
     out, unresolved = [], []
     for label in labels:
-        level = NQF_MAP.get(label)
+        level = nqf_level(label)
         out.append(level)
         if level is None:
             unresolved.append(label)
@@ -575,6 +598,7 @@ def main():
             "levels": NQF_LEVELS,
             "source": "nationalqualificationsframework.pdf, 3rd edition, appendix table p.40",
             "ambiguous": AMBIGUOUS,
+            "provisional": PROVISIONAL_NQF,
         },
         "vocational": {
             "dims": {k: v.labels() for k, v in voc_dims.items()},

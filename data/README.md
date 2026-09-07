@@ -178,35 +178,51 @@ Levels come from the appendix table on **p.40** of
 All **921 of 921** occupations in the master sheet map to an NQF level on
 this table.
 
-**NOT mapped — shown as `غير مصنّف`, never guessed:**
+**Not on the p.40 table.** Four labels in the data are not qualification types
+the framework places, and `NQF_MAP` deliberately does not contain them:
 
-| Label | Where | Why |
+| Label | Where | Why it is not on p.40 |
 |---|---|---|
 | `دبلوم` | both sheets | The framework distinguishes الدبلوم المشارك (4), الدبلوم المتوسط (5) and الدبلوم المتقدم (5). A bare `دبلوم` does not say which. |
-| `دبلوم معاهد ثانوي صناعي` | vocational | Spans التعليم الثانوي (3) and the diploma tiers (4–5); not resolvable from the sheet. |
-| `أخرى` | university | Literally "other". No qualification type given. |
-| `زمالة` | university | Fellowship. Not a qualification type in the p.40 table. |
+| `دبلوم معاهد ثانوي صناعي` | vocational | Spans التعليم الثانوي (3) and the diploma tiers (4–5). |
+| `زمالة` | university | Fellowship. Not a qualification type in the table. |
+| `أخرى` | university | Literally "other". Names no qualification at all. |
 
-⚠️ **This is a large share of the data.** 327,289 graduates — about 59% of the
-552,570 total — carry a qualification the framework does not pin to one level,
-overwhelmingly the bare `دبلوم` in the vocational sheet. The dashboard shows
-this as a distinct hatched bar with its own note rather than distributing it
-across levels. **If the vocational data can be re-exported with the diploma
-tier spelled out (مشارك / متوسط / متقدم), that single change would place the
-majority of these graduates on the framework.**
+### Interim placements — assigned outside the framework, pending confirmation
 
-The NQF charts on `#overview` and `#nqf` print the composition of the bar
-underneath the title, recomputed from the rows currently in scope, so the size
-of `غير مصنّف` reads as "one big source qualification" rather than as a
-mapping that gave up. Over the full six years that line is:
+⚠️ **Three of those four now carry a level the framework did not give them.**
+On 2026-09-07 the project owner assigned them as a working assumption while
+waiting on a confirmation email from the data owner:
 
-| Qualification | Sheet | Graduates |
-|---|---|---|
-| `دبلوم` | vocational + university | 306,040 |
-| `دبلوم معاهد ثانوي صناعي` | vocational | 20,875 |
-| `أخرى` | university | 370 |
-| `زمالة` | university | 4 |
-| **Total** | | **327,289** |
+| Label | Interim level | Graduates | Employed |
+|---|---|---|---|
+| `دبلوم` | **4** | 306,040 | 138,187 |
+| `دبلوم معاهد ثانوي صناعي` | **3** | 20,875 | 3,099 |
+| `زمالة` | **8** | 4 | 2 |
+
+They live in `PROVISIONAL_NQF` in `scripts/parse_sources.py`, kept in a separate
+dict from `NQF_MAP` on purpose: `NQF_MAP` is what the document states, this is a
+decision made outside it. **To retire an entry once the email arrives**, move it
+into `NQF_MAP` (or change the level here if the answer differs) and re-run the
+parser — nothing else needs touching.
+
+Nothing about this is silent. The NQF table tags each of those qualifications
+`مبدئي` in gold, the two NQF charts append `*` to every level that draws on one,
+and both views carry a note naming the label, the level and the count. About
+**59% of all graduates sit on an interim placement**, so the flag matters:
+`دبلوم` alone moves 306,040 graduates onto level 4.
+
+**Still `غير مصنّف`: `أخرى` only** — 13 rows, 370 graduates, 145 employed, 0.07%
+of the total. Located in `خريجي الجامعات للتخصصات بالمجال 0705 2020-2025.xlsx`,
+sheet `النتائج`, column **E `EducationLevel`**. Concentrated in
+جامعة شقراء (292, all in `حماية البيئة`), with the rest at
+جامعة الملك فهد للبترول والمعادن (38), جامعة الملك خالد (29) and جامعة جازان (11);
+268 of the 370 graduated in 2025. It names no qualification type, so there is
+nothing to place — it is left unclassified rather than guessed.
+
+The NQF charts on `#overview` and `#nqf` print both notes underneath the title,
+recomputed from the rows currently in scope, so neither the interim placements
+nor the unclassified remainder can be read off the chart without their caveat.
 
 ---
 

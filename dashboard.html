@@ -116,6 +116,10 @@ main { padding: clamp(14px, 2.2vw, 30px); max-width: 2200px; margin: 0 auto; }
         padding: 15px clamp(11px, 1.3vw, 19px) 11px; min-width: 0; grid-column: span 12; }
 .card > h2 { font-size: clamp(14px, 1.25vw, 18px); margin-bottom: 2px; }
 .card > .hint { font-size: 11.5px; color: var(--mim-grey-dark); margin-bottom: 9px; }
+/* A figure that rests on a level assigned outside the framework, pending
+   confirmation. Marked wherever it is shown, never folded in silently. */
+.card > .hint.prov { color: #8A6400; }
+.card > .hint:empty { display: none; }
 .chart { width: 100%; height: 320px; }
 .chart.tall { height: 440px; }
 .chart.short { height: 240px; }
@@ -622,6 +626,40 @@ function card(title, hint, body, span) {
 function chartCard(title, hint, id, span, cls) {
   return card(title, hint, '<div class="chart ' + (cls || "") + '" id="' + id + '"></div>', span);
 }
+/* Levels the project owner assigned by hand, pending a confirmation email —
+   they are not in the framework's p.40 table. Every figure that rests on one
+   carries the PROV_MARK, and the note under the chart spells out which. */
+var PROV = D.nqf.provisional || {};
+var PROV_MARK = " *";
+function isProvisional(label) {
+  return Object.prototype.hasOwnProperty.call(PROV, label);
+}
+/* Which NQF levels have any graduates placed there by that interim decision. */
+function provisionalLevels(v, u) {
+  var s = {};
+  function scan(rows, key) {
+    rows.forEach(function (f) { if (isProvisional(f[key])) s[PROV[f[key]]] = true; });
+  }
+  scan(v, "qual"); scan(u, "level");
+  return s;
+}
+function provisionalNote(v, u) {
+  var m = new Map();
+  function add(name, f) {
+    if (!isProvisional(name)) return;
+    var c = m.get(name);
+    if (!c) { c = { grads: 0, emp: 0 }; m.set(name, c); }
+    c.grads += f.grads; c.emp += f.emp;
+  }
+  v.forEach(function (f) { add(f.qual, f); });
+  u.forEach(function (f) { add(f.level, f); });
+  if (!m.size) return "";
+  return PROV_MARK.trim() + " تسكين مبدئي بانتظار رسالة التأكيد، وليس من جدول الإطار: " +
+    ranked(m, "grads").map(function (e) {
+      return e[0] + " ← المستوى " + PROV[e[0]] + " (" + fmt(e[1].grads) + " خريجًا)";
+    }).join(" · ") + ".";
+}
+
 /* Which qualifications land in «غير مصنّف», and how big each one is. The bar
    is large because one source qualification is large, not because the mapping
    gave up wholesale, so the chart says which ones and how many. */
@@ -696,6 +734,7 @@ function viewOverview() {
       chartCard("الخريجون حسب سنة التخرج", "Graduates by year · المهني مقابل الجامعي", "oTrend", "span8") +
       chartCard("التوزيع حسب الجنس", "By gender · الفئة غير المتوفرة بنقش مائل", "oGender", "span4") +
       card("حسب مستوى الإطار الوطني للمؤهلات", "",
+        '<p class="hint prov" id="oNqfProv"></p>' +
         '<p class="hint" id="oNqfNote"></p><div class="chart" id="oNqf"></div>', "span6") +
       chartCard("التوزيع الجغرافي", "By region · المناطق الإدارية", "oRegion", "span6", "tall") +
       chartCard("أعلى التخصصات المهنية", "Top vocational specializations", "oVocMaj", "span6", "tall") +
@@ -722,13 +761,17 @@ function viewOverview() {
   var nq = agg(all, function (f) { return f.nqf === null || f.nqf === undefined ? "x" : f.nqf; });
   var keys = Array.from(nq.keys()).sort(function (a, b) {
     if (a === "x") return 1; if (b === "x") return -1; return a - b; });
+  var prov = provisionalLevels(v, u);
   barChart("oNqf", keys.map(function (k) {
     var c0 = nq.get(k);
-    return [k === "x" ? UNCLASSIFIED : nqfName(k), c0.grads, c0.emp]; }), {
+    return [k === "x" ? UNCLASSIFIED : nqfName(k) + (prov[k] ? PROV_MARK : ""),
+            c0.grads, c0.emp]; }), {
     labelWidth: 235, labelRoom: 84,
-    colorFn: function (e, i) { return e[0] === UNCLASSIFIED ? C.neutral
+    colorFn: function (e, i) { return keys[i] === "x" ? C.neutral
       : NQF_RAMP[Math.round(keys[i] / 8 * (NQF_RAMP.length - 1))] || C.voc; },
-    hatchFn: function (e) { return e[0] === UNCLASSIFIED; } });
+    hatchFn: function (e, i) { return keys[i] === "x"; } });
+  var provNote = document.getElementById("oNqfProv");
+  if (provNote) provNote.textContent = provisionalNote(v, u);
   var uncNote = document.getElementById("oNqfNote");
   if (uncNote) uncNote.textContent = unclassifiedNote(v, u);
 
@@ -1396,7 +1439,9 @@ function viewNqf() {
       '<td>' + esc(l.ar) + '<div style="font-size:11px;color:#666;direction:ltr;text-align:right">' +
         esc(l.en) + '</div></td>' +
       '<td>' + ((qualsFor[l.level] || []).map(function (q) {
-        return '<span class="tag">' + esc(q) + '</span>'; }).join(" ") || '<span style="color:#999">غير متوفر</span>') + '</td>' +
+        return '<span class="tag' + (isProvisional(q) ? " warn" : "") + '">' + esc(q) +
+               (isProvisional(q) ? " · مبدئي" : "") + '</span>'; }).join(" ")
+        || '<span style="color:#999">غير متوفر</span>') + '</td>' +
       '<td class="num">' + fmt(oc) + '</td>' +
       '<td class="num">' + fmt(g ? g.grads : 0) + '</td>' +
       '<td class="num">' + (g ? pct(g.emp, g.grads) : "غير متوفر") + '</td></tr>';
@@ -1405,15 +1450,23 @@ function viewNqf() {
   var unc = byLevel.get("x");
   var uncTotal = 0;
   byLevel.forEach(function (v) { uncTotal += v.grads; });
+  var provText = provisionalNote(vocRows(), uniRows());
+  var provLv = provisionalLevels(vocRows(), uniRows());
 
   document.getElementById("view").innerHTML =
     '<p class="scope-note"><strong>المصدر:</strong> ' + esc(D.nqf.source) + '</p>' +
+    (provText
+      ? '<p class="scope-note warn-note"><strong>تسكين مبدئي.</strong> ' +
+        'المؤهلات التالية لا يسندها جدول الإطار (ص.40) إلى مستوى واحد، وقد سُكّنت مؤقتًا ' +
+        'بقرار من جهة العمل بانتظار رسالة التأكيد. ستُحدَّث فور وصولها، والأرقام المبنية ' +
+        'عليها معلّمة بـ «مبدئي» في هذا الجدول وبعلامة ' + PROV_MARK.trim() +
+        ' في الرسوم.<br>' + esc(provText) + '</p>'
+      : "") +
     (unc ? '<p class="scope-note warn-note"><strong>' + fmt(unc.grads) + ' خريجًا (' +
       pct(unc.grads, uncTotal) + ') غير مصنّفين.</strong> ' +
-      'الإطار يميّز بين الدبلوم المشارك (المستوى 4) والدبلوم المتوسط والمتقدم (المستوى 5)، ' +
-      'بينما تسجّل بيانات التعليم المهني «دبلوم» دون تحديد الفئة. تُعرض هذه الصفوف كما هي ' +
-      'ولم تُوزَّع على المستويات تقديرًا.<br>' + esc(unclassifiedNote(vocRows(), uniRows())) +
-      '</p>' : "") +
+      esc(unclassifiedNote(vocRows(), uniRows())) + ' ' +
+      'المؤهل مسجّل في المصدر باسم لا يحدد نوعًا، فتُعرض هذه الصفوف كما هي ' +
+      'ولم تُوزَّع على المستويات تقديرًا.</p>' : "") +
     card("مستويات الإطار الوطني للمؤهلات",
       "عدد المهن والخريجين المسكّنين في كل مستوى",
       '<div class="table-wrap"><table><thead><tr>' +
@@ -1427,7 +1480,8 @@ function viewNqf() {
 
   var keys = D.nqf.levels.map(function (l) { return l.level; }).filter(function (k) { return byLevel.has(k); });
   barChart("nGrad", keys.map(function (k) {
-      var c0 = byLevel.get(k); return [nqfName(k), c0.grads, c0.emp]; }),
+      var c0 = byLevel.get(k);
+      return [nqfName(k) + (provLv[k] ? PROV_MARK : ""), c0.grads, c0.emp]; }),
     { labelWidth: 235, labelRoom: 84,
         colorFn: function (e) { var lv = parseInt(e[0], 10);
           return NQF_RAMP[Math.round(lv / 8 * (NQF_RAMP.length - 1))]; } });
