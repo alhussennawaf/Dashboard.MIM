@@ -109,8 +109,32 @@ PROVISIONAL_NQF = {
     "زمالة": 8,
 }
 # "أخرى" is deliberately not here: it names no qualification, so there is
-# nothing to place. It stays غير مصنّف. In the university sheet it is 13 rows,
-# 370 graduates, 145 employed.
+# nothing to place. It stays غير مصنّف wherever it survives the corrections
+# below. In the university sheet it starts as 13 rows, 370 graduates.
+
+
+# The sheet records "أخرى" where it does not know the qualification, and the
+# project owner identified the actual one for some of those rows. Each rule
+# rewrites EducationLevel for rows matching ALL of its keys, so a university
+# that has "أخرى" against several majors is corrected only where the owner
+# said so. Applied at parse time and counted in the run report; a rule that
+# matches nothing is an error, so a renamed major cannot fail silently.
+LEVEL_CORRECTIONS = [
+    {"from": "أخرى", "university": "جامعة شقراء",
+     "major": "حماية البيئة", "to": "دبلوم متوسط"},
+    {"from": "أخرى", "university": "جامعة الملك فهد للبترول والمعادن",
+     "major": "العمارة", "to": "بكالوريوس"},
+]
+
+
+def corrected_level(level, university, major):
+    """EducationLevel for one row, after the owner's corrections."""
+    for rule in LEVEL_CORRECTIONS:
+        if (level == rule["from"] and university == rule["university"]
+                and major == rule["major"]):
+            rule["hits"] = rule.get("hits", 0) + 1
+            return rule["to"]
+    return level
 
 
 def nqf_level(label):
@@ -224,19 +248,28 @@ def parse_university(report):
         if year is None or not isinstance(grads, (int, float)):
             skipped += 1
             continue
+        university = clean(row[col["University Name"]])
+        major = clean(row[col["MajorName"]])
+        level = corrected_level(clean(row[col["EducationLevel"]]), university, major)
         facts.append([
             dims["year"].id(year),
             dims["gender"].id(clean(row[col["gender"]])),
-            dims["university"].id(clean(row[col["University Name"]])),
+            dims["university"].id(university),
             dims["region"].id(clean(row[col["Region"]])),
-            dims["level"].id(clean(row[col["EducationLevel"]])),
+            dims["level"].id(level),
             dims["generalMajor"].id(clean(row[col["GeneralMajorName"]])),
             dims["narrowMajor"].id(clean(row[col["NarrowMajorName"]])),
             dims["detailedMajor"].id(clean(row[col["DetailedMajorName"]])),
-            dims["major"].id(clean(row[col["MajorName"]])),
+            dims["major"].id(major),
             int(grads),
             int(employed) if isinstance(employed, (int, float)) else 0,
         ])
+
+    missed = [r for r in LEVEL_CORRECTIONS if not r.get("hits")]
+    if missed:
+        raise SystemExit(
+            "level correction matched no rows (a name changed in the source?): "
+            + "; ".join(f'{r["university"]} / {r["major"]}' for r in missed))
 
     report["university"] = {
         "source_rows": len(body),
@@ -244,6 +277,10 @@ def parse_university(report):
         "skipped_rows": skipped,
         "total_graduates": sum(f[9] for f in facts),
         "total_employed": sum(f[10] for f in facts),
+        "level_corrections": [
+            {"university": r["university"], "major": r["major"],
+             "from": r["from"], "to": r["to"], "rows": r["hits"]}
+            for r in LEVEL_CORRECTIONS],
     }
     return dims, facts
 
@@ -599,6 +636,10 @@ def main():
             "source": "nationalqualificationsframework.pdf, 3rd edition, appendix table p.40",
             "ambiguous": AMBIGUOUS,
             "provisional": PROVISIONAL_NQF,
+            "corrections": [
+                {"university": r["university"], "major": r["major"],
+                 "from": r["from"], "to": r["to"]}
+                for r in LEVEL_CORRECTIONS],
         },
         "vocational": {
             "dims": {k: v.labels() for k, v in voc_dims.items()},

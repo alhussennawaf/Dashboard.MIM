@@ -192,7 +192,9 @@ the framework places, and `NQF_MAP` deliberately does not contain them:
 
 ⚠️ **Three of those four now carry a level the framework did not give them.**
 On 2026-09-07 the project owner assigned them as a working assumption while
-waiting on a confirmation email from the data owner:
+waiting on a confirmation email from the data owner. These are label-wide: they
+apply wherever the label appears. (`أخرى` is handled row by row instead — see
+the corrections below.)
 
 | Label | Interim level | Graduates | Employed |
 |---|---|---|---|
@@ -212,13 +214,40 @@ and both views carry a note naming the label, the level and the count. About
 **59% of all graduates sit on an interim placement**, so the flag matters:
 `دبلوم` alone moves 306,040 graduates onto level 4.
 
-**Still `غير مصنّف`: `أخرى` only** — 13 rows, 370 graduates, 145 employed, 0.07%
-of the total. Located in `خريجي الجامعات للتخصصات بالمجال 0705 2020-2025.xlsx`,
-sheet `النتائج`, column **E `EducationLevel`**. Concentrated in
-جامعة شقراء (292, all in `حماية البيئة`), with the rest at
-جامعة الملك فهد للبترول والمعادن (38), جامعة الملك خالد (29) and جامعة جازان (11);
-268 of the 370 graduated in 2025. It names no qualification type, so there is
-nothing to place — it is left unclassified rather than guessed.
+### Level corrections — rows the owner identified
+
+`أخرى` in the university sheet means the export did not know the
+qualification, not that a strange one exists. On 2026-09-08 the project owner
+identified the real qualification behind some of those rows, and
+`LEVEL_CORRECTIONS` in `scripts/parse_sources.py` rewrites `EducationLevel`
+for rows matching **all** of university + major + `أخرى`:
+
+| University | Major | `أخرى` → | Rows | Graduates | Employed |
+|---|---|---|---|---|---|
+| جامعة شقراء | حماية البيئة | `دبلوم متوسط` (5) | 4 | 269 | 88 |
+| جامعة الملك فهد للبترول والمعادن | العمارة | `بكالوريوس` (6) | 4 | 38 | 13 |
+
+The match is scoped to a (university, major) pair, not a university: جامعة شقراء
+also has `أخرى` against `تقنية الهندسة الكهربائية`, which is **not** corrected.
+A rule that matches nothing aborts the parse, so a renamed major in a future
+export cannot fail silently. The corrections ship in the payload and the NQF tab
+names them on screen, so a moved number is never moved invisibly.
+
+**Still `غير مصنّف`: `أخرى` only** — now 5 rows, 63 graduates, 44 employed,
+0.011% of the total. Located in
+`خريجي الجامعات للتخصصات بالمجال 0705 2020-2025.xlsx`, sheet `النتائج`,
+column **E `EducationLevel`**:
+
+| Major | University | Year | Graduates | Employed |
+|---|---|---|---|---|
+| `تقنية الهندسة الكهربائية` | جامعة شقراء | 2024 | 4 | 3 |
+| `تقنية الهندسة الكهربائية` | جامعة شقراء | 2025 | 19 | 9 |
+| `برامج ومؤهلات متعددة التخصصات تتضمن الهندسة والتصنيع والبناء` | جامعة الملك خالد | 2023 | 15 | 15 |
+| `برامج ومؤهلات متعددة التخصصات تتضمن الهندسة والتصنيع والبناء` | جامعة جازان | 2023 | 11 | 11 |
+| `التغذية وعلوم الأطعمة` | جامعة الملك خالد | 2025 | 14 | 6 |
+
+`أخرى` names no qualification type, so these are left unclassified rather than
+guessed. Correcting them is one more line each in `LEVEL_CORRECTIONS`.
 
 The NQF charts on `#overview` and `#nqf` print both notes underneath the title,
 recomputed from the rows currently in scope, so neither the interim placements
@@ -241,9 +270,16 @@ bug cannot produce the same wrong answer on both sides. All 10 checks pass:
 | University, total graduates | 185,596 |
 | University, total employed | 97,120 |
 | University, graduates in 2025 | 27,247 |
-| University, graduates at بكالوريوس | 171,824 |
+| University, graduates at بكالوريوس | 171,862 |
+| University, graduates still recorded as `أخرى` | 63 |
 | Occupation rows | 921 |
 | **Sector employment rate** | **0.5232871398090476** |
+
+The بكالوريوس figure is 171,862, not the sheet's own 171,824, because of the
+level corrections in §4. The verifier does not special-case that: it reads the
+corrections the payload declares and applies them to its own independent read
+of the workbook, so a **declared** correction passes and an **undeclared**
+divergence still fails. The corrections it applied are printed in its output.
 
 The last one is the strongest check available: the university workbook's own
 `تحليل هندسة المواد` sheet states `نسبة التوظيف لكامل القطاع (مرجع)` as

@@ -118,7 +118,28 @@ def main():
     src_total = sum(int(r["M"]) for r in body if r.get("M"))
     src_employed = sum(int(r["N"]) for r in body if r.get("N"))
     src_2025 = sum(int(r["M"]) for r in body if r.get("M") and r.get("A") == "2025")
-    src_bach = sum(int(r["M"]) for r in body if r.get("M") and r.get("E") == "بكالوريوس")
+    # The payload declares any EducationLevel the project owner corrected. Apply
+    # the same declaration to this independent read, so the check still compares
+    # like with like — and an UNdeclared divergence still fails.
+    corrections = payload["nqf"].get("corrections", [])
+
+    def level_of(r):
+        for c in corrections:
+            if (r.get("E") == c["from"] and r.get("C") == c["university"]
+                    and r.get("L") == c["major"]):
+                return c["to"]
+        return r.get("E")
+
+    if corrections:
+        print("  declared level corrections applied to both sides:")
+        for c in corrections:
+            n = sum(1 for r in body if r.get("M") and r.get("E") == c["from"]
+                    and r.get("C") == c["university"] and r.get("L") == c["major"])
+            print(f"    {c['university']} / {c['major']}: "
+                  f"{c['from']} -> {c['to']}  ({n} rows)")
+
+    src_bach = sum(int(r["M"]) for r in body if r.get("M") and level_of(r) == "بكالوريوس")
+    src_other = sum(int(r["M"]) for r in body if r.get("M") and level_of(r) == "أخرى")
 
     uni = payload["university"]
     ci = {name: i for i, name in enumerate(uni["cols"])}
@@ -132,7 +153,12 @@ def main():
     results.append(check("total graduates, all years", src_total, dash_total))
     results.append(check("total employed, all years", src_employed, dash_employed))
     results.append(check("graduates in 2025", src_2025, dash_2025))
+    other = uni["dims"]["level"].index("أخرى") if "أخرى" in uni["dims"]["level"] else None
+    dash_other = 0 if other is None else sum(
+        r[ci["graduates"]] for r in uni["rows"] if r[ci["level"]] == other)
+
     results.append(check("graduates at بكالوريوس level", src_bach, dash_bach))
+    results.append(check("graduates still recorded as أخرى", src_other, dash_other))
 
     # ---- cross-check against a figure the workbook computed itself ------
     print("\nCROSS-CHECK against the source workbook's own computed value")

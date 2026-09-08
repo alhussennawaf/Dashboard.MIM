@@ -631,6 +631,15 @@ function chartCard(title, hint, id, span, cls) {
    carries the PROV_MARK, and the note under the chart spells out which. */
 var PROV = D.nqf.provisional || {};
 var PROV_MARK = " *";
+/* Rows whose EducationLevel the sheet recorded as أخرى and the project owner
+   identified. The number moves, so the correction is named on the page. */
+var CORRECTIONS = D.nqf.corrections || [];
+function correctionsNote() {
+  if (!CORRECTIONS.length) return "";
+  return CORRECTIONS.map(function (c) {
+    return c.university + " / " + c.major + ": " + c.from + " ← " + c.to;
+  }).join(" · ") + ".";
+}
 function isProvisional(label) {
   return Object.prototype.hasOwnProperty.call(PROV, label);
 }
@@ -1461,6 +1470,11 @@ function viewNqf() {
         'بقرار من جهة العمل بانتظار رسالة التأكيد. ستُحدَّث فور وصولها، والأرقام المبنية ' +
         'عليها معلّمة بـ «مبدئي» في هذا الجدول وبعلامة ' + PROV_MARK.trim() +
         ' في الرسوم.<br>' + esc(provText) + '</p>'
+      : "") +
+    (CORRECTIONS.length
+      ? '<p class="scope-note warn-note"><strong>تصحيح مؤهل.</strong> ' +
+        'صفوف سجّلها ملف الجامعات باسم «أخرى» وحدّدت جهة العمل مؤهلها الفعلي، ' +
+        'فتُقرأ بمؤهلها المصحَّح لا بما في العمود:<br>' + esc(correctionsNote()) + '</p>'
       : "") +
     (unc ? '<p class="scope-note warn-note"><strong>' + fmt(unc.grads) + ' خريجًا (' +
       pct(unc.grads, uncTotal) + ') غير مصنّفين.</strong> ' +
