@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Parse the four MIM source documents into a single static data file that
-dashboard.html reads directly.
+index.html reads directly.
 
     python3 scripts/parse_sources.py
 

@@ -12,7 +12,12 @@ Regenerate everything with:
 python3 scripts/parse_sources.py      # sources -> data/dashboard-data.{js,json}
 python3 scripts/verify_totals.py      # independent check of the output
 python3 scripts/build_standalone.py   # optional single-file build
+python3 scripts/build_artifact.py     # optional Artifact-shaped build
+python3 scripts/build_site.py         # site/ — the files Cloudflare serves
 ```
+
+`index.html` is the dashboard and the source of truth. Opening it by
+double-click still works, with `assets/` and `data/` beside it.
 
 ---
 
@@ -517,6 +522,25 @@ kept for inspection and diffing.
 
 Facts are index-encoded against dimension tables — each row is a list of small
 integers plus its two measures.
+
+### Deploying
+
+`wrangler.jsonc` serves **`site/`**, not the repository root. That is a
+deliberate allow-list: the root holds the ministry's source workbooks, the brand
+guidelines PDF and the framework PDF, none of which the page requests and none
+of which belong on a public URL. `scripts/build_site.py` copies the six files
+the browser actually asks for — `index.html`, four assets and
+`data/dashboard-data.js` — and aborts if anything else, or anything with a
+`.xlsx`, `.pdf`, `.py`, `.json` or `.md` suffix, ends up in there.
+
+`site/` is committed because the Cloudflare build runs `wrangler deploy`
+directly without a build step. **Re-run `build_site.py` and commit its output
+after any change to `index.html`, `assets/` or the parsed data**, or the
+deployed page will lag behind the repository.
+
+A Workers URL is reachable by anyone who has it. If the page should be limited
+to named people rather than to whoever the link reaches, put Cloudflare Access
+in front of it.
 
 **String interning.** The occupation records dominate the payload once the
 skills, tasks and programme matches are included: 3.9 MB uncompressed, of which

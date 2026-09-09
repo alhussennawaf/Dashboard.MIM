@@ -1,0 +1,14 @@
+{
+  // Static-only Worker: no server code, just the files in site/.
+  // `wrangler deploy` failed before this existed because it has no way to guess
+  // which directory to serve, and the repository root is the wrong answer — it
+  // holds the source workbooks and the guideline PDFs. See scripts/build_site.py.
+  "name": "mim-graduates",
+  "compatibility_date": "2026-09-09",
+  "assets": {
+    "directory": "./site",
+    // Serve /index.html at "/" and redirect /index -> / rather than 404.
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "single-page-application"
+  }
+}

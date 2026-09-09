@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>لوحة خريجي التعليم المهني والجامعي | MIM Graduates Dashboard</title>
+<link rel="icon" href="assets/mim-emblem.svg">
+<link rel="stylesheet" href="assets/brand.css">
+<style>
+/* ==========================================================================
+   Colour comes from assets/brand.css (MIM guideline values, with provenance).
+   Guidelines p.34 sets the usage ratio: greys carry the layout, purple and
+   teal appear only as accents.
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--mim-black-100);
+  color: var(--mim-grey-darkest);
+  font-family: var(--mim-font-secondary);
+  font-size: 15px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: var(--mim-font-primary); font-weight: 400; margin: 0; }
+a { color: var(--mim-purple); }
+
+/* ---------- masthead ---------- */
+.masthead {
+  background: #fff; border-bottom: 3px solid var(--mim-purple);
+  padding: 15px clamp(14px, 2.6vw, 36px);
+  display: flex; align-items: center; gap: clamp(14px, 2.6vw, 32px); flex-wrap: wrap;
+}
+.masthead img { height: clamp(34px, 4vw, 52px); width: auto; flex: none; }
+.masthead .titles { flex: 1 1 300px; min-width: 0; }
+.masthead h1 { font-size: clamp(17px, 1.85vw, 26px); line-height: 1.35; }
+.masthead .en {
+  font-family: var(--mim-font-secondary); color: var(--mim-grey-dark);
+  font-size: clamp(10.5px, .95vw, 13px); direction: ltr; text-align: right;
+}
+.masthead .period {
+  font-variant-numeric: tabular-nums; background: var(--mim-purple); color: #fff;
+  padding: 6px 15px; border-radius: 2px; font-size: clamp(12px, 1.2vw, 16px);
+  letter-spacing: .06em; direction: ltr; flex: none;
+}
+
+/* ---------- tabs ---------- */
+.tabbar {
+  background: #fff; border-bottom: 1px solid var(--mim-black-200);
+  padding: 0 clamp(10px, 2.6vw, 36px);
+  display: flex; gap: 2px; overflow-x: auto; position: sticky; top: 0; z-index: 30;
+  scrollbar-width: thin;
+}
+.tab {
+  font: inherit; font-size: clamp(13px, 1.1vw, 15px);
+  padding: 13px clamp(12px, 1.5vw, 22px); cursor: pointer; white-space: nowrap;
+  background: none; border: none; border-bottom: 3px solid transparent;
+  color: var(--mim-grey-dark); margin-bottom: -1px;
+}
+.tab:hover { color: var(--mim-purple); background: var(--mim-purple-50); }
+.tab[aria-selected="true"] {
+  color: var(--mim-purple); border-bottom-color: var(--mim-blue-500); font-weight: 600;
+}
+.tab .count {
+  font-size: 11px; color: var(--mim-grey-medium); margin-inline-start: 6px;
+  font-variant-numeric: tabular-nums; direction: ltr; display: inline-block;
+}
+
+/* ---------- global filter strip ---------- */
+.globalbar {
+  background: var(--mim-black-50); border-bottom: 1px solid var(--mim-black-200);
+  padding: 9px clamp(14px, 2.6vw, 36px);
+  display: flex; gap: clamp(12px, 2vw, 28px); align-items: center; flex-wrap: wrap;
+  position: sticky; top: 47px; z-index: 29;
+}
+.globalbar .lab {
+  font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--mim-grey-dark); font-weight: 600;
+}
+.chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.chip {
+  font: inherit; font-size: 12.5px; font-variant-numeric: tabular-nums;
+  padding: 4px 12px; cursor: pointer; border: 1px solid var(--mim-black-300);
+  background: #fff; color: var(--mim-grey-dark); border-radius: 2px;
+}
+.chip:hover { border-color: var(--mim-purple); color: var(--mim-purple); }
+.chip[aria-pressed="true"] { background: var(--mim-purple); border-color: var(--mim-purple); color: #fff; }
+.chip:focus-visible, .tab:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 2px; }
+
+main { padding: clamp(14px, 2.2vw, 30px); max-width: 2200px; margin: 0 auto; }
+
+/* ---------- shared blocks ---------- */
+.scope-note {
+  background: #fff; border-inline-start: 3px solid var(--mim-blue-600);
+  padding: 12px 17px; margin-bottom: 18px; font-size: 13.5px; color: var(--mim-grey-dark);
+}
+.scope-note strong { color: var(--mim-grey-darkest); font-weight: 600; }
+.warn-note { border-inline-start-color: #B8860B; }
+
+.kpis { display: grid; gap: 13px; margin-bottom: 18px;
+        grid-template-columns: repeat(auto-fit, minmax(196px, 1fr)); }
+.kpi { background: #fff; padding: 16px 18px; border: 1px solid var(--mim-black-200);
+       border-top: 3px solid var(--mim-grey-medium); }
+.kpi.is-voc { border-top-color: var(--mim-purple); }
+.kpi.is-uni { border-top-color: var(--mim-blue-600); }
+.kpi .label { font-size: 12px; color: var(--mim-grey-dark); margin-bottom: 5px; }
+.kpi .value { font-family: var(--mim-font-primary); font-size: clamp(24px, 2.7vw, 37px);
+              line-height: 1.1; font-variant-numeric: tabular-nums; direction: ltr; text-align: right; }
+.kpi .sub { font-size: 11.5px; color: var(--mim-grey-dark); margin-top: 4px;
+            font-variant-numeric: tabular-nums; }
+
+/* align-items:start keeps a short card from stretching to match a tall
+   neighbour, which otherwise leaves a large void beside long lists. */
+.grid { display: grid; gap: 15px; grid-template-columns: repeat(12, 1fr); align-items: start; }
+.card { background: #fff; border: 1px solid var(--mim-black-200);
+        padding: 15px clamp(11px, 1.3vw, 19px) 11px; min-width: 0; grid-column: span 12; }
+.card > h2 { font-size: clamp(14px, 1.25vw, 18px); margin-bottom: 2px; }
+.card > .hint { font-size: 11.5px; color: var(--mim-grey-dark); margin-bottom: 9px; }
+/* A figure that rests on a level assigned outside the framework, pending
+   confirmation. Marked wherever it is shown, never folded in silently. */
+.card > .hint.prov { color: #8A6400; }
+.card > .hint:empty { display: none; }
+.chart { width: 100%; height: 320px; }
+.chart.tall { height: 440px; }
+.chart.short { height: 240px; }
+@media (min-width: 880px)  { .span6 { grid-column: span 6; } }
+@media (min-width: 1320px) { .span4 { grid-column: span 4; } .span8 { grid-column: span 8; }
+                             .span3 { grid-column: span 3; } .span9 { grid-column: span 9; } }
+
+/* ---------- tables ---------- */
+.table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 7px 11px; text-align: right; border-bottom: 1px solid var(--mim-black-200); }
+thead th { position: sticky; top: 0; background: var(--mim-black-100); font-weight: 600;
+           font-size: 11px; letter-spacing: .05em; color: var(--mim-grey-dark);
+           text-transform: uppercase; z-index: 1; }
+td.num { font-variant-numeric: tabular-nums; direction: ltr; }
+tbody tr:hover { background: var(--mim-purple-50); }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td:first-child { color: var(--mim-purple); font-weight: 600; }
+
+/* ---------- browse list ---------- */
+.browse-head { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+input[type="search"], select {
+  font: inherit; font-size: 14px; padding: 7px 12px; border: 1px solid var(--mim-black-300);
+  border-radius: 2px; background: #fff; color: inherit;
+}
+input[type="search"] { min-width: 250px; }
+input[type="search"]:focus-visible, select:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 1px; }
+.result-count { font-size: 12.5px; color: var(--mim-grey-dark); font-variant-numeric: tabular-nums; }
+
+.cardlist { display: grid; gap: 11px; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); }
+.item {
+  background: #fff; border: 1px solid var(--mim-black-200);
+  border-inline-start: 3px solid var(--mim-grey-medium);
+  padding: 13px 15px; cursor: pointer; text-align: start; font: inherit; color: inherit;
+  display: block; width: 100%;
+}
+.item:hover { border-inline-start-color: var(--mim-purple); background: var(--mim-purple-50); }
+.item:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 1px; }
+.item .name { font-size: 14.5px; font-weight: 600; line-height: 1.4; }
+.item .en { font-size: 11.5px; color: var(--mim-grey-dark); direction: ltr; text-align: right;
+            margin-top: 2px; }
+.item .meta { font-size: 11.5px; color: var(--mim-grey-dark); margin-top: 7px;
+              display: flex; gap: 12px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.item .meta b { color: var(--mim-grey-darkest); font-weight: 600; }
+
+/* ---------- detail ---------- */
+.crumb { font-size: 12.5px; color: var(--mim-grey-dark); margin-bottom: 12px;
+         display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+.crumb button { font: inherit; font-size: 12.5px; background: none; border: none; padding: 0;
+                color: var(--mim-purple); cursor: pointer; text-decoration: underline; }
+.crumb .sep { color: var(--mim-grey-medium); }
+
+.detail-head { background: #fff; border: 1px solid var(--mim-black-200);
+               border-top: 3px solid var(--mim-purple); padding: 18px 20px; margin-bottom: 16px; }
+.detail-head h2 { font-size: clamp(19px, 2vw, 28px); line-height: 1.3; }
+.detail-head .en { font-size: 13px; color: var(--mim-grey-dark); direction: ltr;
+                   text-align: right; margin-top: 3px; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 11px; }
+.tag { font-size: 11.5px; padding: 3px 10px; border-radius: 2px;
+       background: var(--mim-black-200); color: var(--mim-grey-dark); }
+.tag.accent { background: var(--mim-purple); color: #fff; }
+.tag.teal { background: var(--mim-blue-800); color: #fff; }
+.tag.warn { background: #8A6A00; color: #fff; }
+
+.deflist { margin: 0; font-size: 13.5px; }
+.deflist div { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--mim-black-200); }
+.deflist div:last-child { border-bottom: none; }
+.deflist dt { color: var(--mim-grey-dark); flex: 0 0 40%; font-size: 12.5px; }
+.deflist dd { margin: 0; flex: 1; }
+
+.tasklist { margin: 0; padding-inline-start: 18px; font-size: 13.5px; }
+.tasklist li { margin-bottom: 7px; }
+
+/* A long skill list reads better in columns than as one tall stack. */
+.skills-wrap { columns: 1; column-gap: 30px; }
+@media (min-width: 1000px) { .skills-wrap { columns: 2; } }
+@media (min-width: 1560px) { .skills-wrap { columns: 3; } }
+.skills-wrap h4 { break-after: avoid; }
+.skillrow { display: flex; align-items: center; gap: 10px; padding: 6px 0;
+            border-bottom: 1px solid var(--mim-black-200); font-size: 13px;
+            break-inside: avoid; }
+.skillrow:last-child { border-bottom: none; }
+.skillrow .nm { flex: 1; min-width: 0; }
+.skillrow .lv { flex: 0 0 108px; display: flex; align-items: center; gap: 7px;
+                font-size: 11.5px; color: var(--mim-grey-dark); }
+.meter { flex: 1; height: 6px; background: var(--mim-black-200); border-radius: 3px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--mim-purple); }
+
+.instlist { columns: 2; column-gap: 26px; font-size: 13px; margin: 0; padding-inline-start: 17px; }
+@media (max-width: 760px) { .instlist { columns: 1; } }
+.instlist li { margin-bottom: 4px; break-inside: avoid; }
+.instlist .rg { color: var(--mim-grey-dark); font-size: 11.5px; }
+
+mark { background: var(--mim-blue-100); color: var(--mim-blue-900); padding: 0 2px; border-radius: 2px; }
+
+.subhead { font-size: 12.5px; margin: 0 0 6px; color: var(--mim-grey-dark); font-weight: 600; }
+
+/* An occupation's specializations: siblings under one code, never peers of it. */
+.speclist { display: grid; gap: 9px; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.specitem {
+  background: var(--mim-blue-50); border: 1px solid var(--mim-blue-200);
+  border-inline-start: 3px solid var(--mim-blue-600);
+  padding: 11px 13px; cursor: pointer; text-align: start; font: inherit; color: inherit;
+}
+.specitem:hover { background: var(--mim-blue-100); }
+.specitem:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 1px; }
+.specitem .name { font-size: 13.5px; font-weight: 600; line-height: 1.4; }
+.specitem .en { font-size: 11px; color: var(--mim-grey-dark); direction: ltr; text-align: right; margin-top: 2px; }
+.specitem .meta { font-size: 11px; color: var(--mim-grey-dark); margin-top: 6px;
+                  display: flex; gap: 10px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+
+.badge { font-size: 11px; padding: 1px 7px; border-radius: 2px;
+         background: var(--mim-purple); color: #fff; font-variant-numeric: tabular-nums; }
+
+.parent-of { font-size: 12px; color: var(--mim-grey-dark); margin-bottom: 4px; }
+.parent-of button { font: inherit; font-size: 12px; background: none; border: none; padding: 0;
+                    color: var(--mim-purple); cursor: pointer; text-decoration: underline; }
+
+.siblings { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.siblings .lbl { font-size: 11.5px; color: var(--mim-grey-dark); }
+.siblings button {
+  font: inherit; font-size: 12px; padding: 4px 11px; cursor: pointer; border-radius: 2px;
+  background: #fff; border: 1px solid var(--mim-black-300); color: var(--mim-grey-dark);
+}
+.siblings button:hover { border-color: var(--mim-purple); color: var(--mim-purple); }
+.siblings button.on { background: var(--mim-blue-800); border-color: var(--mim-blue-800); color: #fff; }
+
+/* The specialization window sits over its occupation: the page behind stays
+   put, so closing returns you exactly where you were. */
+body.win-open { overflow: hidden; }
+.win-overlay {
+  position: fixed; inset: 0; z-index: 60; display: flex;
+  align-items: flex-start; justify-content: center;
+  padding: clamp(0px, 3vh, 34px) clamp(0px, 3vw, 28px);
+  background: rgba(19, 12, 36, .55); backdrop-filter: blur(2px);
+  animation: winFade .16s ease-out;
+}
+@keyframes winFade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .win-overlay { animation: none; } }
+
+.win {
+  background: var(--mim-black-100); width: min(1120px, 100%);
+  max-height: 100%; display: flex; flex-direction: column;
+  border: 1px solid var(--mim-black-300);
+  box-shadow: 0 18px 60px rgba(19, 12, 36, .38);
+}
+.win-head {
+  background: #fff; padding: 16px clamp(14px, 2vw, 24px) 14px;
+  border-top: 3px solid var(--mim-blue-600);
+  border-bottom: 1px solid var(--mim-black-200); flex: none;
+}
+.win-head-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.win-head h2 { font-size: clamp(18px, 1.9vw, 26px); line-height: 1.3; margin-top: 2px; }
+.win-head .en { font-size: 12.5px; color: var(--mim-grey-dark);
+                direction: ltr; text-align: right; margin-top: 2px; }
+.win-x {
+  font: inherit; font-size: 15px; line-height: 1; flex: none; cursor: pointer;
+  width: 32px; height: 32px; border-radius: 2px;
+  background: var(--mim-black-200); border: none; color: var(--mim-grey-dark);
+}
+.win-x:hover { background: var(--mim-purple); color: #fff; }
+.win-x:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 2px; }
+
+.win-nav { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.win-nav button {
+  font: inherit; font-size: 12px; padding: 5px 13px; cursor: pointer; border-radius: 2px;
+  background: #fff; border: 1px solid var(--mim-black-300); color: var(--mim-grey-dark);
+}
+.win-nav button:hover { border-color: var(--mim-purple); color: var(--mim-purple); }
+.win-nav .pos { font-size: 11.5px; color: var(--mim-grey-dark);
+                font-variant-numeric: tabular-nums; }
+
+.win-body { overflow-y: auto; padding: 16px clamp(12px, 2vw, 22px) 24px; flex: 1; }
+.win-body .kpis { margin-bottom: 15px; }
+
+.nodata { padding: 34px 16px; text-align: center; color: var(--mim-grey-dark); font-size: 14px; }
+.empty { padding: 14px 0; color: var(--mim-grey-dark); font-size: 13px; }
+
+footer { padding: 20px clamp(14px, 2.6vw, 36px) 36px; color: var(--mim-grey-dark);
+         font-size: 11.5px; line-height: 1.75; border-top: 1px solid var(--mim-black-200);
+         margin-top: 24px; }
+footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5px;
+              border-radius: 2px; direction: ltr; display: inline-block; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <img src="assets/mim-logo-primary.svg"
+       alt="وزارة الصناعة والثروة المعدنية، Ministry of Industry and Mineral Resources">
+  <div class="titles">
+    <h1>خريجو التعليم المهني والجامعي في تخصصات قطاع الصناعة والتعدين</h1>
+    <div class="en">Vocational &amp; University Graduates · Industry and Mining Sector</div>
+  </div>
+  <div class="period">2020 – 2025</div>
+</header>
+
+<nav class="tabbar" id="tabbar" role="tablist" aria-label="أقسام اللوحة"></nav>
+
+<div class="globalbar">
+  <span class="lab">سنة التخرج</span>
+  <div class="chips" id="fYears" role="group" aria-label="سنة التخرج"></div>
+  <span class="lab">الترتيب حسب</span>
+  <div class="chips" id="fMeasure" role="group" aria-label="الترتيب حسب"></div>
+</div>
+
+<main id="view"></main>
+
+<footer><div id="provenance"></div></footer>
+
+<script src="assets/echarts.min.js"></script>
+<script src="data/dashboard-data.js"></script>
+<script>
+(function () {
+"use strict";
+
+var D = window.MIM_DATA;
+if (!D) { document.getElementById("view").innerHTML =
+  "<p class='nodata'>تعذّر تحميل البيانات.</p>"; return; }
+
+/* =========================================================================
+   Colour
+   The MIM palette yields exactly two hues that stay apart under colour-vision
+   deficiency: brand purple #413258 and teal #14B8B8 (ΔE 35.8 deutan). Adding
+   brand pink or a grey as a third collapses against the teal (ΔE 4.0 protan),
+   so nothing here encodes more than two categories by colour at once. Extra
+   categories carry a diagonal decal and a labelled axis entry instead.
+   NQF level is a magnitude, so it uses one hue light->dark.
+   ========================================================================= */
+var C = { voc: "#413258", uni: "#14B8B8", neutral: "#B3B3B3",
+          ink: "#1A1A1A", muted: "#666666", grid: "#E6E6E6" };
+var NQF_RAMP = ["#EDE1F6","#DAC5EE","#B197CC","#7E689A","#5A4775",
+                "#413258","#32244B","#25193F","#190F33"];
+var HATCH = { symbol: "rect", color: "rgba(255,255,255,.55)",
+              dashArrayX: [1, 0], dashArrayY: [2, 5], rotation: -Math.PI / 4 };
+
+var FONT = getComputedStyle(document.body).fontFamily;
+var UNCLASSIFIED = "غير مصنّف";
+var L = D.lexicon;
+
+/* ------------------------------- helpers -------------------------------- */
+function fmt(n) { return (n || 0).toLocaleString("en-US"); }
+function pct(a, b) { return b ? (a / b * 100).toFixed(1) + "%" : "غير متوفر"; }
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+function idx(block) { var m = {}; block.cols.forEach(function (n, i) { m[n] = i; }); return m; }
+/* Mark the matched run so a hit in a long Arabic name is findable at a glance. */
+function hi(text, q) {
+  var t = String(text == null ? "" : text);
+  if (!q) return esc(t);
+  var i = t.toLowerCase().indexOf(q.toLowerCase());
+  if (i < 0) return esc(t);
+  return esc(t.slice(0, i)) + '<mark>' + esc(t.slice(i, i + q.length)) + '</mark>' +
+         esc(t.slice(i + q.length));
+}
+
+/* ------------------------------ fact tables ----------------------------- */
+var VI = idx(D.vocational), UIx = idx(D.university);
+var VD = D.vocational.dims, UD = D.university.dims;
+
+var VOC = D.vocational.rows.map(function (r) {
+  return {
+    year: VD.year[r[VI.year]],
+    track: VD.track[r[VI.track]],
+    qual: VD.qualification[r[VI.qualification]],
+    nqf: D.vocational.qualificationNqf[r[VI.qualification]],
+    gender: VD.gender[r[VI.gender]],
+    inst: VD.institution[r[VI.institution]],
+    region: VD.region[r[VI.region]],
+    regionKey: D.vocational.regionKeys[r[VI.region]],
+    mi: r[VI.major], major: VD.major[r[VI.major]],
+    grads: r[VI.graduates], emp: r[VI.employed]
+  };
+});
+var UNI = D.university.rows.map(function (r) {
+  return {
+    year: UD.year[r[UIx.year]],
+    gender: UD.gender[r[UIx.gender]],
+    uni: UD.university[r[UIx.university]],
+    region: UD.region[r[UIx.region]],
+    regionKey: D.university.regionKeys[r[UIx.region]],
+    level: UD.level[r[UIx.level]],
+    nqf: D.university.levelNqf[r[UIx.level]],
+    gi: r[UIx.generalMajor], g: UD.generalMajor[r[UIx.generalMajor]],
+    ni: r[UIx.narrowMajor],  n: UD.narrowMajor[r[UIx.narrowMajor]],
+    di: r[UIx.detailedMajor], d: UD.detailedMajor[r[UIx.detailedMajor]],
+    mi: r[UIx.major],        m: UD.major[r[UIx.major]],
+    grads: r[UIx.graduates], emp: r[UIx.employed]
+  };
+});
+
+var OCC = D.occupations;
+var YEARS = D.meta.years.slice().sort();
+
+function genderLabel(g) { return (g === "ذكر" || g === "أنثى") ? g : "غير متوفر"; }
+var GENDERS = ["ذكر", "أنثى", "غير متوفر"];
+
+/* ------------------------------- state ---------------------------------- */
+/* Both measures are drawn in every chart that has them, so `measure` now only
+   decides which one the ranked lists and top-N charts are ordered by. */
+var state = { years: YEARS.slice(), measure: "grads" };
+function inYears(f) { return state.years.indexOf(f.year) !== -1; }
+function vocRows() { return VOC.filter(inYears); }
+function uniRows() { return UNI.filter(inYears); }
+
+/* ----------------------------- aggregation ------------------------------ */
+function agg(rows, keyFn) {
+  var m = new Map();
+  rows.forEach(function (f) {
+    var k = keyFn(f);
+    if (k === null || k === undefined || k === "") return;
+    var c = m.get(k);
+    if (!c) { c = { grads: 0, emp: 0 }; m.set(k, c); }
+    c.grads += f.grads; c.emp += f.emp;
+  });
+  return m;
+}
+function total(rows) {
+  return rows.reduce(function (a, f) { a.grads += f.grads; a.emp += f.emp; return a; },
+                     { grads: 0, emp: 0 });
+}
+function ranked(m, measure) {
+  return Array.from(m.entries()).sort(function (a, b) { return b[1][measure] - a[1][measure]; });
+}
+/* A ranked entry ([key, {grads, emp}]) as the [label, graduates, employed]
+   triple the bar charts draw. Extra arguments are ignored so these can be
+   handed straight to Array.map, which also passes an index. */
+function pair(e) { return [e[0], e[1].grads, e[1].emp]; }
+/* Same, for keys that are dimension indexes rather than the label itself. */
+function pairBy(nameFn) {
+  return function (e) { return [nameFn(e[0]), e[1].grads, e[1].emp]; };
+}
+
+/* ------------------------------- charts --------------------------------- */
+var live = [];
+function disposeCharts() {
+  live.forEach(function (c) { try { c.dispose(); } catch (e) {} });
+  live = [];
+}
+function mount(id) {
+  var node = document.getElementById(id);
+  if (!node) return null;
+  var c = echarts.init(node, null, { renderer: "canvas" });
+  live.push(c);
+  return c;
+}
+var AXIS = {
+  axisLine: { lineStyle: { color: C.grid } },
+  axisTick: { show: false },
+  axisLabel: { color: C.muted, fontFamily: FONT, fontSize: 11.5 },
+  splitLine: { lineStyle: { color: C.grid, type: "dashed" } }
+};
+function tip(extra) {
+  return Object.assign({
+    backgroundColor: "#fff", borderColor: C.grid, borderWidth: 1, padding: [8, 12],
+    textStyle: { color: C.ink, fontFamily: FONT, fontSize: 13 },
+    extraCssText: "box-shadow:0 3px 14px rgba(26,26,26,.13);direction:rtl;"
+  }, extra || {});
+}
+function baseText() { return { color: C.ink, fontFamily: FONT, fontSize: 12 }; }
+
+/* Mix a hex colour towards white. `keep` is the share of the hue retained, so
+   the graduates bar reads as the same category as the employed bar drawn on
+   top of it — one hue, two strengths, no second colour to decode. */
+function tint(hex, keep) {
+  if (hex.charAt(0) !== "#") return hex;
+  var n = parseInt(hex.slice(1), 16);
+  function mix(c) { return Math.round(c * keep + 255 * (1 - keep)); }
+  return "rgb(" + mix((n >> 16) & 255) + "," + mix((n >> 8) & 255) + "," + mix(n & 255) + ")";
+}
+var TINT = 0.32;
+
+/* Horizontal ranked bars, every bar directly labelled.
+   entries are [label, value] or, where the row also has an employment count,
+   [label, graduates, employed]: the second form draws the employed figure as a
+   narrower bar inside the graduates bar, since the employed are a subset of
+   the graduates rather than a separate quantity to stack beside them. */
+function barChart(id, entries, opts) {
+  var c = mount(id); if (!c) return;
+  opts = opts || {};
+  var dual = entries.some(function (e) { return typeof e[2] === "number"; });
+  var maxV = entries.reduce(function (a, e) { return Math.max(a, e[1] || 0); }, 0) || 1;
+  var plotWidth = Math.max(40, c.getWidth() - (opts.labelRoom || 72) -
+                               (opts.labelWidth || 200) - 30);
+  var base = opts.legendColor || C.voc;
+
+  function colourAt(e, i) { return opts.colorFn ? opts.colorFn(e, i) : C.voc; }
+  var data = entries.map(function (e, i) {
+    var style = { borderRadius: [0, 4, 4, 0],
+                  color: dual ? tint(colourAt(e, i), TINT) : colourAt(e, i) };
+    if (opts.hatchFn && opts.hatchFn(e, i)) style.decal = HATCH;
+    return { value: e[1], name: e[0], itemStyle: style };
+  });
+  var series = [{ name: "الخريجون", type: "bar", barWidth: opts.barWidth || "62%", data: data,
+    itemStyle: dual ? { color: tint(base, TINT) } : undefined,
+    label: { show: true, position: "right", formatter: function (p) { return fmt(p.value); },
+             color: C.ink, fontFamily: FONT, fontSize: 11.5, fontWeight: 600 } }];
+
+  if (dual) {
+    /* Same width as the bar underneath, drawn from the same zero: the employed
+       read as a filled part of the graduates bar, not a segment stacked onto
+       it. A narrower bar would sit against the top edge, not centred. */
+    series.push({ name: "المتوظفون", type: "bar", barWidth: opts.barWidth || "62%",
+      barGap: "-100%", z: 3,
+      itemStyle: { color: base },
+      data: entries.map(function (e, i) {
+        return { value: e[2] || 0, name: e[0],
+                 itemStyle: { borderRadius: [0, 4, 4, 0], color: colourAt(e, i) } };
+      }),
+      /* Only label a bar wide enough to hold the number, measured against the
+         plot area this chart actually got: the same bar holds its label on a
+         wide card and would spill past its own left edge on a narrow one. */
+      label: { show: true, position: "insideRight", distance: 6,
+               formatter: function (p) {
+                 var text = fmt(p.value);
+                 return p.value / maxV * plotWidth > text.length * 7 + 16 ? text : "";
+               },
+               color: "#fff", fontFamily: FONT, fontSize: 11, fontWeight: 600 } });
+  }
+
+  c.setOption({
+    textStyle: baseText(),
+    grid: { left: 8, right: opts.labelRoom || 72, top: dual ? 30 : 8, bottom: 8,
+            containLabel: true },
+    legend: dual
+      ? { top: 0, right: 2, left: 2, icon: "roundRect", itemWidth: 13, itemHeight: 9,
+          type: "scroll", textStyle: { color: C.muted, fontFamily: FONT, fontSize: 12 } }
+      : { show: false },
+    tooltip: dual
+      ? tip({ trigger: "axis", axisPointer: { type: "shadow" }, formatter: function (ps) {
+          var g = 0, e = 0;
+          ps.forEach(function (p) {
+            if (p.seriesName === "المتوظفون") e = p.value; else g = p.value; });
+          return esc(ps[0].name) + "<br>الخريجون <b>" + fmt(g) + "</b><br>المتوظفون <b>" +
+                 fmt(e) + "</b><br>نسبة التوظيف <b>" + pct(e, g) + "</b>"; } })
+      : tip({ trigger: "item", formatter: function (p) {
+          return esc(p.name) + "<br><b>" + fmt(p.value) + "</b>" +
+                 (opts.unit ? " " + opts.unit : ""); } }),
+    /* axisLabel last: AXIS carries a visible one, and the value ticks collide
+       with each other on a narrow card while every bar is already labelled. */
+    xAxis: Object.assign({ type: "value" }, AXIS,
+                         { axisLine: { show: false }, splitLine: { show: false },
+                           axisLabel: { show: false } }),
+    yAxis: Object.assign({ type: "category", data: entries.map(function (e) { return e[0]; }) },
+      AXIS, { splitLine: { show: false }, axisLine: { show: false },
+              axisLabel: { color: C.muted, fontFamily: FONT, fontSize: 11.5,
+                           width: opts.labelWidth || 200, overflow: "truncate" } }),
+    series: series
+  }, true);
+}
+
+/* Year trend. Tracks use the validated purple/teal pair; where a series also
+   carries an employed count it is drawn in the same hue, dashed and with
+   hollow markers, so the two measures never cost a third colour. */
+function trendChart(id, series) {
+  var c = mount(id); if (!c) return;
+  var lines = [];
+  series.forEach(function (s) {
+    lines.push({ name: s.name, type: "line", symbol: "circle", symbolSize: 9,
+                 lineStyle: { width: 2, color: s.color },
+                 itemStyle: { color: s.color, borderColor: "#fff", borderWidth: 2 },
+                 emphasis: { focus: "series" }, data: s.data });
+    if (s.emp) {
+      lines.push({ name: s.empName || ("المتوظفون · " + s.name), type: "line",
+                   symbol: "circle", symbolSize: 7,
+                   lineStyle: { width: 2, color: s.color, type: "dashed" },
+                   itemStyle: { color: "#fff", borderColor: s.color, borderWidth: 2 },
+                   emphasis: { focus: "series" }, data: s.emp });
+    }
+  });
+  c.setOption({
+    textStyle: baseText(),
+    grid: { left: 12, right: 20, top: lines.length > 1 ? 46 : 18, bottom: 22, containLabel: true },
+    legend: lines.length > 1
+      ? { top: 4, right: 2, left: 2, icon: "roundRect", itemWidth: 13, itemHeight: 9,
+          type: "scroll", textStyle: { color: C.muted, fontFamily: FONT, fontSize: 12.5 } }
+      : { show: false },
+    tooltip: tip({ trigger: "axis", valueFormatter: fmt,
+                   axisPointer: { type: "line", lineStyle: { color: C.neutral, width: 1 } } }),
+    xAxis: Object.assign({ type: "category", data: YEARS, boundaryGap: false }, AXIS),
+    yAxis: Object.assign({ type: "value",
+      axisLabel: { color: C.muted, fontFamily: FONT, fontSize: 11.5, formatter: fmt } },
+      AXIS, { axisLine: { show: false } }),
+    series: lines
+  }, true);
+}
+
+/* --------------------------- shared fragments --------------------------- */
+function kpiHtml(tiles) {
+  return '<section class="kpis">' + tiles.map(function (t) {
+    return '<div class="kpi ' + (t.cls || "") + '">' +
+      '<div class="label">' + esc(t.label) + '</div>' +
+      '<div class="value">' + (t.raw || fmt(t.value)) + '</div>' +
+      '<div class="sub">' + esc(t.sub || "") + '</div></div>';
+  }).join("") + '</section>';
+}
+function card(title, hint, body, span) {
+  return '<section class="card ' + (span || "") + '"><h2>' + esc(title) + '</h2>' +
+    (hint ? '<p class="hint">' + esc(hint) + '</p>' : "") + body + '</section>';
+}
+function chartCard(title, hint, id, span, cls) {
+  return card(title, hint, '<div class="chart ' + (cls || "") + '" id="' + id + '"></div>', span);
+}
+/* Levels the project owner assigned by hand, pending a confirmation email —
+   they are not in the framework's p.40 table. Every figure that rests on one
+   carries the PROV_MARK, and the note under the chart spells out which. */
+var PROV = D.nqf.provisional || {};
+var PROV_MARK = " *";
+/* Rows whose EducationLevel the sheet recorded as أخرى and the project owner
+   identified. The number moves, so the correction is named on the page. */
+var CORRECTIONS = D.nqf.corrections || [];
+function correctionsNote() {
+  if (!CORRECTIONS.length) return "";
+  return CORRECTIONS.map(function (c) {
+    return c.university + " / " + c.major + ": " + c.from + " ← " + c.to;
+  }).join(" · ") + ".";
+}
+function isProvisional(label) {
+  return Object.prototype.hasOwnProperty.call(PROV, label);
+}
+/* Which NQF levels have any graduates placed there by that interim decision. */
+function provisionalLevels(v, u) {
+  var s = {};
+  function scan(rows, key) {
+    rows.forEach(function (f) { if (isProvisional(f[key])) s[PROV[f[key]]] = true; });
+  }
+  scan(v, "qual"); scan(u, "level");
+  return s;
+}
+function provisionalNote(v, u) {
+  var m = new Map();
+  function add(name, f) {
+    if (!isProvisional(name)) return;
+    var c = m.get(name);
+    if (!c) { c = { grads: 0, emp: 0 }; m.set(name, c); }
+    c.grads += f.grads; c.emp += f.emp;
+  }
+  v.forEach(function (f) { add(f.qual, f); });
+  u.forEach(function (f) { add(f.level, f); });
+  if (!m.size) return "";
+  return PROV_MARK.trim() + " تسكين مبدئي بانتظار رسالة التأكيد، وليس من جدول الإطار: " +
+    ranked(m, "grads").map(function (e) {
+      return e[0] + " ← المستوى " + PROV[e[0]] + " (" + fmt(e[1].grads) + " خريجًا)";
+    }).join(" · ") + ".";
+}
+
+/* Which qualifications land in «غير مصنّف», and how big each one is. The bar
+   is large because one source qualification is large, not because the mapping
+   gave up wholesale, so the chart says which ones and how many. */
+function unclassifiedNote(v, u) {
+  var m = new Map();
+  function add(name, f) {
+    if (!name) return;
+    var c = m.get(name);
+    if (!c) { c = { grads: 0, emp: 0 }; m.set(name, c); }
+    c.grads += f.grads; c.emp += f.emp;
+  }
+  v.forEach(function (f) { if (f.nqf === null || f.nqf === undefined) add(f.qual, f); });
+  u.forEach(function (f) { if (f.nqf === null || f.nqf === undefined) add(f.level, f); });
+  if (!m.size) return "";
+  return "«" + UNCLASSIFIED + "» مؤهلات لا يربطها الإطار بمستوى واحد: " +
+    ranked(m, "grads").map(function (e) {
+      return e[0] + " (" + fmt(e[1].grads) + ")"; }).join(" · ") + ".";
+}
+
+function nqfName(level) {
+  if (level === null || level === undefined) return UNCLASSIFIED;
+  var hit = D.nqf.levels.filter(function (l) { return l.level === level; })[0];
+  return hit ? level + " · " + hit.ar : String(level);
+}
+
+/* Year/gender/region/level charts shared by the two detail views. */
+function detailCharts(rows, prefix, colour) {
+  var byYear = agg(rows, function (f) { return f.year; });
+  trendChart(prefix + "Trend", [{
+    name: "الخريجون", empName: "المتوظفون", color: colour,
+    data: YEARS.map(function (y) { return byYear.has(y) ? byYear.get(y).grads : 0; }),
+    emp:  YEARS.map(function (y) { return byYear.has(y) ? byYear.get(y).emp : 0; })
+  }]);
+
+  var byGender = agg(rows, function (f) { return genderLabel(f.gender); });
+  barChart(prefix + "Gender", GENDERS.map(function (g) {
+    var v = byGender.get(g);
+    return [g, v ? v.grads : 0, v ? v.emp : 0];
+  }), { colorFn: function (e) { return e[0] === "غير متوفر" ? C.neutral : colour; },
+        hatchFn: function (e) { return e[0] === "غير متوفر"; },
+        legendColor: colour, labelWidth: 90 });
+
+  var byRegion = ranked(agg(rows, function (f) { return f.regionKey || f.region; }), state.measure);
+  barChart(prefix + "Region", byRegion.slice(0, 13).reverse().map(pair),
+    { colorFn: function () { return colour; }, legendColor: colour, labelWidth: 150 });
+}
+
+/* ========================================================================= */
+/*  VIEW: overview                                                           */
+/* ========================================================================= */
+function viewOverview() {
+  var v = vocRows(), u = uniRows(), all = v.concat(u);
+  var tv = total(v), tu = total(u), ta = total(all);
+
+  var html =
+    '<p class="scope-note"><strong>نطاق البيانات:</strong> ' +
+      esc(D.meta.scope.university.ar) +
+      '. بيانات الجامعات تغطي مجالين عامين فقط ولا تمثل جميع خريجي الجامعات.</p>' +
+    kpiHtml([
+      { label: "إجمالي الخريجين", value: ta.grads, sub: "All graduates · " + state.years.length + " سنوات" },
+      { cls: "is-voc", label: "خريجو التعليم المهني والتقني", value: tv.grads,
+        sub: "Vocational · " + pct(tv.grads, ta.grads) + " من الإجمالي" },
+      { cls: "is-uni", label: "خريجو الجامعات", value: tu.grads,
+        sub: "University · " + pct(tu.grads, ta.grads) + " من الإجمالي" },
+      { label: "المتوظفون", value: ta.emp, sub: "Employed · نسبة التوظيف " + pct(ta.emp, ta.grads) },
+      { label: "المهن المشمولة", value: D.occupationTree.length,
+        sub: "Occupations · " + fmt(OCC.length) + " صفًا في المصدر" },
+      { label: "التخصصات", value: VD.major.length + UD.major.length,
+        sub: VD.major.length + " مهني · " + UD.major.length + " جامعي" }
+    ]) +
+    '<div class="grid">' +
+      chartCard("الخريجون حسب سنة التخرج", "Graduates by year · المهني مقابل الجامعي", "oTrend", "span8") +
+      chartCard("التوزيع حسب الجنس", "By gender · الفئة غير المتوفرة بنقش مائل", "oGender", "span4") +
+      card("حسب مستوى الإطار الوطني للمؤهلات", "",
+        '<p class="hint prov" id="oNqfProv"></p>' +
+        '<p class="hint" id="oNqfNote"></p><div class="chart" id="oNqf"></div>', "span6") +
+      chartCard("التوزيع الجغرافي", "By region · المناطق الإدارية", "oRegion", "span6", "tall") +
+      chartCard("أعلى التخصصات المهنية", "Top vocational specializations", "oVocMaj", "span6", "tall") +
+      chartCard("أعلى التخصصات الجامعية", "Top university specializations", "oUniMaj", "span6", "tall") +
+    '</div>';
+  document.getElementById("view").innerHTML = html;
+
+  var vY = agg(v, function (f) { return f.year; }), uY = agg(u, function (f) { return f.year; });
+  trendChart("oTrend", [
+    { name: "خريجو المهني والتقني", empName: "متوظفو المهني والتقني", color: C.voc,
+      data: YEARS.map(function (y) { return vY.has(y) ? vY.get(y).grads : 0; }),
+      emp:  YEARS.map(function (y) { return vY.has(y) ? vY.get(y).emp : 0; }) },
+    { name: "خريجو الجامعات", empName: "متوظفو الجامعات", color: C.uni,
+      data: YEARS.map(function (y) { return uY.has(y) ? uY.get(y).grads : 0; }),
+      emp:  YEARS.map(function (y) { return uY.has(y) ? uY.get(y).emp : 0; }) }
+  ]);
+
+  var g = agg(all, function (f) { return genderLabel(f.gender); });
+  barChart("oGender", GENDERS.map(function (x) {
+    var c0 = g.get(x); return [x, c0 ? c0.grads : 0, c0 ? c0.emp : 0]; }), {
+    colorFn: function (e) { return e[0] === "ذكر" ? C.voc : e[0] === "أنثى" ? C.uni : C.neutral; },
+    hatchFn: function (e) { return e[0] === "غير متوفر"; }, labelWidth: 90 });
+
+  var nq = agg(all, function (f) { return f.nqf === null || f.nqf === undefined ? "x" : f.nqf; });
+  var keys = Array.from(nq.keys()).sort(function (a, b) {
+    if (a === "x") return 1; if (b === "x") return -1; return a - b; });
+  var prov = provisionalLevels(v, u);
+  barChart("oNqf", keys.map(function (k) {
+    var c0 = nq.get(k);
+    return [k === "x" ? UNCLASSIFIED : nqfName(k) + (prov[k] ? PROV_MARK : ""),
+            c0.grads, c0.emp]; }), {
+    labelWidth: 235, labelRoom: 84,
+    colorFn: function (e, i) { return keys[i] === "x" ? C.neutral
+      : NQF_RAMP[Math.round(keys[i] / 8 * (NQF_RAMP.length - 1))] || C.voc; },
+    hatchFn: function (e, i) { return keys[i] === "x"; } });
+  var provNote = document.getElementById("oNqfProv");
+  if (provNote) provNote.textContent = provisionalNote(v, u);
+  var uncNote = document.getElementById("oNqfNote");
+  if (uncNote) uncNote.textContent = unclassifiedNote(v, u);
+
+  barChart("oRegion", ranked(agg(all, function (f) { return f.regionKey || f.region; }), state.measure)
+    .slice(0, 13).reverse().map(pair), { labelWidth: 150 });
+  barChart("oVocMaj", ranked(agg(v, function (f) { return f.major; }), state.measure)
+    .slice(0, 14).reverse().map(pair), { labelWidth: 190 });
+  barChart("oUniMaj", ranked(agg(u, function (f) { return f.m; }), state.measure)
+    .slice(0, 14).reverse().map(pair),
+    { labelWidth: 190, colorFn: function () { return C.uni; }, legendColor: C.uni });
+}
+
+/* ========================================================================= */
+/*  VIEW: university majors — browse and detail                              */
+/* ========================================================================= */
+var UNI_LEVELS = [
+  { key: "g", dim: "generalMajor",  field: "gi", label: "المجال العام" },
+  { key: "n", dim: "narrowMajor",   field: "ni", label: "المجال الضيق" },
+  { key: "d", dim: "detailedMajor", field: "di", label: "المجال التفصيلي" },
+  { key: "m", dim: "major",         field: "mi", label: "التخصص" }
+];
+function uniLevel(key) {
+  return UNI_LEVELS.filter(function (l) { return l.key === key; })[0];
+}
+
+function viewUniBrowse(levelKey, parentKey, parentIdx) {
+  var lvl = uniLevel(levelKey) || UNI_LEVELS[0];
+  var rows = uniRows();
+  if (parentKey !== undefined && parentIdx !== undefined) {
+    var p = uniLevel(parentKey);
+    rows = rows.filter(function (f) { return f[p.field] === parentIdx; });
+  }
+  var m = agg(rows, function (f) { return f[lvl.field]; });
+  var entries = ranked(m, state.measure);
+  var childLevel = UNI_LEVELS[UNI_LEVELS.indexOf(lvl) + 1];
+
+  var crumb = '<div class="crumb"><button data-go="#uni">التخصصات الجامعية</button>';
+  if (parentKey !== undefined) {
+    crumb += '<span class="sep">›</span><span>' +
+             esc(UD[uniLevel(parentKey).dim][parentIdx]) + '</span>';
+  }
+  crumb += '<span class="sep">›</span><span>' + esc(lvl.label) + '</span></div>';
+
+  var html = crumb +
+    '<div class="browse-head">' +
+      '<input type="search" id="qUni" placeholder="بحث في ' + esc(lvl.label) + '…" autocomplete="off">' +
+      '<span class="result-count" id="cUni"></span>' +
+    '</div>' +
+    '<div class="cardlist" id="listUni"></div>';
+  document.getElementById("view").innerHTML = html;
+
+  function paint(q) {
+    var shown = entries.filter(function (e) {
+      return !q || String(UD[lvl.dim][e[0]]).indexOf(q) !== -1;
+    });
+    document.getElementById("cUni").textContent =
+      fmt(shown.length) + " من " + fmt(entries.length);
+    document.getElementById("listUni").innerHTML = shown.length ? shown.map(function (e) {
+      var name = UD[lvl.dim][e[0]];
+      var target = childLevel
+        ? "#uni/" + childLevel.key + "/" + lvl.key + "/" + e[0]
+        : "#uni/detail/" + e[0];
+      return '<button class="item" data-go="' + target + '">' +
+        '<div class="name">' + esc(name) + '</div>' +
+        '<div class="meta"><span><b>' + fmt(e[1].grads) + '</b> خريج</span>' +
+        '<span><b>' + fmt(e[1].emp) + '</b> متوظف</span>' +
+        '<span>نسبة التوظيف <b>' + pct(e[1].emp, e[1].grads) + '</b></span></div></button>';
+    }).join("") : '<p class="empty">لا توجد نتائج مطابقة.</p>';
+  }
+  paint("");
+  var t;
+  document.getElementById("qUni").addEventListener("input", function (e) {
+    clearTimeout(t); var v = e.target.value.trim();
+    t = setTimeout(function () { paint(v); }, 160);
+  });
+}
+
+function viewUniDetail(majorIdx) {
+  var rows = uniRows().filter(function (f) { return f.mi === majorIdx; });
+  var name = UD.major[majorIdx];
+  if (!rows.length) {
+    document.getElementById("view").innerHTML =
+      '<div class="crumb"><button data-go="#uni">التخصصات الجامعية</button></div>' +
+      '<p class="nodata">لا توجد بيانات لهذا التخصص ضمن السنوات المحددة.</p>';
+    return;
+  }
+  var t = total(rows), sample = rows[0];
+  var levels = ranked(agg(rows, function (f) { return f.level; }), state.measure);
+  var unis = ranked(agg(rows, function (f) { return f.uni; }), state.measure);
+
+  /* Occupations whose education field matches this major's detailed field. */
+  /* Occupations whose education field matches this major, deduplicated: an
+     occupation with several specializations must appear once, not once each. */
+  var relatedOcc = D.occupationTree.filter(function (t) {
+    return t.allFields.some(function (fi) { return L.fields[fi] === sample.d; });
+  });
+
+  var html =
+    '<div class="crumb">' +
+      '<button data-go="#uni">التخصصات الجامعية</button><span class="sep">›</span>' +
+      '<button data-go="#uni/n/g/' + sample.gi + '">' + esc(sample.g) + '</button><span class="sep">›</span>' +
+      '<button data-go="#uni/d/n/' + sample.ni + '">' + esc(sample.n) + '</button><span class="sep">›</span>' +
+      '<button data-go="#uni/m/d/' + sample.di + '">' + esc(sample.d) + '</button>' +
+    '</div>' +
+    '<div class="detail-head"><h2>' + esc(name) + '</h2>' +
+      '<div class="tags">' +
+        '<span class="tag teal">تخصص جامعي</span>' +
+        '<span class="tag">' + esc(sample.d) + '</span>' +
+        '<span class="tag">' + esc(sample.n) + '</span>' +
+        '<span class="tag">' + esc(sample.g) + '</span>' +
+      '</div></div>' +
+    kpiHtml([
+      { cls: "is-uni", label: "الخريجون", value: t.grads, sub: "Graduates · " + state.years.length + " سنوات" },
+      { label: "المتوظفون", value: t.emp, sub: "نسبة التوظيف " + pct(t.emp, t.grads) },
+      { label: "الجامعات التي تُدرّسه", value: unis.length, sub: "Universities teaching it" },
+      { label: "المستويات التعليمية", value: levels.length, sub: levels.map(function (l) { return l[0]; }).join(" · ") },
+      { label: "المهن المرتبطة", value: relatedOcc.length, sub: "عبر المجال التعليمي «" + sample.d + "»" }
+    ]) +
+    '<div class="grid">' +
+      chartCard("الخريجون حسب السنة", "", "dTrend", "span6") +
+      chartCard("حسب المستوى التعليمي", "", "dLevel", "span6") +
+      chartCard("الجامعات", "Where it is taught · بترتيب عدد الخريجين", "dUni", "span6", "tall") +
+      chartCard("التوزيع الجغرافي", "", "dRegion", "span6", "tall") +
+      chartCard("حسب الجنس", "", "dGender", "span6", "short") +
+      card("المهن المرتبطة بهذا المجال التعليمي",
+        relatedOcc.length ? "مطابقة بالاسم الحرفي للمجال التعليمي في جدول المهن" : "",
+        relatedOcc.length
+          ? '<div class="table-wrap"><table><thead><tr><th>المهنة</th><th>Occupation</th>' +
+            '<th>المجموعة</th><th>مستوى الإطار</th></tr></thead><tbody>' +
+            relatedOcc.slice(0, 60).map(function (t) {
+              var o = D.occupations[t.base];
+              return '<tr class="clickable" data-go="#occ/' + t.code + '">' +
+                '<td>' + esc(o.ar) + (t.children.length
+                  ? ' <span class="badge">' + t.children.length + ' تخصص</span>' : "") + '</td>' +
+                '<td style="direction:ltr;text-align:right">' + esc(o.en) + '</td>' +
+                '<td>' + esc(o.group) + '</td><td class="num">' +
+                (o.nqfLevel === null ? UNCLASSIFIED : o.nqfLevel) + '</td></tr>';
+            }).join("") + '</tbody></table></div>'
+          : '<p class="empty">لا توجد مهن مرتبطة: اسم المجال التعليمي «' + esc(sample.d) +
+            '» لا يطابق أي مجال في جدول المهن مطابقة حرفية. لم تُستخدم مطابقة تقريبية.</p>',
+        "span6") +
+    '</div>';
+  document.getElementById("view").innerHTML = html;
+
+  detailCharts(rows, "d", C.uni);
+  barChart("dLevel", levels.slice().reverse().map(pair),
+    { colorFn: function () { return C.uni; }, legendColor: C.uni, labelWidth: 130 });
+  barChart("dUni", unis.slice(0, 26).reverse().map(pair),
+    { colorFn: function () { return C.uni; }, legendColor: C.uni, labelWidth: 230, labelRoom: 78 });
+}
+
+/* ========================================================================= */
+/*  VIEW: vocational majors — browse and detail                              */
+/* ========================================================================= */
+function viewVocBrowse() {
+  var rows = vocRows();
+  var entries = ranked(agg(rows, function (f) { return f.mi; }), state.measure);
+
+  document.getElementById("view").innerHTML =
+    '<div class="browse-head">' +
+      '<input type="search" id="qVoc" placeholder="بحث في التخصصات المهنية…" autocomplete="off">' +
+      '<span class="result-count" id="cVoc"></span>' +
+    '</div><div class="cardlist" id="listVoc"></div>';
+
+  function paint(q) {
+    var shown = entries.filter(function (e) {
+      return !q || String(VD.major[e[0]]).indexOf(q) !== -1; });
+    document.getElementById("cVoc").textContent = fmt(shown.length) + " من " + fmt(entries.length);
+    document.getElementById("listVoc").innerHTML = shown.length ? shown.map(function (e) {
+      return '<button class="item" data-go="#voc/detail/' + e[0] + '">' +
+        '<div class="name">' + esc(VD.major[e[0]]) + '</div>' +
+        '<div class="meta"><span><b>' + fmt(e[1].grads) + '</b> خريج</span>' +
+        '<span><b>' + fmt(e[1].emp) + '</b> متوظف</span>' +
+        '<span>نسبة التوظيف <b>' + pct(e[1].emp, e[1].grads) + '</b></span></div></button>';
+    }).join("") : '<p class="empty">لا توجد نتائج مطابقة.</p>';
+  }
+  paint("");
+  var t;
+  document.getElementById("qVoc").addEventListener("input", function (e) {
+    clearTimeout(t); var v = e.target.value.trim();
+    t = setTimeout(function () { paint(v); }, 160);
+  });
+}
+
+function viewVocDetail(majorIdx) {
+  var rows = vocRows().filter(function (f) { return f.mi === majorIdx; });
+  var name = VD.major[majorIdx];
+  if (!rows.length) {
+    document.getElementById("view").innerHTML =
+      '<div class="crumb"><button data-go="#voc">التخصصات المهنية</button></div>' +
+      '<p class="nodata">لا توجد بيانات لهذا التخصص ضمن السنوات المحددة.</p>';
+    return;
+  }
+  var t = total(rows);
+  var insts = ranked(agg(rows, function (f) { return f.inst; }), state.measure);
+  var quals = ranked(agg(rows, function (f) { return f.qual; }), state.measure);
+  var tracks = ranked(agg(rows, function (f) { return f.track; }), state.measure);
+
+  document.getElementById("view").innerHTML =
+    '<div class="crumb"><button data-go="#voc">التخصصات المهنية</button>' +
+      '<span class="sep">›</span><span>' + esc(name) + '</span></div>' +
+    '<div class="detail-head"><h2>' + esc(name) + '</h2>' +
+      '<div class="tags"><span class="tag accent">تخصص مهني وتقني</span>' +
+      quals.map(function (q) { return '<span class="tag">' + esc(q[0]) + '</span>'; }).join("") +
+      '</div></div>' +
+    kpiHtml([
+      { cls: "is-voc", label: "الخريجون", value: t.grads, sub: "Graduates · " + state.years.length + " سنوات" },
+      { label: "المتوظفون", value: t.emp, sub: "نسبة التوظيف " + pct(t.emp, t.grads) },
+      { label: "الجهات التدريبية", value: insts.length, sub: "Institutions teaching it" },
+      { label: "المؤهلات الممنوحة", value: quals.length, sub: quals.map(function (q) { return q[0]; }).join(" · ") },
+      { label: "نوع البرنامج", value: tracks.length, sub: tracks.map(function (q) { return q[0]; }).join(" · ") }
+    ]) +
+    '<div class="grid">' +
+      chartCard("الخريجون حسب السنة", "", "dTrend", "span6") +
+      chartCard("حسب المؤهل", "", "dQual", "span6") +
+      chartCard("الجهات التدريبية", "Where it is taught", "dInst", "span6", "tall") +
+      chartCard("التوزيع الجغرافي", "", "dRegion", "span6", "tall") +
+      chartCard("حسب الجنس", "", "dGender", "span6", "short") +
+    '</div>';
+
+  detailCharts(rows, "d", C.voc);
+  barChart("dQual", quals.slice().reverse().map(pair), { labelWidth: 180 });
+  barChart("dInst", insts.slice(0, 26).reverse().map(pair),
+    { labelWidth: 230, labelRoom: 78 });
+}
+
+/* ========================================================================= */
+/*  VIEW: occupations — browse, occupation page, specialization page          */
+/* ========================================================================= */
+/* The sheet's 921 rows are 548 occupations. A repeated رمز المهنة means the
+   occupation has specializations (التخصص المهني), each stored as its own row.
+   The browse list shows occupations; a specialization is reached from inside
+   its occupation, never listed beside it as if it were a peer. */
+var TREE = D.occupationTree;
+var byCode = {};
+TREE.forEach(function (t, i) { byCode[t.code] = i; });
+
+var occFilter = { q: "", nqf: "", sector: "", group: "" };
+
+function occOf(t) { return OCC[t.base]; }
+function specOf(t, i) { return OCC[t.children[i]]; }
+
+/* Skills, tasks, sectors and fields belong to whichever record is on screen —
+   the occupation's own base row, or one specialization. */
+function describe(rec, tree, specIdx, skipKpis) {
+  var fieldNames = rec.fields.map(function (f) { return L.fields[f]; });
+  var linked = uniRows().filter(function (r) { return fieldNames.indexOf(r.d) !== -1; });
+  var lt = total(linked);
+  var linkedMajors = ranked(agg(linked, function (r) { return r.mi; }), state.measure);
+
+  var progInst = [];
+  rec.programMatches.forEach(function (pm) {
+    L.instLists[pm[1]].forEach(function (inst) {
+      if (!progInst.some(function (x) { return x.name === inst.name; })) progInst.push(inst);
+    });
+  });
+  var estimated = rec.matchStatus && rec.matchStatus.indexOf("تقديري") !== -1;
+  var nSkills = ["technical", "basic", "general", "leadership"]
+    .reduce(function (a, k) { return a + rec.skills[k].length; }, 0);
+
+  return (estimated ? '<p class="scope-note warn-note"><strong>تنبيه:</strong> ' +
+      'حالة مطابقة البرامج مسجّلة في المصدر بأنها «' + esc(rec.matchStatus) +
+      '»، لذا تُعرض كما وردت دون ترجيح.</p>' : "") +
+
+    /* The specialization window shows its own stat row above the charts, so
+       it suppresses this one instead of repeating four of the same tiles. */
+    (skipKpis ? "" :
+    '<section class="kpis">' +
+      '<div class="kpi"><div class="label">مستوى المهنة</div><div class="value">' +
+        esc(rec.occLevel || "غير متوفر") + '</div><div class="sub">Occupation level</div></div>' +
+      '<div class="kpi"><div class="label">القطاعات التي تخدمها</div><div class="value">' +
+        rec.sectors.length + '</div><div class="sub">من 13 قطاعًا فرعيًا</div></div>' +
+      '<div class="kpi"><div class="label">المهارات</div><div class="value">' +
+        nSkills + '</div><div class="sub">' + rec.tasks.length + ' مهام رئيسية</div></div>' +
+      '<div class="kpi is-uni"><div class="label">خريجو المجالات المرتبطة</div><div class="value">' +
+        fmt(lt.grads) + '</div><div class="sub">' +
+        (linked.length ? "نسبة التوظيف " + pct(lt.emp, lt.grads)
+                       : "لا يوجد مجال مطابق في بيانات الخريجين") + '</div></div>' +
+    '</section>') +
+
+    '<div class="grid">' +
+      card("ملخص المهنة", tree && tree.baseFromChild && specIdx === undefined
+          ? "المصدر لا يحمل صفًا للمهنة دون تخصص؛ النص معروض من أول تخصص" : "",
+        '<p style="font-size:14px;margin:0">' + esc(rec.summary || "غير متوفر") + '</p>', "span6") +
+
+      card("التصنيف", "", '<dl class="deflist">' +
+        '<div><dt>المجموعة الرئيسية</dt><dd>' + esc(rec.group) +
+          ' <span style="color:#999">(' + esc(rec.groupCode) + ')</span></dd></div>' +
+        '<div><dt>المجموعة الفرعية</dt><dd>' + esc(rec.subGroup) + '</dd></div>' +
+        '<div><dt>المجموعة الثانوية</dt><dd>' + esc(rec.minorGroup) + '</dd></div>' +
+        '<div><dt>الوحدة</dt><dd>' + esc(rec.unit) + '</dd></div>' +
+        '<div><dt>نوع المهنة</dt><dd>' + esc(rec.type || "غير متوفر") + '</dd></div>' +
+        '<div><dt>المجموعة الوظيفية</dt><dd>' + esc(rec.functionalGroup || "غير متوفر") + '</dd></div>' +
+        '<div><dt>مستوى ISCED 11</dt><dd>' + esc(rec.isced || "غير متوفر") + '</dd></div>' +
+        '<div><dt>مستوى الإطار الوطني</dt><dd>' + esc(rec.nqfLabel || "غير متوفر") + '</dd></div>' +
+      '</dl>', "span6") +
+
+      card("المهام الرئيسية", "", rec.tasks.length
+        ? '<ol class="tasklist">' + rec.tasks.map(function (t) {
+            return '<li>' + esc(t) + '</li>'; }).join("") + '</ol>'
+        : '<p class="empty">غير متوفرة.</p>', "span6") +
+
+      card("القطاعات والمجالات التعليمية", "",
+        '<h4 class="subhead">القطاعات الفرعية التي تخدمها</h4>' +
+        (rec.sectors.length
+          ? '<div class="tags">' + rec.sectors.map(function (x) {
+              return '<span class="tag">' + esc(L.sectors[x]) + '</span>'; }).join("") + '</div>'
+          : '<p class="empty">لا توجد.</p>') +
+        '<h4 class="subhead" style="margin-top:14px">المجالات التعليمية</h4>' +
+        (fieldNames.length
+          ? '<div class="tags">' + fieldNames.map(function (f) {
+              return '<span class="tag' + (D.fieldLinks[f] ? " teal" : "") + '">' + esc(f) +
+                     (D.fieldLinks[f] ? " ✓" : "") + '</span>'; }).join("") +
+            '<p class="hint" style="margin-top:9px">المعلّمة بـ ✓ تطابق تخصصًا في بيانات خريجي الجامعات مطابقة حرفية.</p>'
+          : '<p class="empty">غير متوفرة.</p>'), "span6") +
+
+      card("المهارات المطلوبة", "المستوى من 5 كما ورد في جدول المهن",
+        '<div class="skills-wrap">' +
+        ((skillBlock("المهارات الفنية", rec.skills.technical) +
+          skillBlock("المهارات الأساسية", rec.skills.basic) +
+          skillBlock("المهارات العامة", rec.skills.general) +
+          skillBlock("المهارات القيادية", rec.skills.leadership)) ||
+          '<p class="empty">غير متوفرة.</p>') + '</div>') +
+
+      card("الجامعات والكليات المطابقة",
+        progInst.length ? "من جدول «قطاع التعدين» في ملف المهن" : "",
+        progInst.length
+          ? '<ul class="instlist">' + progInst.map(function (x) {
+              return '<li>' + esc(x.name) +
+                (x.region ? ' <span class="rg">· ' + esc(x.region) + '</span>' : "") + '</li>';
+            }).join("") + '</ul>'
+          : '<p class="empty">لم يُسجَّل برنامج مطابق في المصدر. جداول المطابقة تغطي مهن قطاع التعدين فقط.</p>',
+        "span6") +
+
+      card("خريجو المجالات التعليمية المرتبطة",
+        linked.length ? "أعلى التخصصات الجامعية ضمن المجالات المطابقة" : "",
+        linked.length
+          ? '<div class="table-wrap"><table><thead><tr><th>التخصص</th><th>المجال</th>' +
+            '<th>الخريجون</th><th>المتوظفون</th><th>النسبة</th></tr></thead><tbody>' +
+            linkedMajors.slice(0, 30).map(function (e) {
+              var r0 = linked.filter(function (x) { return x.mi === e[0]; })[0];
+              return '<tr class="clickable" data-go="#uni/detail/' + e[0] + '">' +
+                '<td>' + esc(UD.major[e[0]]) + '</td><td>' + esc(r0 ? r0.d : "") + '</td>' +
+                '<td class="num">' + fmt(e[1].grads) + '</td>' +
+                '<td class="num">' + fmt(e[1].emp) + '</td>' +
+                '<td class="num">' + pct(e[1].emp, e[1].grads) + '</td></tr>';
+            }).join("") + '</tbody></table></div>'
+          : '<p class="empty">لا يطابق أي مجال تعليمي هنا تخصصًا في بيانات خريجي الجامعات مطابقة حرفية. ' +
+            'لم تُستخدم مطابقة تقريبية حتى لا يُعرض رقم غير مؤكد.</p>', "span6") +
+    '</div>';
+}
+
+function viewOccBrowse() {
+  var groups = Array.from(new Set(TREE.map(function (t) { return occOf(t).group; }))).sort();
+  var levels = Array.from(new Set(TREE.map(function (t) { return occOf(t).nqfLevel; })))
+                    .sort(function (a, b) { return a - b; });
+
+  document.getElementById("view").innerHTML =
+    '<p class="scope-note"><strong>' + fmt(TREE.length) + ' مهنة</strong> من ' + fmt(OCC.length) +
+      ' صفًا في المصدر. تكرار رمز المهنة يعني أن للمهنة تخصصات مهنية، وتُعرض داخل صفحة المهنة ' +
+      'لا بجانبها.</p>' +
+    '<div class="browse-head">' +
+      '<input type="search" id="qOcc" placeholder="بحث بالاسم العربي أو الإنجليزي أو الرمز أو التخصص…" autocomplete="off">' +
+      '<select id="fOccGroup"><option value="">كل المجموعات الرئيسية</option>' +
+        groups.map(function (g) { return '<option>' + esc(g) + '</option>'; }).join("") + '</select>' +
+      '<select id="fOccNqf"><option value="">كل مستويات الإطار</option>' +
+        levels.map(function (l) { return '<option value="' + l + '">' + esc(nqfName(l)) + '</option>'; }).join("") +
+      '</select>' +
+      '<select id="fOccSector"><option value="">كل القطاعات</option>' +
+        L.sectors.map(function (s, i) { return '<option value="' + i + '">' + esc(s) + '</option>'; }).join("") +
+      '</select>' +
+      '<span class="result-count" id="cOcc"></span>' +
+    '</div><div class="cardlist" id="listOcc"></div>';
+
+  function paint() {
+    var q = occFilter.q;
+    var shown = TREE.filter(function (t) {
+      var o = occOf(t);
+      if (occFilter.group && o.group !== occFilter.group) return false;
+      if (occFilter.nqf !== "" && String(o.nqfLevel) !== occFilter.nqf) return false;
+      /* Filter against the union so an occupation surfaces when any of its
+         specializations serves the sector. */
+      if (occFilter.sector !== "" && t.allSectors.indexOf(Number(occFilter.sector)) === -1) return false;
+      if (q) {
+        var hay = [o.ar, o.en, t.code, o.functionalGroup, o.summary]
+          .concat(t.children.map(function (ci) { return OCC[ci].specAr; }))
+          .join(" ").toLowerCase();
+        if (hay.indexOf(q.toLowerCase()) === -1) return false;
+      }
+      return true;
+    });
+
+    document.getElementById("cOcc").textContent =
+      fmt(shown.length) + " من " + fmt(TREE.length) + " مهنة";
+
+    document.getElementById("listOcc").innerHTML = shown.length
+      ? shown.slice(0, 300).map(function (t) {
+          var o = occOf(t);
+          return '<button class="item" data-go="#occ/' + t.code + '">' +
+            '<div class="name">' + hi(o.ar, q) + '</div>' +
+            '<div class="en">' + esc(o.en || "") + '</div>' +
+            '<div class="meta"><span>' + esc(t.code) + '</span>' +
+            '<span>الإطار <b>' + (o.nqfLevel === null ? UNCLASSIFIED : o.nqfLevel) + '</b></span>' +
+            '<span>' + t.allSectors.length + ' قطاع</span>' +
+            (t.children.length
+              ? '<span class="badge">' + t.children.length + ' تخصص مهني</span>' : "") +
+            '</div></button>';
+        }).join("") +
+        (shown.length > 300
+          ? '<p class="empty">يعرض أول 300 من ' + fmt(shown.length) + '. حدّد البحث أكثر.</p>' : "")
+      : '<div class="nodata"><p style="font-size:15px;margin:0 0 6px">لا توجد مهن مطابقة</p>' +
+        '<p class="hint">جرّب توسيع البحث أو إزالة بعض الفلاتر.</p>' +
+        '<button class="btn-reset" id="occReset" style="margin-top:10px">إعادة تعيين الفلاتر</button></div>';
+
+    var rb = document.getElementById("occReset");
+    if (rb) rb.addEventListener("click", function () {
+      occFilter = { q: "", nqf: "", sector: "", group: "" };
+      route();
+    });
+  }
+  paint();
+
+  var t0;
+  var qEl = document.getElementById("qOcc");
+  qEl.value = occFilter.q;
+  qEl.addEventListener("input", function (e) {
+    clearTimeout(t0); var v = e.target.value.trim();
+    t0 = setTimeout(function () { occFilter.q = v; paint(); }, 160);
+  });
+  ["fOccGroup:group", "fOccNqf:nqf", "fOccSector:sector"].forEach(function (pair) {
+    var parts = pair.split(":"), el = document.getElementById(parts[0]);
+    el.value = occFilter[parts[1]];
+    el.addEventListener("change", function (e) { occFilter[parts[1]] = e.target.value; paint(); });
+  });
+}
+
+function skillBlock(title, entries) {
+  if (!entries.length) return "";
+  return '<h4 class="subhead">' + esc(title) + '</h4>' +
+    entries.map(function (s) {
+      var name = L.skillNames[s[0]], lvl = s[1], lab = L.skillLevels[s[2]];
+      return '<div class="skillrow"><span class="nm">' + esc(name) + '</span>' +
+        '<span class="lv"><span class="meter"><i style="width:' +
+        (lvl ? Math.round(lvl / 5 * 100) : 0) + '%"></i></span>' +
+        esc(lvl ? lvl + " · " + (lab || "") : "غير متوفر") + '</span></div>';
+    }).join("");
+}
+
+/* The occupation itself: its own description, then its specializations. */
+function viewOccDetail(code) {
+  var ti = byCode[code];
+  if (ti === undefined) {
+    document.getElementById("view").innerHTML =
+      '<p class="nodata">لا توجد مهنة بهذا الرمز.</p>'; return;
+  }
+  var t = TREE[ti], o = occOf(t);
+
+  document.getElementById("view").innerHTML =
+    '<div class="crumb"><button data-go="#occ">المهن</button>' +
+      '<span class="sep">›</span><span>' + esc(o.group) + '</span>' +
+      '<span class="sep">›</span><span>' + esc(o.unit) + '</span></div>' +
+
+    '<div class="detail-head"><h2>' + esc(o.ar) + '</h2>' +
+      '<div class="en">' + esc(o.en || "") + '</div>' +
+      '<div class="tags">' +
+        '<span class="tag accent">' + esc(t.code) + '</span>' +
+        (o.nqfLevel !== null
+          ? '<span class="tag teal">الإطار الوطني · المستوى ' + o.nqfLevel + '</span>'
+          : '<span class="tag">' + UNCLASSIFIED + '</span>') +
+        '<span class="tag">' + esc(o.type || "") + '</span>' +
+        (t.children.length
+          ? '<span class="tag accent">' + t.children.length + ' تخصص مهني</span>' : "") +
+      '</div></div>' +
+
+    (t.children.length
+      ? '<section class="card" style="margin-bottom:15px">' +
+          '<h2>التخصصات المهنية</h2>' +
+          '<p class="hint">تخصصات تندرج تحت هذه المهنة وتشترك في رمزها وتصنيفها، ' +
+            'ولكلٍّ منها ملخصه ومهامه ومهاراته وقطاعاته.</p>' +
+          '<div class="speclist">' + t.children.map(function (ci, i) {
+            var c = OCC[ci];
+            var ns = ["technical","basic","general","leadership"]
+              .reduce(function (a, k) { return a + c.skills[k].length; }, 0);
+            return '<button class="specitem" data-go="#occ/' + t.code + '/' + i + '">' +
+              '<div class="name">' + esc(c.specAr) + '</div>' +
+              (c.specEn ? '<div class="en">' + esc(c.specEn) + '</div>' : "") +
+              '<div class="meta"><span>' + esc(c.specCode || "") + '</span>' +
+              '<span>' + c.sectors.length + ' قطاع</span>' +
+              '<span>' + ns + ' مهارة</span>' +
+              '<span>' + c.tasks.length + ' مهام</span></div></button>';
+          }).join("") + '</div></section>'
+      : "") +
+
+    describe(o, t, undefined);
+}
+
+/* A specialization opens over its occupation rather than replacing it, so the
+   occupation stays on screen behind and closing returns you to your place.
+   The route still carries the state, so #occ/<code>/<n> opens it directly and
+   the URL remains shareable. */
+function closeSpecWindow() {
+  var el = document.getElementById("specWin");
+  if (el) el.remove();
+  document.body.classList.remove("win-open");
+  if (specKeyHandler) { document.removeEventListener("keydown", specKeyHandler); specKeyHandler = null; }
+  specCharts.forEach(function (c) { try { c.dispose(); } catch (e) {} });
+  specCharts = [];
+}
+var specKeyHandler = null;
+var specCharts = [];
+
+function viewOccSpec(code, idx) {
+  var ti = byCode[code];
+  if (ti === undefined) {
+    document.getElementById("view").innerHTML =
+      '<p class="nodata">لا توجد مهنة بهذا الرمز.</p>';
+    return;
+  }
+  var t = TREE[ti], o = occOf(t), c = specOf(t, idx);
+
+  /* The occupation renders underneath either way. */
+  viewOccDetail(code);
+
+  if (!c) {
+    document.getElementById("view").insertAdjacentHTML("afterbegin",
+      '<p class="scope-note warn-note">لا يوجد تخصص بهذا الرقم ضمن هذه المهنة.</p>');
+    return;
+  }
+
+  var back = "#occ/" + t.code;
+  var prev = (idx - 1 + t.children.length) % t.children.length;
+  var next = (idx + 1) % t.children.length;
+
+  /* Stats for this specialization alone. */
+  var cats = [
+    ["المهارات الفنية", c.skills.technical],
+    ["المهارات الأساسية", c.skills.basic],
+    ["المهارات العامة", c.skills.general],
+    ["المهارات القيادية", c.skills.leadership]
+  ].filter(function (x) { return x[1].length; });
+  var allSk = cats.reduce(function (a, x) { return a.concat(x[1]); }, []);
+  var levelled = allSk.filter(function (x) { return x[1]; });
+  var avgLevel = levelled.length
+    ? levelled.reduce(function (a, x) { return a + x[1]; }, 0) / levelled.length : 0;
+
+  var fieldNames = c.fields.map(function (f) { return L.fields[f]; });
+  var linked = uniRows().filter(function (r) { return fieldNames.indexOf(r.d) !== -1; });
+  var lt = total(linked);
+  var unis = ranked(agg(linked, function (r) { return r.uni; }), state.measure);
+
+  document.body.classList.add("win-open");
+  document.body.insertAdjacentHTML("beforeend",
+    '<div class="win-overlay" id="specWin" role="dialog" aria-modal="true" ' +
+      'aria-label="' + esc(c.specAr) + '">' +
+      '<div class="win">' +
+        '<header class="win-head">' +
+          '<div class="win-head-top">' +
+            '<div class="parent-of">تخصص مهني ضمن ' +
+              '<button data-go="' + back + '">' + esc(o.ar) + '</button></div>' +
+            '<button class="win-x" data-go="' + back + '" aria-label="إغلاق">✕</button>' +
+          '</div>' +
+          '<h2>' + esc(c.specAr) + '</h2>' +
+          (c.specEn ? '<div class="en">' + esc(c.specEn) + '</div>' : "") +
+          '<div class="tags">' +
+            '<span class="tag accent">' + esc(c.specCode || t.code) + '</span>' +
+            (c.nqfLevel !== null
+              ? '<span class="tag teal">الإطار الوطني · المستوى ' + c.nqfLevel + '</span>'
+              : '<span class="tag">' + UNCLASSIFIED + '</span>') +
+            '<span class="tag">' + esc(c.type || "") + '</span>' +
+            (c.functionalGroup ? '<span class="tag">' + esc(c.functionalGroup) + '</span>' : "") +
+          '</div>' +
+          (t.children.length > 1
+            ? '<div class="win-nav">' +
+                '<button data-go="#occ/' + t.code + '/' + prev + '">→ السابق</button>' +
+                '<span class="pos">' + (idx + 1) + ' من ' + t.children.length + ' تخصص</span>' +
+                '<button data-go="#occ/' + t.code + '/' + next + '">التالي ←</button>' +
+              '</div>'
+            : "") +
+        '</header>' +
+
+        '<div class="win-body">' +
+          '<section class="kpis">' +
+            '<div class="kpi"><div class="label">القطاعات التي يخدمها</div><div class="value">' +
+              c.sectors.length + '</div><div class="sub">من 13 قطاعًا فرعيًا</div></div>' +
+            '<div class="kpi"><div class="label">المهارات</div><div class="value">' +
+              allSk.length + '</div><div class="sub">متوسط المستوى ' +
+              (levelled.length ? avgLevel.toFixed(1) + " من 5" : "غير محدد") + '</div></div>' +
+            '<div class="kpi"><div class="label">المهام الرئيسية</div><div class="value">' +
+              c.tasks.length + '</div><div class="sub">مستوى المهنة ' +
+              esc(c.occLevel || "غير متوفر") + '</div></div>' +
+            '<div class="kpi is-uni"><div class="label">خريجو المجالات المرتبطة</div><div class="value">' +
+              fmt(lt.grads) + '</div><div class="sub">' +
+              (linked.length
+                ? "نسبة التوظيف " + pct(lt.emp, lt.grads) + " · " + unis.length + " جامعة"
+                : "لا يوجد مجال مطابق") + '</div></div>' +
+          '</section>' +
+
+          '<div class="grid">' +
+            (cats.length
+              ? chartCard("توزيع المهارات", "عدد المهارات في كل فئة", "wSkillCat", "span6", "short")
+              : "") +
+            (linked.length
+              ? chartCard("الجامعات التي تُدرّس المجالات المرتبطة",
+                  "بترتيب عدد الخريجين", "wUni", "span6", "short")
+              : "") +
+          '</div>' +
+
+          describe(c, t, idx, true) +
+        '</div>' +
+      '</div></div>');
+
+  /* Charts live on the window, so they are disposed when it closes. */
+  var mountedBefore = live.length;
+  if (cats.length) {
+    barChart("wSkillCat", cats.map(function (x) { return [x[0], x[1].length]; }).reverse(),
+      { unit: "مهارة", labelWidth: 130, labelRoom: 56 });
+  }
+  if (linked.length) {
+    barChart("wUni", unis.slice(0, 8).reverse().map(pair),
+      { colorFn: function () { return C.uni; }, legendColor: C.uni,
+        labelWidth: 190, labelRoom: 74 });
+  }
+  specCharts = live.splice(mountedBefore);
+
+  specKeyHandler = function (e) {
+    if (e.key === "Escape") { e.preventDefault(); location.hash = back; }
+    else if (e.key === "ArrowRight") { e.preventDefault(); location.hash = "#occ/" + t.code + "/" + prev; }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); location.hash = "#occ/" + t.code + "/" + next; }
+  };
+  document.addEventListener("keydown", specKeyHandler);
+
+  var ov = document.getElementById("specWin");
+  ov.addEventListener("click", function (e) { if (e.target === ov) location.hash = back; });
+  var x = ov.querySelector(".win-x");
+  if (x) x.focus();
+}
+
+/* ========================================================================= */
+/*  VIEW: NQF reference                                                      */
+/* ========================================================================= */
+function viewNqf() {
+  var all = vocRows().concat(uniRows());
+  var byLevel = agg(all, function (f) { return f.nqf === null || f.nqf === undefined ? "x" : f.nqf; });
+  /* Count occupations, not source rows: a repeated code is one occupation. */
+  var occByLevel = new Map();
+  D.occupationTree.forEach(function (t) {
+    var o = D.occupations[t.base];
+    var k = o.nqfLevel === null ? "x" : o.nqfLevel;
+    occByLevel.set(k, (occByLevel.get(k) || 0) + 1);
+  });
+
+  var qualsFor = {};
+  VD.qualification.forEach(function (q, i) {
+    var lv = D.vocational.qualificationNqf[i];
+    (qualsFor[lv === null ? "x" : lv] = qualsFor[lv === null ? "x" : lv] || []).push(q);
+  });
+  UD.level.forEach(function (q, i) {
+    var lv = D.university.levelNqf[i];
+    (qualsFor[lv === null ? "x" : lv] = qualsFor[lv === null ? "x" : lv] || []).push(q);
+  });
+
+  var rowsHtml = D.nqf.levels.map(function (l) {
+    var g = byLevel.get(l.level), oc = occByLevel.get(l.level) || 0;
+    return '<tr><td class="num"><b>' + l.level + '</b></td>' +
+      '<td>' + esc(l.ar) + '<div style="font-size:11px;color:#666;direction:ltr;text-align:right">' +
+        esc(l.en) + '</div></td>' +
+      '<td>' + ((qualsFor[l.level] || []).map(function (q) {
+        return '<span class="tag' + (isProvisional(q) ? " warn" : "") + '">' + esc(q) +
+               (isProvisional(q) ? " · مبدئي" : "") + '</span>'; }).join(" ")
+        || '<span style="color:#999">غير متوفر</span>') + '</td>' +
+      '<td class="num">' + fmt(oc) + '</td>' +
+      '<td class="num">' + fmt(g ? g.grads : 0) + '</td>' +
+      '<td class="num">' + (g ? pct(g.emp, g.grads) : "غير متوفر") + '</td></tr>';
+  }).join("");
+
+  var unc = byLevel.get("x");
+  var uncTotal = 0;
+  byLevel.forEach(function (v) { uncTotal += v.grads; });
+  var provText = provisionalNote(vocRows(), uniRows());
+  var provLv = provisionalLevels(vocRows(), uniRows());
+
+  document.getElementById("view").innerHTML =
+    '<p class="scope-note"><strong>المصدر:</strong> ' + esc(D.nqf.source) + '</p>' +
+    (provText
+      ? '<p class="scope-note warn-note"><strong>تسكين مبدئي.</strong> ' +
+        'المؤهلات التالية لا يسندها جدول الإطار (ص.40) إلى مستوى واحد، وقد سُكّنت مؤقتًا ' +
+        'بقرار من جهة العمل بانتظار رسالة التأكيد. ستُحدَّث فور وصولها، والأرقام المبنية ' +
+        'عليها معلّمة بـ «مبدئي» في هذا الجدول وبعلامة ' + PROV_MARK.trim() +
+        ' في الرسوم.<br>' + esc(provText) + '</p>'
+      : "") +
+    (CORRECTIONS.length
+      ? '<p class="scope-note warn-note"><strong>تصحيح مؤهل.</strong> ' +
+        'صفوف سجّلها ملف الجامعات باسم «أخرى» وحدّدت جهة العمل مؤهلها الفعلي، ' +
+        'فتُقرأ بمؤهلها المصحَّح لا بما في العمود:<br>' + esc(correctionsNote()) + '</p>'
+      : "") +
+    (unc ? '<p class="scope-note warn-note"><strong>' + fmt(unc.grads) + ' خريجًا (' +
+      pct(unc.grads, uncTotal) + ') غير مصنّفين.</strong> ' +
+      esc(unclassifiedNote(vocRows(), uniRows())) + ' ' +
+      'المؤهل مسجّل في المصدر باسم لا يحدد نوعًا، فتُعرض هذه الصفوف كما هي ' +
+      'ولم تُوزَّع على المستويات تقديرًا.</p>' : "") +
+    card("مستويات الإطار الوطني للمؤهلات",
+      "عدد المهن والخريجين المسكّنين في كل مستوى",
+      '<div class="table-wrap"><table><thead><tr>' +
+      '<th>المستوى</th><th>الوصف</th><th>المؤهلات المسكّنة</th>' +
+      '<th>المهن</th><th>الخريجون</th><th>نسبة التوظيف</th></tr></thead><tbody>' +
+      rowsHtml + '</tbody></table></div>') +
+    '<div class="grid" style="margin-top:15px">' +
+      chartCard("الخريجون حسب المستوى", "", "nGrad", "span6") +
+      chartCard("المهن حسب المستوى", "", "nOcc", "span6") +
+    '</div>';
+
+  var keys = D.nqf.levels.map(function (l) { return l.level; }).filter(function (k) { return byLevel.has(k); });
+  barChart("nGrad", keys.map(function (k) {
+      var c0 = byLevel.get(k);
+      return [nqfName(k) + (provLv[k] ? PROV_MARK : ""), c0.grads, c0.emp]; }),
+    { labelWidth: 235, labelRoom: 84,
+        colorFn: function (e) { var lv = parseInt(e[0], 10);
+          return NQF_RAMP[Math.round(lv / 8 * (NQF_RAMP.length - 1))]; } });
+  var okeys = Array.from(occByLevel.keys()).filter(function (k) { return k !== "x"; })
+                   .sort(function (a, b) { return a - b; });
+  barChart("nOcc", okeys.map(function (k) { return [nqfName(k), occByLevel.get(k)]; }),
+    { unit: "مهنة", labelWidth: 235, labelRoom: 76,
+      colorFn: function (e) { var lv = parseInt(e[0], 10);
+        return NQF_RAMP[Math.round(lv / 8 * (NQF_RAMP.length - 1))]; } });
+}
+
+/* ========================================================================= */
+/*  VIEW: data table                                                         */
+/* ========================================================================= */
+function viewData() {
+  var rows = [];
+  vocRows().forEach(function (f) {
+    rows.push(["التعليم المهني والتقني", f.year, f.major, f.inst, f.region, f.qual, f.nqf, f.grads, f.emp]);
+  });
+  uniRows().forEach(function (f) {
+    rows.push(["الجامعات", f.year, f.m, f.uni, f.region, f.level, f.nqf, f.grads, f.emp]);
+  });
+  rows.sort(function (a, b) { return b[7] - a[7]; });
+  var shown = rows.slice(0, 600);
+
+  document.getElementById("view").innerHTML =
+    card("جدول البيانات الكامل",
+      "يعرض " + fmt(shown.length) + " من " + fmt(rows.length) +
+      " صفًا مصدريًا ضمن السنوات المحددة، مرتبة تنازليًا حسب عدد الخريجين.",
+      '<div class="table-wrap"><table><thead><tr>' +
+      '<th>المسار</th><th>السنة</th><th>التخصص</th><th>الجهة</th><th>المنطقة</th>' +
+      '<th>المؤهل</th><th>مستوى الإطار</th><th>الخريجون</th><th>المتوظفون</th><th>النسبة</th>' +
+      '</tr></thead><tbody>' + shown.map(function (r) {
+        return "<tr><td>" + esc(r[0]) + "</td><td class='num'>" + esc(r[1]) + "</td>" +
+          "<td>" + esc(r[2]) + "</td><td>" + esc(r[3]) + "</td><td>" + esc(r[4]) + "</td>" +
+          "<td>" + esc(r[5]) + "</td><td class='num'>" +
+          (r[6] === null || r[6] === undefined ? UNCLASSIFIED : r[6]) + "</td>" +
+          "<td class='num'>" + fmt(r[7]) + "</td><td class='num'>" + fmt(r[8]) + "</td>" +
+          "<td class='num'>" + pct(r[8], r[7]) + "</td></tr>";
+      }).join("") + '</tbody></table></div>');
+}
+
+/* ========================================================================= */
+/*  Tabs and routing                                                         */
+/* ========================================================================= */
+var TABS = [
+  { id: "overview", label: "نظرة عامة" },
+  { id: "voc", label: "التخصصات المهنية", count: VD.major.length },
+  { id: "uni", label: "التخصصات الجامعية", count: UD.major.length },
+  { id: "occ", label: "المهن", count: D.occupationTree.length },
+  { id: "nqf", label: "الإطار الوطني للمؤهلات" },
+  { id: "data", label: "البيانات" }
+];
+
+function buildTabs() {
+  document.getElementById("tabbar").innerHTML = TABS.map(function (t) {
+    return '<button class="tab" role="tab" data-tab="' + t.id + '" data-go="#' + t.id + '">' +
+      esc(t.label) + (t.count ? '<span class="count">' + fmt(t.count) + '</span>' : "") + '</button>';
+  }).join("");
+}
+function markTab(id) {
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
+    b.setAttribute("aria-selected", String(b.dataset.tab === id));
+  });
+}
+
+function route() {
+  closeSpecWindow();
+  disposeCharts();
+  var hash = (location.hash || "#overview").replace(/^#/, "");
+  var p = hash.split("/");
+  var tab = p[0] || "overview";
+  markTab(tab);
+  window.scrollTo(0, 0);
+
+  if (tab === "voc") {
+    if (p[1] === "detail") viewVocDetail(Number(p[2]));
+    else viewVocBrowse();
+  } else if (tab === "uni") {
+    if (p[1] === "detail") viewUniDetail(Number(p[2]));
+    else if (p[1]) viewUniBrowse(p[1], p[2], p[3] === undefined ? undefined : Number(p[3]));
+    else viewUniBrowse("g");
+  } else if (tab === "occ") {
+    /* #occ  ·  #occ/<رمز المهنة>  ·  #occ/<رمز المهنة>/<رقم التخصص> */
+    if (p[1] && p[2] !== undefined && p[2] !== "") viewOccSpec(p[1], Number(p[2]));
+    else if (p[1]) viewOccDetail(p[1]);
+    else viewOccBrowse();
+  } else if (tab === "nqf") { viewNqf(); }
+  else if (tab === "data") { viewData(); }
+  else { markTab("overview"); viewOverview(); }
+}
+
+/* Delegated navigation: any element with data-go changes the hash. */
+document.addEventListener("click", function (e) {
+  var el = e.target.closest("[data-go]");
+  if (!el) return;
+  e.preventDefault();
+  var to = el.getAttribute("data-go");
+  if (location.hash === to) route(); else location.hash = to;
+});
+window.addEventListener("hashchange", route);
+
+/* ------------------------------ filters --------------------------------- */
+function chipRow(container, items, isOn, toggle) {
+  container.innerHTML = "";
+  items.forEach(function (item) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = item.label;
+    b.setAttribute("aria-pressed", String(isOn(item.value)));
+    b.addEventListener("click", function () { toggle(item.value); });
+    container.appendChild(b);
+  });
+}
+function buildFilters() {
+  chipRow(document.getElementById("fYears"),
+    YEARS.map(function (y) { return { label: y, value: y }; }),
+    function (y) { return state.years.indexOf(y) !== -1; },
+    function (y) {
+      var i = state.years.indexOf(y);
+      if (i === -1) state.years.push(y);
+      else if (state.years.length > 1) state.years.splice(i, 1);
+      buildFilters(); route();
+    });
+  chipRow(document.getElementById("fMeasure"),
+    [{ label: "الخريجون", value: "grads" }, { label: "المتوظفون", value: "emp" }],
+    function (m) { return state.measure === m; },
+    function (m) { state.measure = m; buildFilters(); route(); });
+}
+
+/* ------------------------------ boot ------------------------------------ */
+document.getElementById("provenance").innerHTML =
+  "المصادر: <code>" + esc(D.meta.sources.vocational) + "</code>, <code>" +
+  esc(D.meta.sources.university) + "</code>, <code>" + esc(D.meta.sources.master) +
+  "</code>, <code>" + esc(D.meta.sources.nqf) + "</code>. " +
+  "مستويات الإطار الوطني للمؤهلات من " + esc(D.nqf.source) + ". " +
+  "الهوية البصرية وفق إرشادات العلامة التجارية لوزارة الصناعة والثروة المعدنية (الإصدار 1.1). " +
+  "تفاصيل التحليل ومصادر كل قيمة في <code>data/README.md</code>.";
+
+buildTabs();
+buildFilters();
+route();
+
+var rt;
+window.addEventListener("resize", function () {
+  clearTimeout(rt);
+  rt = setTimeout(function () { live.forEach(function (c) { c.resize(); }); }, 120);
+});
+
+})();
+</script>
+</body>
+</html>

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Inline every local dependency of dashboard.html into one portable file.
+Inline every local dependency of index.html into one portable file.
 
     python3 scripts/build_standalone.py   ->   dashboard.standalone.html
 
-dashboard.html is the source of truth and works fine on its own as long as
+index.html is the source of truth and works fine on its own as long as
 the ./assets and ./data folders travel with it. This build is for the case
 where the file has to travel alone (email, USB stick, a shared drive that
 flattens folders).
@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "dashboard.html"
+SRC = ROOT / "index.html"
 OUT = ROOT / "dashboard.standalone.html"
 
 

@@ -11,7 +11,7 @@ tags the skeleton already provides, keeps the <title>, <style> and <script>
 blocks, and re-applies the RTL direction that used to live on <html>.
 
 Nothing about the design changes: the brand palette, layout and copy are the
-reviewed dashboard exactly as it ships in dashboard.html.
+reviewed dashboard exactly as it ships in index.html.
 """
 
 import re

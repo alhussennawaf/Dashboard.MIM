@@ -1,0 +1,74 @@
+/* ============================================================================
+   MIM brand tokens
+   Source of truth: data/MiM_Brand_Guidelines_Short_Version_v1.1.pdf (11 Oct 2021)
+   Every value below is transcribed from a named page of that document, or from
+   the design-system swatch screenshots supplied by the project owner.
+   No colour here is invented. See data/README.md for the full provenance table.
+   ========================================================================== */
+
+:root {
+  /* --- Core greys — "الألوان الأساسية" (primary), guidelines p.30 ----------
+     The brand's primary palette is greyscale, drawn from the tones of worked
+     metal. These carry ~75% of any layout (usage ratio, p.34).              */
+  --mim-grey-light:    #E6E6E6; /* MIM Light Grey    rgb(230,230,230) hsl(0,0%,90%) */
+  --mim-grey-medium:   #B3B3B3; /* MIM Medium Grey   rgb(179,179,179) hsl(0,0%,70%) */
+  --mim-grey-dark:     #666666; /* MIM Dark Grey     rgb(102,102,102) hsl(0,0%,40%) */
+  --mim-grey-darkest:  #1A1A1A; /* MIM Darkest Grey  rgb(26,26,26)    hsl(0,0%,10%) */
+
+  /* --- Highlight colours — "الألوان المميزة", guidelines p.30 -------------
+     Purple + phosphor blue. Per p.34 these are accent only: 10% / 10% / 5%
+     of a layout. They must never become the dominant field.                */
+  --mim-purple:        #413258; /* MIM Highlight Purple rgb(65,50,88)   hsl(264,43%,27%) */
+  --mim-blue:          #1AD9C7; /* MIM Highlight Blue   rgb(26,217,199) hsl(174,88%,48%) */
+
+  /* --- Secondary — "الألوان الثانوية", guidelines p.30 --------------------
+     Pink, a nod to the human hands behind industry.                        */
+  --mim-pink:          #BFA19F; /* MIM Highlight Pink rgb(191,161,159) hsl(4,17%,69%) */
+
+  /* --- Digital gradients — "الألوان المستخدمة للتطبيقات الرقمية", p.32 ---
+     Screen-only gradient pairs. Note these differ from the print values.   */
+  --mim-gradient-purple: linear-gradient(135deg, #825DEC 0%, #3F3355 100%);
+  --mim-gradient-pink:   linear-gradient(135deg, #BFA19F 0%, #EFCAC7 100%);
+  --mim-gradient-blue:   linear-gradient(135deg, #1AD9C7 0%, #66D6C7 100%);
+
+  --mim-gradient-purple-from: #825DEC;
+  --mim-gradient-purple-to:   #3F3355;
+  --mim-gradient-blue-from:   #1AD9C7;
+  --mim-gradient-blue-to:     #66D6C7;
+  --mim-gradient-pink-from:   #BFA19F;
+  --mim-gradient-pink-to:     #EFCAC7;
+
+  /* --- Digital tint ramps -------------------------------------------------
+     From the MIM digital design-system swatches supplied by the project
+     owner. Step 500 of each ramp corresponds to the named brand colour
+     above (with small deltas noted in data/README.md).                     */
+  --mim-purple-50:  #F5F3FF;  --mim-purple-100: #EDE1F6;
+  --mim-purple-200: #DAC5EE;  --mim-purple-300: #B197CC;
+  --mim-purple-400: #7E689A;  --mim-purple-500: #413258;
+  --mim-purple-600: #32244B;  --mim-purple-700: #25193F;
+  --mim-purple-800: #190F33;  --mim-purple-900: #11092A;
+
+  --mim-blue-50:  #E8FFF4;  --mim-blue-100: #D0FDE8;
+  --mim-blue-200: #A3FBDA;  --mim-blue-300: #74F3CF;
+  --mim-blue-400: #50E7CA;  --mim-blue-500: #1CD7C5;
+  --mim-blue-600: #14B8B8;  --mim-blue-700: #0E8E9A;
+  --mim-blue-800: #08687C;  --mim-blue-900: #054C67;
+
+  --mim-black-50:  #FCFCFC;  --mim-black-100: #F3F3F3;
+  --mim-black-200: #E8E8E8;  --mim-black-300: #BABABA;
+  --mim-black-400: #757575;  --mim-black-500: #1A1A1A;
+  --mim-black-600: #161313;  --mim-black-700: #120D0E;
+  --mim-black-800: #0F080A;  --mim-black-900: #0C0407;
+
+  /* --- Typography — "خطنا", guidelines pp.26-34 ---------------------------
+     Primary (AR + EN):   Lyon Arabic Regular  — headings and body
+     Secondary (AR + EN): Diodrum Arabic Regular — subheadings
+     Both are licensed commercial faces and are NOT redistributed here, so
+     the stacks below name them first and fall back to metrically comparable
+     faces already present on most systems. See data/README.md.             */
+  --mim-font-primary:   "Lyon Arabic", "Lyon Text", "Noto Naskh Arabic",
+                        "Times New Roman", Georgia, serif;
+  --mim-font-secondary: "Diodrum Arabic", "Diodrum", "Noto Sans Arabic",
+                        "Segoe UI", Tahoma, Arial, sans-serif;
+  --mim-font-numeric:   "Diodrum Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+}
