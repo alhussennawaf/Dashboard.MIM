@@ -225,23 +225,23 @@ for rows matching **all** of university + major + `أخرى`:
 | University | Major | `أخرى` → | Rows | Graduates | Employed |
 |---|---|---|---|---|---|
 | جامعة شقراء | حماية البيئة | `دبلوم متوسط` (5) | 4 | 269 | 88 |
+| جامعة شقراء | تقنية الهندسة الكهربائية | `دبلوم متوسط` (5) | 2 | 23 | 12 |
 | جامعة الملك فهد للبترول والمعادن | العمارة | `بكالوريوس` (6) | 4 | 38 | 13 |
 
-The match is scoped to a (university, major) pair, not a university: جامعة شقراء
-also has `أخرى` against `تقنية الهندسة الكهربائية`, which is **not** corrected.
-A rule that matches nothing aborts the parse, so a renamed major in a future
-export cannot fail silently. The corrections ship in the payload and the NQF tab
-names them on screen, so a moved number is never moved invisibly.
+The match is scoped to a (university, major) pair rather than a university,
+because جامعة شقراء had `أخرى` against two different majors and the owner
+identified them in separate passes. A rule that matches nothing aborts the
+parse, so a renamed major in a future export cannot fail silently. The
+corrections ship in the payload and the NQF tab names them on screen, so a
+moved number is never moved invisibly.
 
-**Still `غير مصنّف`: `أخرى` only** — now 5 rows, 63 graduates, 44 employed,
-0.011% of the total. Located in
+**Still `غير مصنّف`: `أخرى` only** — now 3 rows, 40 graduates, 32 employed,
+0.007% of the total. Located in
 `خريجي الجامعات للتخصصات بالمجال 0705 2020-2025.xlsx`, sheet `النتائج`,
 column **E `EducationLevel`**:
 
 | Major | University | Year | Graduates | Employed |
 |---|---|---|---|---|
-| `تقنية الهندسة الكهربائية` | جامعة شقراء | 2024 | 4 | 3 |
-| `تقنية الهندسة الكهربائية` | جامعة شقراء | 2025 | 19 | 9 |
 | `برامج ومؤهلات متعددة التخصصات تتضمن الهندسة والتصنيع والبناء` | جامعة الملك خالد | 2023 | 15 | 15 |
 | `برامج ومؤهلات متعددة التخصصات تتضمن الهندسة والتصنيع والبناء` | جامعة جازان | 2023 | 11 | 11 |
 | `التغذية وعلوم الأطعمة` | جامعة الملك خالد | 2025 | 14 | 6 |
@@ -271,7 +271,7 @@ bug cannot produce the same wrong answer on both sides. All 10 checks pass:
 | University, total employed | 97,120 |
 | University, graduates in 2025 | 27,247 |
 | University, graduates at بكالوريوس | 171,862 |
-| University, graduates still recorded as `أخرى` | 63 |
+| University, graduates still recorded as `أخرى` | 40 |
 | Occupation rows | 921 |
 | **Sector employment rate** | **0.5232871398090476** |
 
