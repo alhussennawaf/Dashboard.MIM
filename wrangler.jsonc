@@ -3,7 +3,9 @@
   // `wrangler deploy` failed before this existed because it has no way to guess
   // which directory to serve, and the repository root is the wrong answer — it
   // holds the source workbooks and the guideline PDFs. See scripts/build_site.py.
-  "name": "mim-graduates",
+  // Must match the Worker created in the Cloudflare dashboard, or the build
+  // deploys to a different Worker than the one connected to this repository.
+  "name": "dashboard-mim",
   "compatibility_date": "2026-09-09",
   "assets": {
     "directory": "./site",
