@@ -193,31 +193,30 @@ the framework places, and `NQF_MAP` deliberately does not contain them:
 | `زمالة` | university | Fellowship. Not a qualification type in the table. |
 | `أخرى` | university | Literally "other". Names no qualification at all. |
 
-### Interim placements — assigned outside the framework, pending confirmation
+### Owner-assigned placements — confirmed, but not from p.40
 
-⚠️ **Three of those four now carry a level the framework did not give them.**
-On 2026-09-07 the project owner assigned them as a working assumption while
-waiting on a confirmation email from the data owner. These are label-wide: they
+**Three of those four carry a level the framework document does not state.** The
+project owner proposed them on 2026-09-07 and **confirmed all three on
+2026-09-09**, so they are settled, not provisional. These are label-wide: they
 apply wherever the label appears. (`أخرى` is handled row by row instead — see
 the corrections below.)
 
-| Label | Interim level | Graduates | Employed |
+| Label | Level | Graduates | Employed |
 |---|---|---|---|
 | `دبلوم` | **4** | 306,040 | 138,187 |
 | `دبلوم معاهد ثانوي صناعي` | **3** | 20,875 | 3,099 |
 | `زمالة` | **8** | 4 | 2 |
 
-They live in `PROVISIONAL_NQF` in `scripts/parse_sources.py`, kept in a separate
-dict from `NQF_MAP` on purpose: `NQF_MAP` is what the document states, this is a
-decision made outside it. **To retire an entry once the email arrives**, move it
-into `NQF_MAP` (or change the level here if the answer differs) and re-run the
-parser — nothing else needs touching.
+They live in `OWNER_ASSIGNED_NQF` in `scripts/parse_sources.py`, kept in a
+separate dict from `NQF_MAP` even after confirmation, because the **provenance
+differs**: `NQF_MAP` is transcribed from the document and can be checked against
+it, these come from the data owner and cannot. Folding them together would make
+the p.40 transcription unverifiable against p.40.
 
-Nothing about this is silent. The NQF table tags each of those qualifications
-`مبدئي` in gold, the two NQF charts append `*` to every level that draws on one,
-and both views carry a note naming the label, the level and the count. About
-**59% of all graduates sit on an interim placement**, so the flag matters:
-`دبلوم` alone moves 306,040 graduates onto level 4.
+That distinction is on the page too, as a plain footnote on the NQF tab naming
+each label, its level and its count — no longer the warning it carried while the
+question was open. It is worth keeping visible: **59% of all graduates sit on an
+owner-assigned level**, `دبلوم` alone accounting for 306,040 of them.
 
 ### Level corrections — rows the owner identified
 

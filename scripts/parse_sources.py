@@ -96,14 +96,14 @@ AMBIGUOUS = {
     "زمالة": "Fellowship. Not named as a qualification type in the p.40 table.",
 }
 
-# INTERIM, NOT FROM THE FRAMEWORK.
-# Three of the labels above were given a level by the project owner on 2026-09-07
-# as a working assumption, pending a confirmation email from the data owner. They
-# are kept separate from NQF_MAP on purpose: NQF_MAP is what p.40 states, this is
-# a decision made outside the document, and the dashboard labels every figure
-# that depends on it as مبدئي. To retire it, move an entry into NQF_MAP once the
-# confirmation arrives, or change the level here if the answer differs.
-PROVISIONAL_NQF = {
+# CONFIRMED BY THE DATA OWNER, NOT READ OFF p.40.
+# Three of the labels above are not qualification types the p.40 table places.
+# The project owner proposed a level for each on 2026-09-07 and confirmed all
+# three on 2026-09-09, so they are no longer provisional. They stay in their own
+# dict rather than moving into NQF_MAP because the provenance differs: NQF_MAP is
+# transcribed from the document, these come from the data owner. The dashboard
+# says so in a footnote instead of the warning it carried while they were open.
+OWNER_ASSIGNED_NQF = {
     "دبلوم": 4,
     "دبلوم معاهد ثانوي صناعي": 3,
     "زمالة": 8,
@@ -140,10 +140,10 @@ def corrected_level(level, university, major):
 
 
 def nqf_level(label):
-    """The p.40 level for a label, else the interim one, else None."""
+    """The p.40 level for a label, else the owner-assigned one, else None."""
     if label in NQF_MAP:
         return NQF_MAP[label]
-    return PROVISIONAL_NQF.get(label)
+    return OWNER_ASSIGNED_NQF.get(label)
 
 
 def clean(value):
@@ -637,7 +637,7 @@ def main():
             "levels": NQF_LEVELS,
             "source": "nationalqualificationsframework.pdf, 3rd edition, appendix table p.40",
             "ambiguous": AMBIGUOUS,
-            "provisional": PROVISIONAL_NQF,
+            "ownerAssigned": OWNER_ASSIGNED_NQF,
             "corrections": [
                 {"university": r["university"], "major": r["major"],
                  "from": r["from"], "to": r["to"]}
