@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../assets/brand.css">
+<style>
+  /* Source artwork for site/og-image.png. Rendered at exactly 1200x630 by
+     scripts/build_images.js — Chromium shapes the Arabic correctly, which is
+     why this is a browser render and not a Pillow drawing. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1200px; height: 630px; background: #F3F3F3;
+         font-family: var(--mim-font-primary); color: var(--mim-black);
+         display: flex; flex-direction: column; overflow: hidden; }
+  .bar { height: 10px; background: var(--mim-purple); flex: none; }
+  .bar span { display: block; height: 100%; width: 34%; background: var(--mim-blue-600); }
+  .body { flex: 1; padding: 52px 64px 44px; display: flex; flex-direction: column; }
+  .top { display: flex; align-items: flex-start; justify-content: space-between; }
+  .top img { height: 62px; }
+  /* A year range is a number, not prose: RTL would render it "2025 - 2020". */
+  .kicker { font-size: 22px; color: var(--mim-grey-dark); letter-spacing: .2px;
+            padding-top: 8px; direction: ltr; }
+  h1 { font-size: 58px; line-height: 1.25; font-weight: 700; margin-top: 30px;
+       max-width: 940px; }
+  .en { font-size: 23px; color: var(--mim-grey-dark); margin-top: 14px; direction: ltr;
+        text-align: right; font-family: var(--mim-font-secondary); }
+  .stats { margin-top: auto; display: flex; gap: 54px; align-items: flex-end; }
+  .stat .n { font-size: 52px; font-variant-numeric: tabular-nums; direction: ltr;
+             line-height: 1; font-weight: 700; }
+  .stat .l { font-size: 19px; color: var(--mim-grey-dark); margin-top: 9px; }
+  .stat.voc .n { color: var(--mim-purple); }
+  .stat.uni .n { color: var(--mim-blue-800); }
+  .rule { width: 1px; align-self: stretch; background: var(--mim-black-200); }
+</style>
+</head>
+<body>
+  <div class="bar"><span></span></div>
+  <div class="body">
+    <div class="top">
+      <img src="../assets/mim-logo-primary.svg"
+           alt="وزارة الصناعة والثروة المعدنية">
+      <div class="kicker">2020 – 2025</div>
+    </div>
+    <h1>خريجو التعليم المهني والجامعي في تخصصات قطاع الصناعة والتعدين</h1>
+    <div class="en">Vocational &amp; University Graduates · Industry and Mining Sector</div>
+    <div class="stats">
+      <div class="stat"><div class="n">552,570</div><div class="l">إجمالي الخريجين</div></div>
+      <div class="rule"></div>
+      <div class="stat voc"><div class="n">548</div><div class="l">مهنة</div></div>
+      <div class="rule"></div>
+      <div class="stat uni"><div class="n">424</div><div class="l">تخصصًا</div></div>
+    </div>
+  </div>
+</body>
+</html>

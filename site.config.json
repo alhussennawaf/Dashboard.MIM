@@ -1,0 +1,12 @@
+{
+  "//": "Deploy settings. scripts/build_site.py reads this to stamp absolute URLs into the pages and to generate robots.txt and sitemap.xml.",
+
+  "//site_url": "No trailing slash. Change this one value when the custom domain goes live and re-run build_site.py; canonical, og:url, og:image and the sitemap all follow it.",
+  "site_url": "https://dashboard-mim.nawaf-husn.workers.dev",
+
+  "//cf_beacon_token": "Cloudflare Web Analytics site token. NOT a secret — it is a public identifier that ships in the page by design. Get it at Cloudflare dashboard > Analytics & Logs > Web Analytics > add a site > copy the token from the snippet. Leave empty and no analytics script is injected at all.",
+  "cf_beacon_token": "",
+
+  "//indexable": "true writes a robots.txt that allows crawling and a sitemap. false switches to Disallow plus a noindex tag.",
+  "indexable": true
+}

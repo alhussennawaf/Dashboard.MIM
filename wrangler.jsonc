@@ -11,6 +11,9 @@
     "directory": "./site",
     // Serve /index.html at "/" and redirect /index -> / rather than 404.
     "html_handling": "auto-trailing-slash",
-    "not_found_handling": "single-page-application"
+    // The dashboard routes on the hash, so a real path that does not exist is a
+    // genuine 404 and gets the custom page — not a silent fallback to the
+    // dashboard, which would return 200 for every typo.
+    "not_found_handling": "404-page"
   }
 }

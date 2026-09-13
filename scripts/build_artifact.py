@@ -56,7 +56,7 @@ def main():
     # publish call's emoji parameter, so the <link rel="icon"> would be dead.
     kept = html[head_open:head_close]
     kept = re.sub(r'\s*<meta[^>]*>', "", kept)
-    kept = re.sub(r'\s*<link rel="icon"[^>]*>', "", kept)
+    kept = re.sub(r'\s*<link rel="(?:icon|apple-touch-icon|canonical)"[^>]*>', "", kept)
 
     # The file's own <title> carries an English gloss after a pipe, which reads
     # as filler in a gallery listing. The artifact gets the name alone.

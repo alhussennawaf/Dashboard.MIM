@@ -11,9 +11,12 @@ Regenerate everything with:
 ```
 python3 scripts/parse_sources.py      # sources -> data/dashboard-data.{js,json}
 python3 scripts/verify_totals.py      # independent check of the output
+python3 scripts/build_site.py         # site/ — the files Cloudflare serves
 python3 scripts/build_standalone.py   # optional single-file build
 python3 scripts/build_artifact.py     # optional Artifact-shaped build
-python3 scripts/build_site.py         # site/ — the files Cloudflare serves
+
+node   scripts/build_images.js        # icons + og-image, only when artwork changes
+python3 scripts/build_favicon.py      # packs the icon frames into favicon.ico
 ```
 
 `index.html` is the dashboard and the source of truth. Opening it by
@@ -536,6 +539,36 @@ the browser actually asks for — `index.html`, four assets and
 directly without a build step. **Re-run `build_site.py` and commit its output
 after any change to `index.html`, `assets/` or the parsed data**, or the
 deployed page will lag behind the repository.
+
+Besides copying, `build_site.py` does four things the source files cannot do for
+themselves, all driven by **`site.config.json`**:
+
+| Setting | Effect |
+|---|---|
+| `site_url` | Replaces `__SITE_URL__` in every page, so `canonical`, `og:url` and `og:image` become absolute. Also the base for `sitemap.xml` and the `Sitemap:` line in `robots.txt`. **The one value to change when the custom domain goes live.** |
+| `cf_beacon_token` | Injects the Cloudflare Web Analytics beacon. Empty means no analytics script is emitted at all, rather than a broken one. |
+| `indexable` | `true` writes an allow-all `robots.txt` plus a sitemap; `false` writes `Disallow: /` and stamps `noindex` into every page. |
+
+It also writes `_headers`: `nosniff`, a referrer policy, `SAMEORIGIN` framing, a
+`Permissions-Policy` denying sensors, and cache lifetimes — a week for
+`/assets/*` (the vendored ECharts is 368 KB gzipped and never changes between
+deploys), an hour for `/data/*`, and revalidate-always for the HTML, which
+carries the routing.
+
+The build prints a warning rather than failing when `privacy.html` or
+`terms.html` still contain placeholder blocks, or when the analytics token is
+missing while `privacy.html` tells visitors analytics is in use. Those are
+launch blockers, not build errors.
+
+### What the page does and does not send
+
+The dashboard makes **no third-party request of any kind** unless
+`cf_beacon_token` is set — no fonts, no CDN, no tracker. With the token set, the
+one outbound request is Cloudflare's `beacon.min.js`. It sets no cookies, which
+is why the bar at the bottom of the page is a **statement, not a consent
+prompt**: asking permission for cookies that do not exist would be false. The
+only thing stored in the browser is one flag recording that the bar was
+dismissed.
 
 A Workers URL is reachable by anyone who has it. If the page should be limited
 to named people rather than to whoever the link reaches, put Cloudflare Access

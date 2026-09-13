@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://dashboard-mim.nawaf-husn.workers.dev/sitemap.xml

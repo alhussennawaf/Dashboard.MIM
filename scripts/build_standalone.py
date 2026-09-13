@@ -49,9 +49,17 @@ def main():
     html, n_js = re.subn(r'<script src="([^"]+)"></script>', inline_script, html)
     html, n_css = re.subn(r'<link rel="stylesheet" href="([^"]+)">', inline_style, html)
 
+    # The standalone file travels alone, so the canonical and og:* URLs it
+    # carries would point at a page it is not. They are dropped rather than
+    # left pointing somewhere else.
+    html = re.sub(r'\s*<link rel="canonical"[^>]*>', "", html)
+    html = re.sub(r'\s*<meta (?:property="og:|name="twitter:)[^>]*>', "", html)
+
     n_img = 0
     for rel, mime in [("assets/mim-logo-primary.svg", "image/svg+xml"),
-                      ("assets/mim-emblem.svg", "image/svg+xml")]:
+                      ("assets/mim-emblem.svg", "image/svg+xml"),
+                      ("assets/favicon.ico", "image/x-icon"),
+                      ("assets/icon-180.png", "image/png")]:
         path = ROOT / rel
         if path.exists() and rel in html:
             html = html.replace(rel, data_uri(path, mime))

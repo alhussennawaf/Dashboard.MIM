@@ -3,8 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>لوحة خريجي التعليم المهني والجامعي | MIM Graduates Dashboard</title>
-<link rel="icon" href="assets/mim-emblem.svg">
+<title>لوحة خريجي التعليم المهني والجامعي | وزارة الصناعة والثروة المعدنية</title>
+<meta name="description" content="552,570 خريجًا من التعليم المهني والجامعي في تخصصات قطاع الصناعة والتعدين، 2020–2025: 548 مهنة و424 تخصصًا، موزّعة على مستويات الإطار الوطني للمؤهلات، بنسب التوظيف والتوزيع الجغرافي.">
+<meta name="author" content="وزارة الصناعة والثروة المعدنية">
+<meta name="theme-color" content="#413258">
+<link rel="canonical" href="__SITE_URL__/">
+
+<!-- Social preview. og:image must be absolute, so the deploy build injects the
+     site URL; opened from the filesystem the token simply stays unresolved,
+     which affects nothing a local reader can see. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="وزارة الصناعة والثروة المعدنية">
+<meta property="og:locale" content="ar_SA">
+<meta property="og:url" content="__SITE_URL__/">
+<meta property="og:title" content="خريجو التعليم المهني والجامعي في تخصصات قطاع الصناعة والتعدين">
+<meta property="og:description" content="552,570 خريجًا بين 2020 و2025، عبر 548 مهنة و424 تخصصًا، مقابل مستويات الإطار الوطني للمؤهلات.">
+<meta property="og:image" content="__SITE_URL__/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="لوحة خريجي التعليم المهني والجامعي في تخصصات قطاع الصناعة والتعدين، 2020 إلى 2025">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="خريجو التعليم المهني والجامعي في تخصصات قطاع الصناعة والتعدين">
+<meta name="twitter:description" content="552,570 خريجًا بين 2020 و2025، عبر 548 مهنة و424 تخصصًا، مقابل مستويات الإطار الوطني للمؤهلات.">
+<meta name="twitter:image" content="__SITE_URL__/assets/og-image.png">
+
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="assets/mim-emblem.svg">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
 <link rel="stylesheet" href="assets/brand.css">
 <style>
 /* ==========================================================================
@@ -303,6 +328,42 @@ footer { padding: 20px clamp(14px, 2.6vw, 36px) 36px; color: var(--mim-grey-dark
          margin-top: 24px; }
 footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5px;
               border-radius: 2px; direction: ltr; display: inline-block; }
+.footlinks { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.footlinks a { color: var(--mim-grey-dark); display: inline-flex; align-items: center;
+               min-height: 44px; padding: 0 8px; }
+
+/* ---------- privacy notice ---------- */
+.notice {
+  position: fixed; inset-inline: 0; bottom: 0; z-index: 70;
+  background: #fff; border-top: 3px solid var(--mim-purple);
+  box-shadow: 0 -3px 16px rgba(26,26,26,.12);
+  padding: 13px clamp(14px, 2.6vw, 36px);
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  font-size: 13px; color: var(--mim-grey-dark);
+}
+.notice[hidden] { display: none; }   /* display:flex above would win otherwise */
+.notice p { margin: 0; flex: 1 1 300px; }
+.notice button {
+  font: inherit; font-size: 13px; cursor: pointer; flex: none;
+  background: var(--mim-purple); color: #fff; border: 1px solid var(--mim-purple);
+  border-radius: 2px; padding: 9px 22px; min-height: 44px;
+}
+.notice button:hover { background: var(--mim-purple-600); border-color: var(--mim-purple-600); }
+
+/* ---------- touch targets and tab overflow (small screens) ---------- */
+/* The tab strip scrolls sideways under ~700px, which hid three of the six
+   sections with nothing to show they existed. The fade marks the cut edge. */
+@media (max-width: 700px) {
+  .tabbar {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    mask-image: linear-gradient(to left, #000 calc(100% - 26px), transparent);
+  }
+  .tab { scroll-snap-align: start; padding-top: 15px; padding-bottom: 15px; }
+  .chip { padding: 10px 14px; min-height: 44px; }
+  .browse-head input[type="search"], .browse-head select { min-height: 44px; }
+  .notice { font-size: 12.5px; }
+}
 </style>
 </head>
 <body>
@@ -328,7 +389,24 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5p
 
 <main id="view"></main>
 
-<footer><div id="provenance"></div></footer>
+<footer>
+  <div id="provenance"></div>
+  <nav class="footlinks" aria-label="روابط عامة">
+    <a href="/privacy.html">سياسة الخصوصية</a>
+    <a href="/terms.html">الشروط والأحكام</a>
+  </nav>
+</footer>
+
+<!-- Not a cookie consent dialog, because there is nothing to consent to: the
+     page sets no cookies and the analytics is cookieless. A prompt asking
+     permission for cookies that do not exist would be false. This states the
+     position instead, and closing it is remembered so it is shown once. -->
+<div class="notice" id="privacyNotice" role="note" hidden>
+  <p>لا يستخدم هذا الموقع ملفات ارتباط (Cookies)، ولا يجمع بيانات شخصية.
+     تُقاس الزيارات بخدمة إحصاء لا تتعقّب الزائر.
+     <a href="/privacy.html">سياسة الخصوصية</a></p>
+  <button type="button" id="noticeOk">حسنًا</button>
+</div>
 
 <script src="assets/echarts.min.js"></script>
 <script src="data/dashboard-data.js"></script>
@@ -623,8 +701,14 @@ function card(title, hint, body, span) {
   return '<section class="card ' + (span || "") + '"><h2>' + esc(title) + '</h2>' +
     (hint ? '<p class="hint">' + esc(hint) + '</p>' : "") + body + '</section>';
 }
+/* A chart renders to <canvas>, which carries no text. role="img" plus a label
+   gives a screen reader the chart's subject; the numbers themselves are in the
+   البيانات tab, which is the accessible equivalent of the whole dashboard. */
 function chartCard(title, hint, id, span, cls) {
-  return card(title, hint, '<div class="chart ' + (cls || "") + '" id="' + id + '"></div>', span);
+  var label = title + (hint ? " · " + hint : "") + " — رسم بياني";
+  return card(title, hint,
+    '<div class="chart ' + (cls || "") + '" id="' + id + '" role="img" aria-label="' +
+    esc(label) + '"></div>', span);
 }
 /* Levels the p.40 table does not state, assigned by the data owner and since
    confirmed. Not a caveat any more, but still a different source from the rest
@@ -734,7 +818,10 @@ function viewOverview() {
       chartCard("التوزيع حسب الجنس", "By gender · الفئة غير المتوفرة بنقش مائل", "oGender", "span4") +
       card("حسب مستوى الإطار الوطني للمؤهلات", "",
         '<p class="hint prov" id="oNqfProv"></p>' +
-        '<p class="hint" id="oNqfNote"></p><div class="chart" id="oNqf"></div>', "span6") +
+        '<p class="hint" id="oNqfNote"></p>' +
+        '<div class="chart" id="oNqf" role="img" ' +
+        'aria-label="توزيع الخريجين على مستويات الإطار الوطني للمؤهلات — رسم بياني"></div>',
+        "span6") +
       chartCard("التوزيع الجغرافي", "By region · المناطق الإدارية", "oRegion", "span6", "tall") +
       chartCard("أعلى التخصصات المهنية", "Top vocational specializations", "oVocMaj", "span6", "tall") +
       chartCard("أعلى التخصصات الجامعية", "Top university specializations", "oUniMaj", "span6", "tall") +
@@ -1616,6 +1703,22 @@ document.getElementById("provenance").innerHTML =
   "مستويات الإطار الوطني للمؤهلات من " + esc(D.nqf.source) + ". " +
   "الهوية البصرية وفق إرشادات العلامة التجارية لوزارة الصناعة والثروة المعدنية (الإصدار 1.1). " +
   "تفاصيل التحليل ومصادر كل قيمة في <code>data/README.md</code>.";
+
+/* The notice is shown until dismissed. localStorage is the only thing this
+   page stores, it holds one boolean, and it never leaves the browser — so a
+   private window or blocked storage just means the notice shows again. */
+(function () {
+  var el = document.getElementById("privacyNotice");
+  if (!el) return;
+  var KEY = "mim.notice.seen";
+  var seen = false;
+  try { seen = localStorage.getItem(KEY) === "1"; } catch (e) {}
+  if (!seen) el.hidden = false;
+  document.getElementById("noticeOk").addEventListener("click", function () {
+    el.hidden = true;
+    try { localStorage.setItem(KEY, "1"); } catch (e) {}
+  });
+})();
 
 buildTabs();
 buildFilters();

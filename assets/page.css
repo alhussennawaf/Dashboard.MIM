@@ -1,0 +1,148 @@
+/* ==========================================================================
+   Layout for the standalone pages — privacy, terms, 404.
+   These are plain documents, not the dashboard: they load brand.css for the
+   tokens and this for the reading column. No charts, no data, no script.
+   ========================================================================== */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--mim-black-100);
+  color: var(--mim-grey-darkest);
+  font-family: var(--mim-font-primary);
+  font-size: 15.5px;
+  line-height: 1.75;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ------------------------------- masthead ------------------------------- */
+.masthead {
+  background: #fff;
+  border-bottom: 1px solid var(--mim-black-200);
+  padding: 16px clamp(16px, 4vw, 44px);
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 2.5vw, 28px);
+}
+.masthead img { height: clamp(38px, 4.6vw, 52px); width: auto; }
+.masthead a.home {
+  margin-inline-start: auto;
+  font-size: 13.5px;
+  color: var(--mim-purple);
+  text-decoration: none;
+  border: 1px solid var(--mim-black-200);
+  padding: 9px 15px;
+  border-radius: 2px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+}
+.masthead a.home:hover { background: var(--mim-black-100); }
+
+/* -------------------------------- sheet --------------------------------- */
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 760px;
+  margin: clamp(20px, 4vw, 40px) auto;
+  padding: 0 clamp(16px, 4vw, 24px);
+}
+.sheet {
+  background: #fff;
+  border: 1px solid var(--mim-black-200);
+  border-top: 3px solid var(--mim-purple);
+  padding: clamp(22px, 4vw, 42px);
+}
+
+h1 { font-size: clamp(22px, 3.4vw, 31px); line-height: 1.3; margin-bottom: 6px; }
+.sub {
+  font-size: 13px;
+  color: var(--mim-grey-dark);
+  margin-bottom: 26px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--mim-black-200);
+}
+h2 {
+  font-size: clamp(16px, 2vw, 19px);
+  margin: 30px 0 9px;
+  padding-inline-start: 11px;
+  border-inline-start: 3px solid var(--mim-blue-600);
+}
+h2:first-of-type { margin-top: 0; }
+p { margin-bottom: 13px; }
+ul, ol { margin: 0 0 13px; padding-inline-start: 22px; }
+li { margin-bottom: 6px; }
+strong { font-weight: 600; }
+a { color: var(--mim-purple); }
+code {
+  font-size: 12.5px;
+  background: var(--mim-black-200);
+  padding: 1px 5px;
+  border-radius: 2px;
+  direction: ltr;
+  display: inline-block;
+}
+
+/* A block the Ministry has still to supply. Deliberately impossible to mistake
+   for finished copy — it must read as unfinished to anyone who lands on it. */
+.placeholder {
+  background: #FDF6E3;
+  border: 1px dashed #C9A227;
+  border-inline-start-width: 3px;
+  padding: 15px 18px;
+  margin: 16px 0 22px;
+  font-size: 14.5px;
+  color: #6B5200;
+}
+.placeholder strong { color: #4A3800; }
+
+.factual {
+  background: var(--mim-black-50);
+  border: 1px solid var(--mim-black-200);
+  padding: 15px 18px;
+  margin: 16px 0 22px;
+  font-size: 14.5px;
+}
+
+/* -------------------------------- footer -------------------------------- */
+footer {
+  border-top: 1px solid var(--mim-black-200);
+  padding: 18px clamp(16px, 4vw, 44px);
+  font-size: 12.5px;
+  color: var(--mim-grey-dark);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: center;
+}
+footer a { color: var(--mim-grey-dark); }
+footer nav { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-inline-start: auto; }
+
+/* ------------------------------ 404 specific ---------------------------- */
+.code404 {
+  font-size: clamp(54px, 11vw, 88px);
+  line-height: 1;
+  color: var(--mim-purple);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  margin-bottom: 10px;
+}
+.actions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 24px; }
+.actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 20px;
+  border-radius: 2px;
+  text-decoration: none;
+  font-size: 14.5px;
+  border: 1px solid var(--mim-black-200);
+  color: var(--mim-grey-darkest);
+}
+.actions a.primary {
+  background: var(--mim-purple);
+  border-color: var(--mim-purple);
+  color: #fff;
+}
