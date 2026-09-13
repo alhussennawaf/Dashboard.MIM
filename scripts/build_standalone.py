@@ -87,7 +87,7 @@ def main():
     # been — which is exactly how a regex that over-matched went unnoticed.
     floor = SRC.stat().st_size + sum(
         (ROOT / r).stat().st_size for r in
-        ("assets/echarts.min.js", "data/dashboard-data.js"))
+        ("assets/echarts.min.js", "assets/reactbits.js", "data/dashboard-data.js"))
     if len(html.encode("utf-8")) < floor * 0.98:
         sys.exit(f"output is {len(html.encode('utf-8')):,} bytes but its sources "
                  f"alone are {floor:,} — stripping removed too much")

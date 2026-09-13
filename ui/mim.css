@@ -1,0 +1,228 @@
+/* ============================================================================
+   React Bits, wearing the ministry's palette
+   ----------------------------------------------------------------------------
+   The components ship with their own stylesheet — a dark, rounded, generic
+   look. Those files are vendored unmodified under ui/reactbits/, and every
+   difference between that look and this dashboard is stated here instead, so
+   the vendored copies stay diffable against upstream.
+
+   No colour below is a new colour. Each one is a token from assets/brand.css,
+   or a stated alpha over one, so the guideline ratio on p.34 — greys carrying
+   the layout, purple and teal as accent — survives the redesign.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Island plumbing
+   -------------------------------------------------------------------------- */
+
+/* The box React gives a wrapper so it can hold markup React did not render.
+   It must not exist as far as layout is concerned: these sit inside CSS grids
+   whose children are the dashboard's own cards. */
+.rb-adopt { display: contents; }
+
+/* The click spark canvas covers the viewport and never takes a click; the
+   events are forwarded to it from the document (see ui/index.jsx). */
+.rb-spark-layer {
+  position: fixed; inset: 0; z-index: 200; pointer-events: none;
+}
+.rb-spark-layer > div { pointer-events: none !important; }
+
+/* --------------------------------------------------------------------------
+   Hero — Aurora, ShinyText, GradientText, CountUp, StarBorder
+   The darkest brand grey with the aurora behind it. The aurora is the only
+   saturated field on the page and it is capped at 42% so the band still reads
+   as grey, which is what the usage ratio asks for.
+   -------------------------------------------------------------------------- */
+.hero {
+  position: relative;
+  background: var(--mim-black-500);
+  color: #fff;
+  overflow: hidden;
+  isolation: isolate;
+}
+.hero-inner {
+  position: relative;
+  padding: clamp(26px, 4.2vw, 54px) clamp(14px, 2.6vw, 36px) clamp(22px, 3.4vw, 40px);
+  max-width: 2200px; margin: 0 auto;
+}
+.hero-aurora {
+  position: absolute; inset: -20% 0 -35%;
+  opacity: .42;
+  pointer-events: none;
+  z-index: 0;
+}
+/* Aurora is a rectangle of light with a hard top edge. Fading it into the
+   band's own grey is what turns it from a panel into an atmosphere. */
+.hero::after {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(to bottom,
+              rgba(26,26,26,.55) 0%, rgba(26,26,26,0) 42%, rgba(26,26,26,.72) 100%);
+}
+.hero-copy { position: relative; z-index: 2; }
+
+.hero-eyebrow.shiny-text,
+.hero-eyebrow {
+  font-size: clamp(11px, 1vw, 13px);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  display: inline-block;
+  margin-bottom: clamp(8px, 1.2vw, 14px);
+}
+
+/* GradientText centres itself in a pill and animates a gradient through the
+   glyphs. Here it is a headline, so it sits at the start of the line and drops
+   the pill: no border, no backdrop blur, no pointer affordance. */
+.hero-headline.animated-gradient-text {
+  margin: 0; max-width: none; justify-content: flex-start;
+  border-radius: 0; backdrop-filter: none; cursor: default;
+  font-family: var(--mim-font-primary); font-weight: 400;
+  font-size: clamp(21px, 3.1vw, 44px); line-height: 1.28;
+}
+.hero-headline .text-content { display: inline; }
+
+.hero-figures {
+  display: flex; flex-wrap: wrap; align-items: flex-end;
+  gap: clamp(16px, 3vw, 46px);
+  margin-top: clamp(18px, 2.6vw, 32px);
+}
+.hero-figure-value {
+  font-family: var(--mim-font-primary);
+  font-size: clamp(22px, 2.4vw, 34px); line-height: 1.05;
+  font-variant-numeric: tabular-nums; direction: ltr; text-align: start;
+  color: #fff;
+}
+.hero-figure.is-lead .hero-figure-value {
+  font-size: clamp(34px, 5.2vw, 68px);
+  color: var(--mim-blue-300);
+}
+.hero-figure-label {
+  font-size: clamp(10.5px, 1vw, 12.5px);
+  color: var(--mim-grey-medium);
+  margin-top: 6px; letter-spacing: .04em;
+}
+.hero-period { margin-inline-start: auto; }
+
+/* Off the overview the band keeps the totals and the period and drops the
+   headline: a reader who has drilled into one occupation needs the context
+   strip, not the title card, and the charts below want the height back. */
+.hero-inner.is-compact { padding-block: clamp(14px, 1.8vw, 22px); }
+.hero-inner.is-compact .hero-figures { margin-top: 0; gap: clamp(14px, 2.4vw, 38px); }
+.hero-inner.is-compact .hero-figure.is-lead .hero-figure-value {
+  font-size: clamp(26px, 3.2vw, 42px);
+}
+.hero-inner.is-compact .hero-figure-value { font-size: clamp(18px, 1.9vw, 26px); }
+/* StarBorder's own metrics are made for a call-to-action button; this is a
+   date range, so it is tightened and the text set in the numeric face. */
+.hero-period .star-border-container { border-radius: 3px; }
+.hero-period .inner-content {
+  border-radius: 2px; padding: 9px 20px;
+  font-family: var(--mim-font-numeric); font-size: clamp(13px, 1.25vw, 16px);
+  letter-spacing: .1em; direction: ltr; backdrop-filter: blur(3px);
+}
+
+@media (max-width: 700px) {
+  .hero-period { margin-inline-start: 0; width: 100%; }
+}
+
+/* --------------------------------------------------------------------------
+   Navigation — GooeyNav
+   The gooey seam is a blur-plus-contrast filter that only resolves over a dark
+   field, so the section bar is the darkest brand grey. The blob is teal, the
+   settled pill is teal, and the label inverts to ink on it.
+   -------------------------------------------------------------------------- */
+.nav-gooey { position: relative; }
+.nav-gooey .gooey-nav-container nav ul {
+  gap: clamp(2px, .6vw, 10px);
+  padding: 0 clamp(4px, 1vw, 12px);
+  color: var(--mim-grey-light);
+  text-shadow: none;
+  align-items: stretch;
+}
+.nav-gooey .gooey-nav-container nav ul li {
+  border-radius: 3px;
+  white-space: nowrap;
+  font-size: clamp(12.5px, 1.05vw, 15px);
+  color: var(--mim-grey-light);
+  display: flex; align-items: center;
+}
+.nav-gooey .gooey-nav-container nav ul li a {
+  padding: 14px clamp(10px, 1.4vw, 20px);
+  color: inherit; text-decoration: none;
+  display: flex; align-items: center; gap: 7px;
+}
+.nav-gooey .gooey-nav-container nav ul li::after { border-radius: 3px; }
+.nav-gooey .gooey-nav-container nav ul li.active,
+.nav-gooey .gooey-nav-container .effect.text.active { color: var(--mim-grey-darkest); }
+.nav-gooey .gooey-nav-container nav ul li.active::after { background: var(--mim-blue-500); }
+.nav-gooey .gooey-nav-container .effect.filter::before { background: var(--mim-black-500); }
+.nav-gooey .gooey-nav-container .effect.filter::after { background: var(--mim-blue-500); }
+.nav-gooey .gooey-nav-container .effect.text { color: var(--mim-grey-light); }
+.nav-gooey .gooey-nav-container nav ul li:focus-within:has(:focus-visible) {
+  box-shadow: 0 0 0.5px 2px var(--mim-blue-500);
+}
+/* The counts the old tab strip carried, kept: they say how much is behind the
+   label before you spend a click finding out. */
+.nav-gooey .nav-label { display: inline-flex; align-items: baseline; gap: 7px; }
+.nav-gooey .nav-count {
+  font-size: 10.5px; font-variant-numeric: tabular-nums; direction: ltr;
+  opacity: .62; letter-spacing: 0;
+}
+/* GooeyNav mirrors the active label into a second, absolutely placed copy so
+   the colour can cross-fade with the blob. That copy is built from innerText,
+   and these labels carry a count on its own line — so the ghost lands as two
+   lines stacked over one. The blob is the effect worth having; the real label
+   already recolours through .active, so the copy is dropped. */
+.nav-gooey .gooey-nav-container .effect.text { display: none; }
+
+/* --------------------------------------------------------------------------
+   KPI tiles — SpotlightCard + CountUp
+   SpotlightCard's shell is a dark rounded panel. The dashboard's cards are
+   white, square and hairline-bordered, and that is what is kept; only the
+   spotlight itself is new.
+   -------------------------------------------------------------------------- */
+.card-spotlight.kpi {
+  border-radius: 2px;
+  border: 1px solid var(--mim-black-200);
+  border-top: 3px solid var(--mim-grey-medium);
+  background-color: #fff;
+  padding: 16px 18px;
+  transition: border-top-color .25s ease, transform .25s ease, box-shadow .25s ease;
+}
+.card-spotlight.kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 26px rgba(26, 26, 26, .10);
+}
+.card-spotlight.kpi.is-voc { border-top-color: var(--mim-purple); }
+.card-spotlight.kpi.is-uni { border-top-color: var(--mim-blue-600); }
+.card-spotlight.kpi:hover::before, .card-spotlight.kpi:focus-within::before { opacity: 1; }
+
+/* --------------------------------------------------------------------------
+   Masthead title — SplitText
+   Split by word, never by character: Arabic is cursive and splitting a word
+   into glyphs severs the joins, which turns a sentence into nonsense.
+   -------------------------------------------------------------------------- */
+.split-parent { display: inline-block; }
+.masthead .split-parent { overflow: visible; }
+.split-word { display: inline-block; will-change: transform, opacity; }
+
+/* --------------------------------------------------------------------------
+   GlareHover
+   Used on the specialization tiles, where the glare is the only thing telling
+   you the tile is a door. Its box is supplied by the dashboard's own rules.
+   -------------------------------------------------------------------------- */
+.glare-hover.rb-glare {
+  width: 100%; height: 100%; display: grid; place-items: stretch;
+  border: none; background: transparent; border-radius: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Reduced motion
+   The components are given still variants in JS; these cover the parts that
+   are pure CSS animation.
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .border-gradient-bottom, .border-gradient-top,
+  .particle, .point { animation: none !important; }
+  .card-spotlight.kpi { transition: none; }
+  .card-spotlight.kpi:hover { transform: none; }
+}
