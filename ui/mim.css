@@ -167,12 +167,25 @@
   font-size: 10.5px; font-variant-numeric: tabular-nums; direction: ltr;
   opacity: .62; letter-spacing: 0;
 }
-/* GooeyNav mirrors the active label into a second, absolutely placed copy so
-   the colour can cross-fade with the blob. That copy is built from innerText,
-   and these labels carry a count on its own line — so the ghost lands as two
-   lines stacked over one. The blob is the effect worth having; the real label
-   already recolours through .active, so the copy is dropped. */
+/* GooeyNav paints the travelling blob over the item it lands on, and mirrors
+   the active label into a second, absolutely placed copy so something is still
+   legible on top of it. That copy is built from innerText, and these labels
+   carry a count — which the copy would flatten to one size and, because the
+   label is a flex row, onto a second line.
+
+   So the copy is dropped and the blob is moved behind the list instead. The
+   real label then stays the thing you read, with its count still set small,
+   in the active state as well as the inactive one. The blob has to be lifted
+   out of the list's stacking order to get there: a mix-blend-mode element is
+   composited over ordinary content of a higher z-index, so "below" here means
+   a negative index, not a smaller positive one.
+
+   The band is the nearest stacking context (it is sticky with a z-index), so
+   -1 puts the blob above the band's own dark ground and below every label —
+   which is where the particles want to be too, since they burst outside the
+   pill into empty band. */
 .nav-gooey .gooey-nav-container .effect.text { display: none; }
+.nav-gooey .gooey-nav-container .effect.filter { z-index: -1; }
 
 /* --------------------------------------------------------------------------
    KPI tiles — SpotlightCard + CountUp
