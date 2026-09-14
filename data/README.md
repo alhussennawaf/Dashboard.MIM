@@ -370,6 +370,27 @@ installed. No path data or colour was altered; `mim-emblem.svg` differs from
 
 ---
 
+### What the 2026 redesign does with it
+
+The redesign changes the arrangement, not the palette. Every value it uses is a
+token from `assets/brand.css`, read at runtime rather than retyped, so the
+provenance table above still covers all of it:
+
+| Element | Colour | Token |
+|---|---|---|
+| Band under the masthead | darkest brand grey | `--mim-black-500` |
+| Aurora over that band | purple → teal → digital purple, at 42% | `--mim-purple`, `--mim-blue`, `--mim-gradient-purple-from` |
+| Section navigation, active | teal pill, ink label | `--mim-blue-500`, `--mim-grey-darkest` |
+| Masthead hairline | purple → teal → light purple | `--mim-purple`, `--mim-blue-600`, `--mim-purple-300` |
+| KPI spotlight | purple or teal at 14–20% | `--mim-purple`, `--mim-blue` |
+| Detail headings | purple → deep teal → digital purple | `--mim-purple`, `--mim-blue-700`, `--mim-gradient-purple-from` |
+| Click spark | teal | `--mim-blue` |
+
+The usage ratio on p.34 is what caps the aurora: it is the only saturated field
+on the page, it sits at 42% over grey, and everything else the redesign adds is
+a pill, a rule or a figure. The chart palette in §7 is untouched — the redesign
+does not put colour anywhere a chart has to be read.
+
 ## 7. Chart colour
 
 The MIM palette yields exactly **two** hues that remain distinguishable under
@@ -509,6 +530,17 @@ silently borrowing a specialization's text.
 
 Occupations are addressed by `رمز المهنة` in the URL and specializations by
 their position within the occupation, so both are stable across re-parses.
+
+### Interface layer
+
+The chrome around that structure — the masthead, the aurora band under it, the
+section navigation, the KPI tiles and the reveals — is built with components
+from [React Bits](https://reactbits.dev), mounted as islands into the markup the
+ES5 dashboard writes. The source is in `ui/`, bundled by
+`scripts/build_ui.mjs` into the committed `assets/reactbits.js` and
+`assets/reactbits.css`; `ui/README.md` describes the bridge, and §6 below still
+governs every colour it uses. Nothing in that layer touches the data: with the
+bundle blocked the dashboard renders exactly as it did before it existed.
 
 ---
 

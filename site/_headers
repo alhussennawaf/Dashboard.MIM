@@ -6,8 +6,9 @@
   X-Frame-Options: SAMEORIGIN
   Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()
 
-# Vendored library and artwork: change rarely, and a stale copy is only ever a
-# revalidation away. This is the repeat-visit win — 368 KB of ECharts gzipped.
+# Vendored libraries and artwork: change rarely, and a stale copy is only ever
+# a revalidation away. This is the repeat-visit win — ECharts and the React
+# Bits bundle are the two large ones, and neither moves between deploys.
 /assets/*
   Cache-Control: public, max-age=604800
 

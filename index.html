@@ -31,6 +31,9 @@
 <link rel="icon" type="image/svg+xml" href="assets/mim-emblem.svg">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <link rel="stylesheet" href="assets/brand.css">
+<!-- The React Bits layer: one stylesheet and one bundle, both built from
+     ui/ by scripts/build_ui.mjs and vendored the same way ECharts is. -->
+<link rel="stylesheet" href="assets/reactbits.css">
 <style>
 /* ==========================================================================
    Colour comes from assets/brand.css (MIM guideline values, with provenance).
@@ -50,11 +53,17 @@ body {
 h1, h2, h3, h4 { font-family: var(--mim-font-primary); font-weight: 400; margin: 0; }
 a { color: var(--mim-purple); }
 
-/* ---------- masthead ---------- */
+/* ---------- masthead ----------
+   The identity plate. It stays white and unanimated behind the logo: the
+   ministry's primary mark is drawn in dark ink over metallic greys and has no
+   reversed variant in the asset set, so nothing may be put behind it that
+   would ask it to sit on anything but white. The movement starts one band
+   lower, where the mark is not. */
 .masthead {
-  background: #fff; border-bottom: 3px solid var(--mim-purple);
+  background: #fff;
   padding: 15px clamp(14px, 2.6vw, 36px);
   display: flex; align-items: center; gap: clamp(14px, 2.6vw, 32px); flex-wrap: wrap;
+  position: relative; z-index: 2;
 }
 .masthead img { height: clamp(34px, 4vw, 52px); width: auto; flex: none; }
 .masthead .titles { flex: 1 1 300px; min-width: 0; }
@@ -63,40 +72,53 @@ a { color: var(--mim-purple); }
   font-family: var(--mim-font-secondary); color: var(--mim-grey-dark);
   font-size: clamp(10.5px, .95vw, 13px); direction: ltr; text-align: right;
 }
-.masthead .period {
-  font-variant-numeric: tabular-nums; background: var(--mim-purple); color: #fff;
-  padding: 6px 15px; border-radius: 2px; font-size: clamp(12px, 1.2vw, 16px);
-  letter-spacing: .06em; direction: ltr; flex: none;
+/* A hairline in brand teal rather than the old 3px purple rule: the purple is
+   spent on the band below, and two heavy rules stacked read as a mistake. */
+.masthead::after {
+  content: ""; position: absolute; inset-inline: 0; bottom: 0; height: 2px;
+  background: linear-gradient(to left,
+              var(--mim-purple) 0%, var(--mim-blue-600) 55%, var(--mim-purple-300) 100%);
 }
 
-/* ---------- tabs ---------- */
-.tabbar {
-  background: #fff; border-bottom: 1px solid var(--mim-black-200);
-  padding: 0 clamp(10px, 2.6vw, 36px);
-  display: flex; gap: 2px; overflow-x: auto; position: sticky; top: 0; z-index: 30;
-  scrollbar-width: thin;
+/* ---------- section band ----------
+   GooeyNav's seam is a blur-and-contrast filter, which only resolves over a
+   dark field — so this band is the darkest brand grey, which is also what the
+   aurora above it needs to read as light rather than as a coloured panel. */
+.navband {
+  background: var(--mim-black-500);
+  position: sticky; top: 0; z-index: 30;
+  box-shadow: 0 1px 0 rgba(255,255,255,.07), 0 6px 18px rgba(26,26,26,.20);
 }
-.tab {
-  font: inherit; font-size: clamp(13px, 1.1vw, 15px);
-  padding: 13px clamp(12px, 1.5vw, 22px); cursor: pointer; white-space: nowrap;
-  background: none; border: none; border-bottom: 3px solid transparent;
-  color: var(--mim-grey-dark); margin-bottom: -1px;
+.navband-inner {
+  max-width: 2200px; margin: 0 auto;
+  padding: 0 clamp(6px, 2vw, 28px);
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: thin;
 }
-.tab:hover { color: var(--mim-purple); background: var(--mim-purple-50); }
-.tab[aria-selected="true"] {
-  color: var(--mim-purple); border-bottom-color: var(--mim-blue-500); font-weight: 600;
+.navband-inner::-webkit-scrollbar { height: 3px; }
+.navband-inner::-webkit-scrollbar-thumb { background: var(--mim-grey-dark); }
+/* Before the bundle has run there is nothing in here, and a band that
+   collapses to nothing and then springs open shifts the whole page. */
+.navband-inner:empty { height: 48px; }
+
+/* Without the bundle the sections are still a list of links on the same dark
+   band — no blob, same reach. */
+.navband-fallback { display: flex; gap: 2px; }
+.navband-fallback a {
+  color: var(--mim-grey-light); text-decoration: none; white-space: nowrap;
+  padding: 14px clamp(10px, 1.4vw, 20px); font-size: clamp(12.5px, 1.05vw, 15px);
+  display: flex; align-items: center; gap: 7px;
 }
-.tab .count {
-  font-size: 11px; color: var(--mim-grey-medium); margin-inline-start: 6px;
-  font-variant-numeric: tabular-nums; direction: ltr; display: inline-block;
+.navband-fallback a[aria-current="page"] {
+  background: var(--mim-blue-500); color: var(--mim-grey-darkest); border-radius: 3px;
 }
+.navband-fallback .nav-count { font-size: 10.5px; opacity: .62; direction: ltr; }
 
 /* ---------- global filter strip ---------- */
 .globalbar {
-  background: var(--mim-black-50); border-bottom: 1px solid var(--mim-black-200);
-  padding: 9px clamp(14px, 2.6vw, 36px);
+  background: #fff; border-bottom: 1px solid var(--mim-black-200);
+  padding: 10px clamp(14px, 2.6vw, 36px);
   display: flex; gap: clamp(12px, 2vw, 28px); align-items: center; flex-wrap: wrap;
-  position: sticky; top: 47px; z-index: 29;
+  position: sticky; top: 48px; z-index: 29;
 }
 .globalbar .lab {
   font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
@@ -105,12 +127,15 @@ a { color: var(--mim-purple); }
 .chips { display: flex; gap: 5px; flex-wrap: wrap; }
 .chip {
   font: inherit; font-size: 12.5px; font-variant-numeric: tabular-nums;
-  padding: 4px 12px; cursor: pointer; border: 1px solid var(--mim-black-300);
-  background: #fff; color: var(--mim-grey-dark); border-radius: 2px;
+  padding: 5px 13px; cursor: pointer; border: 1px solid var(--mim-black-300);
+  background: #fff; color: var(--mim-grey-dark); border-radius: 999px;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease;
 }
 .chip:hover { border-color: var(--mim-purple); color: var(--mim-purple); }
-.chip[aria-pressed="true"] { background: var(--mim-purple); border-color: var(--mim-purple); color: #fff; }
-.chip:focus-visible, .tab:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 2px; }
+.chip[aria-pressed="true"] {
+  background: var(--mim-purple); border-color: var(--mim-purple); color: #fff;
+}
+.chip:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 2px; }
 
 main { padding: clamp(14px, 2.2vw, 30px); max-width: 2200px; margin: 0 auto; }
 
@@ -124,6 +149,13 @@ main { padding: clamp(14px, 2.2vw, 30px); max-width: 2200px; margin: 0 auto; }
 
 .kpis { display: grid; gap: 13px; margin-bottom: 18px;
         grid-template-columns: repeat(auto-fit, minmax(196px, 1fr)); }
+/* The tile's shell — white, square, hairline, coloured top rule — is stated
+   in ui/mim.css, where it overrides SpotlightCard's own dark panel. What is
+   left here is the type inside it, which React Bits has no opinion about. */
+/* The island is the grid cell; the tile inside it fills the cell whether it is
+   the static markup or the SpotlightCard that replaces it. */
+.kpi-island { display: flex; min-width: 0; }
+.kpi-island > * { flex: 1 1 auto; min-width: 0; }
 .kpi { background: #fff; padding: 16px 18px; border: 1px solid var(--mim-black-200);
        border-top: 3px solid var(--mim-grey-medium); }
 .kpi.is-voc { border-top-color: var(--mim-purple); }
@@ -137,8 +169,15 @@ main { padding: clamp(14px, 2.2vw, 30px); max-width: 2200px; margin: 0 auto; }
 /* align-items:start keeps a short card from stretching to match a tall
    neighbour, which otherwise leaves a large void beside long lists. */
 .grid { display: grid; gap: 15px; grid-template-columns: repeat(12, 1fr); align-items: start; }
+/* Every card is wrapped so React Bits' AnimatedContent can reveal it on
+   scroll. The wrapper is the grid child, which is why the column spans live
+   on it and not on the card — and why it is in the markup from the start,
+   rather than being inserted around the card afterwards: the chart inside
+   measures itself before the bundle hydrates, and it must measure the width
+   it is going to keep. */
+.cardwrap { grid-column: span 12; min-width: 0; }
 .card { background: #fff; border: 1px solid var(--mim-black-200);
-        padding: 15px clamp(11px, 1.3vw, 19px) 11px; min-width: 0; grid-column: span 12; }
+        padding: 15px clamp(11px, 1.3vw, 19px) 11px; min-width: 0; }
 .card > h2 { font-size: clamp(14px, 1.25vw, 18px); margin-bottom: 2px; }
 .card > .hint { font-size: 11.5px; color: var(--mim-grey-dark); margin-bottom: 9px; }
 /* A figure that rests on a level assigned outside the framework, pending
@@ -148,9 +187,11 @@ main { padding: clamp(14px, 2.2vw, 30px); max-width: 2200px; margin: 0 auto; }
 .chart { width: 100%; height: 320px; }
 .chart.tall { height: 440px; }
 .chart.short { height: 240px; }
-@media (min-width: 880px)  { .span6 { grid-column: span 6; } }
-@media (min-width: 1320px) { .span4 { grid-column: span 4; } .span8 { grid-column: span 8; }
-                             .span3 { grid-column: span 3; } .span9 { grid-column: span 9; } }
+@media (min-width: 880px)  { .cardwrap.span6 { grid-column: span 6; } }
+@media (min-width: 1320px) { .cardwrap.span4 { grid-column: span 4; }
+                             .cardwrap.span8 { grid-column: span 8; }
+                             .cardwrap.span3 { grid-column: span 3; }
+                             .cardwrap.span9 { grid-column: span 9; } }
 
 /* ---------- tables ---------- */
 .table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; }
@@ -200,6 +241,15 @@ input[type="search"]:focus-visible, select:focus-visible { outline: 2px solid va
 .detail-head { background: #fff; border: 1px solid var(--mim-black-200);
                border-top: 3px solid var(--mim-purple); padding: 18px 20px; margin-bottom: 16px; }
 .detail-head h2 { font-size: clamp(19px, 2vw, 28px); line-height: 1.3; }
+/* GradientText centres itself and offers a pointer; as a page heading it does
+   neither. The gradient runs purple -> teal -> purple, all brand values. */
+.detail-head .animated-gradient-text {
+  margin: 0; max-width: none; justify-content: flex-start; cursor: default;
+  backdrop-filter: none; border-radius: 0; font-weight: inherit;
+  font-family: var(--mim-font-primary);
+  font-size: clamp(19px, 2vw, 28px); line-height: 1.3;
+}
+.detail-head .animated-gradient-text .text-content { display: inline; }
 .detail-head .en { font-size: 13px; color: var(--mim-grey-dark); direction: ltr;
                    text-align: right; margin-top: 3px; }
 .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 11px; }
@@ -250,6 +300,8 @@ mark { background: var(--mim-blue-100); color: var(--mim-blue-900); padding: 0 2
   padding: 11px 13px; cursor: pointer; text-align: start; font: inherit; color: inherit;
 }
 .specitem:hover { background: var(--mim-blue-100); }
+/* GlareHover supplies the sweep, the tile supplies the box. */
+.rb-glare > .specitem { width: 100%; height: 100%; }
 .specitem:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 1px; }
 .specitem .name { font-size: 13.5px; font-weight: 600; line-height: 1.4; }
 .specitem .en { font-size: 11px; color: var(--mim-grey-dark); direction: ltr; text-align: right; margin-top: 2px; }
@@ -332,6 +384,10 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5p
 .footlinks a { color: var(--mim-grey-dark); display: inline-flex; align-items: center;
                min-height: 44px; padding: 0 8px; }
 
+/* Magnet wraps its child in two spans; the button inside has to keep filling
+   them or the pointer leaves the hit area before the pull does. */
+.notice-magnet, .notice-magnet > * { display: inline-flex; }
+
 /* ---------- privacy notice ---------- */
 .notice {
   position: fixed; inset-inline: 0; bottom: 0; z-index: 70;
@@ -350,20 +406,19 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5p
 }
 .notice button:hover { background: var(--mim-purple-600); border-color: var(--mim-purple-600); }
 
-/* ---------- touch targets and tab overflow (small screens) ---------- */
-/* The tab strip scrolls sideways under ~700px, which hid three of the six
+/* ---------- touch targets and section overflow (small screens) ---------- */
+/* The section band scrolls sideways under ~700px, which hid three of the six
    sections with nothing to show they existed. The fade marks the cut edge. */
 @media (max-width: 700px) {
-  .tabbar {
+  .navband-inner {
     -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
     mask-image: linear-gradient(to left, #000 calc(100% - 26px), transparent);
   }
-  .tab { scroll-snap-align: start; padding-top: 15px; padding-bottom: 15px; }
-  .chip { padding: 10px 14px; min-height: 44px; }
+  .chip { padding: 10px 16px; min-height: 44px; }
   .browse-head input[type="search"], .browse-head select { min-height: 44px; }
   .notice { font-size: 12.5px; }
 }
+
 </style>
 </head>
 <body>
@@ -372,13 +427,27 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5p
   <img src="assets/mim-logo-primary.svg"
        alt="وزارة الصناعة والثروة المعدنية، Ministry of Industry and Mineral Resources">
   <div class="titles">
-    <h1>خريجو التعليم المهني والجامعي في تخصصات قطاع الصناعة والتعدين</h1>
-    <div class="en">Vocational &amp; University Graduates · Industry and Mining Sector</div>
+    <!-- The sentence lives here, in the markup, not in an attribute: React
+         Bits' SplitText takes its text as a prop, so the bundle reads it off
+         the element. A reader without JavaScript, and a crawler, still find a
+         real <h1>. splitType is words, never chars — Arabic is cursive and
+         splitting a word into glyphs severs the joins. -->
+    <h1 data-rb="SplitText"
+        data-rb-props='{"tag":"span","splitType":"words","textAlign":"start","delay":55,"duration":0.9,"threshold":0.05,"rootMargin":"0px","from":{"opacity":0,"y":18},"to":{"opacity":1,"y":0}}'
+        >خريجو التعليم المهني والجامعي في تخصصات قطاع الصناعة والتعدين</h1>
+    <div class="en" data-rb="ShinyText"
+         data-rb-props='{"speed":7,"spread":110,"color":"@greyDark","shineColor":"@purpleGlow"}'
+         >Vocational &amp; University Graduates · Industry and Mining Sector</div>
   </div>
-  <div class="period">2020 – 2025</div>
 </header>
 
-<nav class="tabbar" id="tabbar" role="tablist" aria-label="أقسام اللوحة"></nav>
+<!-- The aurora band. Its figures follow the year filter, so it is re-rendered
+     from route() rather than written once into the markup. -->
+<section class="hero" id="hero" aria-label="ملخص الفترة"></section>
+
+<div class="navband">
+  <div class="navband-inner" id="tabbar"></div>
+</div>
 
 <div class="globalbar">
   <span class="lab">سنة التخرج</span>
@@ -390,7 +459,8 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5p
 <main id="view"></main>
 
 <footer>
-  <div id="provenance"></div>
+  <div id="provenance" data-rb="FadeContent"
+       data-rb-props='{"blur":true,"duration":900,"threshold":0.05}'></div>
   <nav class="footlinks" aria-label="روابط عامة">
     <a href="/privacy.html">سياسة الخصوصية</a>
     <a href="/terms.html">الشروط والأحكام</a>
@@ -405,10 +475,12 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5p
   <p>لا يستخدم هذا الموقع ملفات ارتباط (Cookies)، ولا يجمع بيانات شخصية.
      تُقاس الزيارات بخدمة إحصاء لا تتعقّب الزائر.
      <a href="/privacy.html">سياسة الخصوصية</a></p>
-  <button type="button" id="noticeOk">حسنًا</button>
+  <span data-rb="Magnet" data-rb-props='{"padding":70,"magnetStrength":4,"wrapperClassName":"notice-magnet"}'
+    ><button type="button" id="noticeOk">حسنًا</button></span>
 </div>
 
 <script src="assets/echarts.min.js"></script>
+<script src="assets/reactbits.js"></script>
 <script src="data/dashboard-data.js"></script>
 <script>
 (function () {
@@ -447,6 +519,46 @@ function esc(s) {
     .replace(/"/g, "&quot;");
 }
 function idx(block) { var m = {}; block.cols.forEach(function (n, i) { m[n] = i; }); return m; }
+
+/* ------------------------- React Bits island bridge ---------------------- */
+/* assets/reactbits.js publishes window.MIMUI. If it failed to load — a blocked
+   request, an old browser — every helper below still emits the plain markup it
+   always did and the dashboard works without a single animation. That is why
+   the static version of a tile is written inside its island rather than being
+   passed to the component as data: an un-hydrated island is the old page. */
+function ui() { return window.MIMUI && window.MIMUI.ready ? window.MIMUI : null; }
+
+/* A data-rb-props attribute. Single-quoted, so only & < > and ' need escaping;
+   the JSON itself may hold any Arabic the labels contain. */
+function rbProps(o) {
+  return " data-rb-props='" + JSON.stringify(o)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/'/g, "&#39;") + "'";
+}
+/* A detail-page heading, carried through the brand ramp by GradientText. The
+   heading text is the island's child, so it is already legible before the
+   bundle touches it. */
+function rbHead(text) {
+  if (!ui()) return esc(text);
+  return rbOpen("span", "GradientText",
+    { colors: ["@purple", "@blueDeep", "@purpleGlow", "@purple"],
+      animationSpeed: 11, yoyo: false }) + esc(text) + "</span>";
+}
+/* A browse list. FadeContent brings the whole grid in as one body; searching
+   inside it afterwards only replaces the list's own innerHTML, which the
+   component neither sees nor minds. */
+function rbList(id) {
+  var grid = '<div class="cardlist" id="' + id + '"></div>';
+  if (!ui()) return grid;
+  return rbOpen("div", "FadeContent",
+                { blur: false, duration: 520, delay: 60, threshold: 0.02 }) +
+         grid + '</div>';
+}
+function rbOpen(tag, name, props, cls) {
+  if (!ui()) return "<" + tag + (cls ? ' class="' + cls + '"' : "") + ">";
+  return "<" + tag + (cls ? ' class="' + cls + '"' : "") +
+         ' data-rb="' + name + '"' + rbProps(props || {}) + ">";
+}
 /* Mark the matched run so a hit in a long Arabic name is findable at a glance. */
 function hi(text, q) {
   var t = String(text == null ? "" : text);
@@ -689,17 +801,36 @@ function trendChart(id, series) {
 }
 
 /* --------------------------- shared fragments --------------------------- */
+/* Each tile is a React Bits SpotlightCard whose figure counts up on first
+   sight. The island carries the finished tile as its child, so the numbers are
+   on the page from the first paint and the component replaces them rather
+   than filling a blank. */
 function kpiHtml(tiles) {
   return '<section class="kpis">' + tiles.map(function (t) {
-    return '<div class="kpi ' + (t.cls || "") + '">' +
+    var tone = t.cls === "is-voc" ? "voc" : t.cls === "is-uni" ? "uni" : "";
+    var props = { label: t.label, sub: t.sub || "", tone: tone };
+    if (t.raw !== undefined) props.raw = t.raw; else props.value = t.value;
+    return rbOpen("div", "Kpi", props, "kpi-island") +
+      '<div class="kpi ' + (t.cls || "") + '">' +
       '<div class="label">' + esc(t.label) + '</div>' +
-      '<div class="value">' + (t.raw || fmt(t.value)) + '</div>' +
-      '<div class="sub">' + esc(t.sub || "") + '</div></div>';
+      '<div class="value">' + (t.raw !== undefined ? esc(t.raw) : fmt(t.value)) + '</div>' +
+      '<div class="sub">' + esc(t.sub || "") + '</div></div></div>';
   }).join("") + '</section>';
 }
+/* A card and the reveal that brings it in. The wrapper is the grid child and
+   carries the column span; AnimatedContent takes it over on hydrate and slides
+   it up as it crosses the fold. The delay is staggered by position so a row of
+   cards arrives as a row, not all at once. */
+var revealSeq = 0;
+function resetReveals() { revealSeq = 0; }
 function card(title, hint, body, span) {
-  return '<section class="card ' + (span || "") + '"><h2>' + esc(title) + '</h2>' +
-    (hint ? '<p class="hint">' + esc(hint) + '</p>' : "") + body + '</section>';
+  var delay = Math.min(revealSeq++, 5) * 0.07;
+  return rbOpen("div", "AnimatedContent",
+                { distance: 34, duration: 0.62, ease: "power3.out", delay: delay,
+                  threshold: 0.06, scale: 0.985 },
+                "cardwrap " + (span || "")) +
+    '<section class="card"><h2>' + esc(title) + '</h2>' +
+    (hint ? '<p class="hint">' + esc(hint) + '</p>' : "") + body + '</section></div>';
 }
 /* A chart renders to <canvas>, which carries no text. role="img" plus a label
    gives a screen reader the chart's subject; the numbers themselves are in the
@@ -904,7 +1035,7 @@ function viewUniBrowse(levelKey, parentKey, parentIdx) {
       '<input type="search" id="qUni" placeholder="بحث في ' + esc(lvl.label) + '…" autocomplete="off">' +
       '<span class="result-count" id="cUni"></span>' +
     '</div>' +
-    '<div class="cardlist" id="listUni"></div>';
+    '' + rbList('listUni') + '';
   document.getElementById("view").innerHTML = html;
 
   function paint(q) {
@@ -960,7 +1091,7 @@ function viewUniDetail(majorIdx) {
       '<button data-go="#uni/d/n/' + sample.ni + '">' + esc(sample.n) + '</button><span class="sep">›</span>' +
       '<button data-go="#uni/m/d/' + sample.di + '">' + esc(sample.d) + '</button>' +
     '</div>' +
-    '<div class="detail-head"><h2>' + esc(name) + '</h2>' +
+    '<div class="detail-head"><h2>' + rbHead(name) + '</h2>' +
       '<div class="tags">' +
         '<span class="tag teal">تخصص جامعي</span>' +
         '<span class="tag">' + esc(sample.d) + '</span>' +
@@ -1018,7 +1149,7 @@ function viewVocBrowse() {
     '<div class="browse-head">' +
       '<input type="search" id="qVoc" placeholder="بحث في التخصصات المهنية…" autocomplete="off">' +
       '<span class="result-count" id="cVoc"></span>' +
-    '</div><div class="cardlist" id="listVoc"></div>';
+    '</div>' + rbList('listVoc') + '';
 
   function paint(q) {
     var shown = entries.filter(function (e) {
@@ -1057,7 +1188,7 @@ function viewVocDetail(majorIdx) {
   document.getElementById("view").innerHTML =
     '<div class="crumb"><button data-go="#voc">التخصصات المهنية</button>' +
       '<span class="sep">›</span><span>' + esc(name) + '</span></div>' +
-    '<div class="detail-head"><h2>' + esc(name) + '</h2>' +
+    '<div class="detail-head"><h2>' + rbHead(name) + '</h2>' +
       '<div class="tags"><span class="tag accent">تخصص مهني وتقني</span>' +
       quals.map(function (q) { return '<span class="tag">' + esc(q[0]) + '</span>'; }).join("") +
       '</div></div>' +
@@ -1122,19 +1253,14 @@ function describe(rec, tree, specIdx, skipKpis) {
 
     /* The specialization window shows its own stat row above the charts, so
        it suppresses this one instead of repeating four of the same tiles. */
-    (skipKpis ? "" :
-    '<section class="kpis">' +
-      '<div class="kpi"><div class="label">مستوى المهنة</div><div class="value">' +
-        esc(rec.occLevel || "غير متوفر") + '</div><div class="sub">Occupation level</div></div>' +
-      '<div class="kpi"><div class="label">القطاعات التي تخدمها</div><div class="value">' +
-        rec.sectors.length + '</div><div class="sub">من 13 قطاعًا فرعيًا</div></div>' +
-      '<div class="kpi"><div class="label">المهارات</div><div class="value">' +
-        nSkills + '</div><div class="sub">' + rec.tasks.length + ' مهام رئيسية</div></div>' +
-      '<div class="kpi is-uni"><div class="label">خريجو المجالات المرتبطة</div><div class="value">' +
-        fmt(lt.grads) + '</div><div class="sub">' +
-        (linked.length ? "نسبة التوظيف " + pct(lt.emp, lt.grads)
-                       : "لا يوجد مجال مطابق في بيانات الخريجين") + '</div></div>' +
-    '</section>') +
+    (skipKpis ? "" : kpiHtml([
+      { label: "مستوى المهنة", raw: rec.occLevel || "غير متوفر", sub: "Occupation level" },
+      { label: "القطاعات التي تخدمها", value: rec.sectors.length, sub: "من 13 قطاعًا فرعيًا" },
+      { label: "المهارات", value: nSkills, sub: rec.tasks.length + " مهام رئيسية" },
+      { cls: "is-uni", label: "خريجو المجالات المرتبطة", value: lt.grads,
+        sub: linked.length ? "نسبة التوظيف " + pct(lt.emp, lt.grads)
+                           : "لا يوجد مجال مطابق في بيانات الخريجين" }
+    ])) +
 
     '<div class="grid">' +
       card("ملخص المهنة", tree && tree.baseFromChild && specIdx === undefined
@@ -1228,7 +1354,7 @@ function viewOccBrowse() {
         L.sectors.map(function (s, i) { return '<option value="' + i + '">' + esc(s) + '</option>'; }).join("") +
       '</select>' +
       '<span class="result-count" id="cOcc"></span>' +
-    '</div><div class="cardlist" id="listOcc"></div>';
+    '</div>' + rbList('listOcc') + '';
 
   function paint() {
     var q = occFilter.q;
@@ -1318,7 +1444,7 @@ function viewOccDetail(code) {
       '<span class="sep">›</span><span>' + esc(o.group) + '</span>' +
       '<span class="sep">›</span><span>' + esc(o.unit) + '</span></div>' +
 
-    '<div class="detail-head"><h2>' + esc(o.ar) + '</h2>' +
+    '<div class="detail-head"><h2>' + rbHead(o.ar) + '</h2>' +
       '<div class="en">' + esc(o.en || "") + '</div>' +
       '<div class="tags">' +
         '<span class="tag accent">' + esc(t.code) + '</span>' +
@@ -1339,13 +1465,17 @@ function viewOccDetail(code) {
             var c = OCC[ci];
             var ns = ["technical","basic","general","leadership"]
               .reduce(function (a, k) { return a + c.skills[k].length; }, 0);
-            return '<button class="specitem" data-go="#occ/' + t.code + '/' + i + '">' +
+            return rbOpen("div", "GlareHover",
+                  { glareColor: "@blue", glareOpacity: 0.4, glareAngle: -42,
+                    glareSize: 210, transitionDuration: 720, className: "rb-glare" }) +
+              '<button class="specitem" data-go="#occ/' + t.code + '/' + i + '">' +
               '<div class="name">' + esc(c.specAr) + '</div>' +
               (c.specEn ? '<div class="en">' + esc(c.specEn) + '</div>' : "") +
               '<div class="meta"><span>' + esc(c.specCode || "") + '</span>' +
               '<span>' + c.sectors.length + ' قطاع</span>' +
               '<span>' + ns + ' مهارة</span>' +
-              '<span>' + c.tasks.length + ' مهام</span></div></button>';
+              '<span>' + c.tasks.length + ' مهام</span></div></button>' +
+              (ui() ? '</div>' : "");
           }).join("") + '</div></section>'
       : "") +
 
@@ -1407,6 +1537,7 @@ function viewOccSpec(code, idx) {
   var unis = ranked(agg(linked, function (r) { return r.uni; }), state.measure);
 
   document.body.classList.add("win-open");
+  resetReveals();
   document.body.insertAdjacentHTML("beforeend",
     '<div class="win-overlay" id="specWin" role="dialog" aria-modal="true" ' +
       'aria-label="' + esc(c.specAr) + '">' +
@@ -1437,21 +1568,18 @@ function viewOccSpec(code, idx) {
         '</header>' +
 
         '<div class="win-body">' +
-          '<section class="kpis">' +
-            '<div class="kpi"><div class="label">القطاعات التي يخدمها</div><div class="value">' +
-              c.sectors.length + '</div><div class="sub">من 13 قطاعًا فرعيًا</div></div>' +
-            '<div class="kpi"><div class="label">المهارات</div><div class="value">' +
-              allSk.length + '</div><div class="sub">متوسط المستوى ' +
-              (levelled.length ? avgLevel.toFixed(1) + " من 5" : "غير محدد") + '</div></div>' +
-            '<div class="kpi"><div class="label">المهام الرئيسية</div><div class="value">' +
-              c.tasks.length + '</div><div class="sub">مستوى المهنة ' +
-              esc(c.occLevel || "غير متوفر") + '</div></div>' +
-            '<div class="kpi is-uni"><div class="label">خريجو المجالات المرتبطة</div><div class="value">' +
-              fmt(lt.grads) + '</div><div class="sub">' +
-              (linked.length
+          kpiHtml([
+            { label: "القطاعات التي يخدمها", value: c.sectors.length, sub: "من 13 قطاعًا فرعيًا" },
+            { label: "المهارات", value: allSk.length,
+              sub: "متوسط المستوى " +
+                   (levelled.length ? avgLevel.toFixed(1) + " من 5" : "غير محدد") },
+            { label: "المهام الرئيسية", value: c.tasks.length,
+              sub: "مستوى المهنة " + (c.occLevel || "غير متوفر") },
+            { cls: "is-uni", label: "خريجو المجالات المرتبطة", value: lt.grads,
+              sub: linked.length
                 ? "نسبة التوظيف " + pct(lt.emp, lt.grads) + " · " + unis.length + " جامعة"
-                : "لا يوجد مجال مطابق") + '</div></div>' +
-          '</section>' +
+                : "لا يوجد مجال مطابق" }
+          ]) +
 
           '<div class="grid">' +
             (cats.length
@@ -1620,21 +1748,74 @@ var TABS = [
   { id: "data", label: "البيانات" }
 ];
 
-function buildTabs() {
-  document.getElementById("tabbar").innerHTML = TABS.map(function (t) {
-    return '<button class="tab" role="tab" data-tab="' + t.id + '" data-go="#' + t.id + '">' +
-      esc(t.label) + (t.count ? '<span class="count">' + fmt(t.count) + '</span>' : "") + '</button>';
-  }).join("");
-}
-function markTab(id) {
-  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
-    b.setAttribute("aria-selected", String(b.dataset.tab === id));
+/* The section bar is React Bits' GooeyNav. It is a shell island: mounted once
+   and re-rendered with a new active index, never taken down, so the blob that
+   travels between sections is not interrupted by the repaint underneath it.
+   Without the bundle the same list is written as plain links — the sections
+   stay reachable, they simply do not glide. */
+function navItems() {
+  return TABS.map(function (t) {
+    return { label: t.label, count: t.count ? fmt(t.count) : "", href: "#" + t.id };
   });
 }
+function markTab(id) {
+  var host = document.getElementById("tabbar");
+  if (!host) return;
+  var active = 0;
+  TABS.forEach(function (t, i) { if (t.id === id) active = i; });
+  var u = ui();
+  if (u) { u.shell("nav", host, "Nav", { items: navItems(), activeIndex: active }); return; }
+  host.innerHTML = '<nav class="navband-fallback" aria-label="أقسام اللوحة">' +
+    TABS.map(function (t, i) {
+      return '<a href="#' + t.id + '"' + (i === active ? ' aria-current="page"' : "") + '>' +
+        esc(t.label) + (t.count ? '<span class="nav-count">' + fmt(t.count) + '</span>' : "") +
+        '</a>';
+    }).join("") + '</nav>';
+}
+
+/* The aurora band's figures are the current filter's figures, so it is
+   re-rendered whenever the filter or the route moves. React keeps the WebGL
+   context alive across those renders; only the numbers change. */
+function paintHero() {
+  var host = document.getElementById("hero");
+  if (!host) return;
+  var t = total(vocRows().concat(uniRows()));
+  var u = ui();
+  if (!u) {
+    host.innerHTML = '<div class="hero-inner"><div class="hero-copy">' +
+      '<div class="hero-eyebrow">' + esc(D.meta.sources ? "وزارة الصناعة والثروة المعدنية" : "") + '</div>' +
+      '<div class="hero-headline">' + HERO_HEADLINE + '</div>' +
+      '<div class="hero-figures"><div class="hero-figure is-lead">' +
+      '<div class="hero-figure-value">' + fmt(t.grads) + '</div>' +
+      '<div class="hero-figure-label">إجمالي الخريجين</div></div></div>' +
+      '</div></div>';
+    return;
+  }
+  u.shell("hero", host, "Hero", {
+    compact: (location.hash || "#overview").indexOf("#overview") !== 0,
+    eyebrow: "إحصاءات الخريجين · GRADUATE STATISTICS",
+    headline: HERO_HEADLINE,
+    total: t.grads,
+    employed: t.emp,
+    occupations: D.occupationTree.length,
+    majors: VD.major.length + UD.major.length,
+    years: state.years.length === YEARS.length
+      ? YEARS[0] + " – " + YEARS[YEARS.length - 1]
+      : state.years.slice().sort().join(" · "),
+    labels: { total: "إجمالي الخريجين · Graduates",
+              employed: "المتوظفون · Employed",
+              occupations: "المهن · Occupations",
+              majors: "التخصصات · Specializations" }
+  });
+}
+var HERO_HEADLINE = "مسار الكفاءات الوطنية إلى قطاع الصناعة والتعدين";
 
 function route() {
   closeSpecWindow();
   disposeCharts();
+  var u0 = ui();
+  if (u0) u0.unmountView();
+  resetReveals();
   var hash = (location.hash || "#overview").replace(/^#/, "");
   var p = hash.split("/");
   var tab = p[0] || "overview";
@@ -1656,6 +1837,16 @@ function route() {
   } else if (tab === "nqf") { viewNqf(); }
   else if (tab === "data") { viewData(); }
   else { markTab("overview"); viewOverview(); }
+
+  paintHero();
+  /* Last, and only now: the views above look their own nodes up by id and hand
+     them to ECharts, and hydrating re-parents those nodes. Running after them
+     means every chart has already measured the box it keeps. */
+  if (u0) {
+    u0.hydrate(document.getElementById("view"));
+    var win = document.getElementById("specWin");
+    if (win) u0.hydrate(win);
+  }
 }
 
 /* Delegated navigation: any element with data-go changes the hash. */
@@ -1720,7 +1911,14 @@ document.getElementById("provenance").innerHTML =
   });
 })();
 
-buildTabs();
+/* The masthead title, the English line, the notice button and the footer note
+   are part of the shell, not of any view, so they are hydrated once here and
+   are never taken down by the router. */
+(function () {
+  var u = ui();
+  if (u) u.hydrateOnce(document.body);
+})();
+
 buildFilters();
 route();
 

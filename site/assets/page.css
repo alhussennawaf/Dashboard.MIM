@@ -17,14 +17,22 @@ body {
   min-height: 100vh;
 }
 
-/* ------------------------------- masthead ------------------------------- */
+/* ------------------------------- masthead -------------------------------
+   The same plate the dashboard carries: white behind the mark, closed by the
+   purple-to-teal hairline rather than a grey rule, so the two look like one
+   site even though only the dashboard loads the animation bundle. */
 .masthead {
   background: #fff;
-  border-bottom: 1px solid var(--mim-black-200);
   padding: 16px clamp(16px, 4vw, 44px);
   display: flex;
   align-items: center;
   gap: clamp(14px, 2.5vw, 28px);
+  position: relative;
+}
+.masthead::after {
+  content: ""; position: absolute; inset-inline: 0; bottom: 0; height: 2px;
+  background: linear-gradient(to left,
+              var(--mim-purple) 0%, var(--mim-blue-600) 55%, var(--mim-purple-300) 100%);
 }
 .masthead img { height: clamp(38px, 4.6vw, 52px); width: auto; }
 .masthead a.home {
@@ -33,8 +41,8 @@ body {
   color: var(--mim-purple);
   text-decoration: none;
   border: 1px solid var(--mim-black-200);
-  padding: 9px 15px;
-  border-radius: 2px;
+  padding: 9px 17px;
+  border-radius: 999px;
   min-height: 40px;
   display: inline-flex;
   align-items: center;
@@ -121,10 +129,15 @@ footer a { color: var(--mim-grey-dark); }
 footer nav { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-inline-start: auto; }
 
 /* ------------------------------ 404 specific ---------------------------- */
+/* The dashboard's hero sets its big figure in the primary face over the brand
+   ramp; the error code is the same gesture on a page with nothing else on it. */
 .code404 {
   font-size: clamp(54px, 11vw, 88px);
   line-height: 1;
-  color: var(--mim-purple);
+  background: linear-gradient(to left, var(--mim-purple), var(--mim-blue-700), var(--mim-gradient-purple-from));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   font-variant-numeric: tabular-nums;
   direction: ltr;
   margin-bottom: 10px;
@@ -134,8 +147,8 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-inline-start:
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 10px 20px;
-  border-radius: 2px;
+  padding: 10px 22px;
+  border-radius: 999px;
   text-decoration: none;
   font-size: 14.5px;
   border: 1px solid var(--mim-black-200);

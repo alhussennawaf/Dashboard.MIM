@@ -1,0 +1,23 @@
+{
+  "name": "dashboard-mim-ui",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Build tooling for the React Bits interface layer of the MIM graduates dashboard. The dashboard itself is plain HTML/JS and needs no build; this only produces the vendored assets/reactbits.js and assets/reactbits.css.",
+  "scripts": {
+    "build": "node scripts/build_ui.mjs",
+    "check": "node scripts/check_ui.mjs"
+  },
+  "dependencies": {
+    "@gsap/react": "^2.1.2",
+    "gsap": "^3.13.0",
+    "motion": "^12.23.12",
+    "ogl": "^1.0.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "playwright": "^1.49.0"
+  }
+}

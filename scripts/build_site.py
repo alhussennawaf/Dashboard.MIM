@@ -45,6 +45,9 @@ PUBLISHED = [
     "assets/brand.css",
     "assets/page.css",
     "assets/echarts.min.js",
+    # Built from ui/ by scripts/build_ui.mjs and committed, same as ECharts.
+    "assets/reactbits.js",
+    "assets/reactbits.css",
     "assets/mim-logo-primary.svg",
     "assets/mim-emblem.svg",
     "assets/favicon.ico",
@@ -77,8 +80,9 @@ HEADERS = """\
   X-Frame-Options: SAMEORIGIN
   Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()
 
-# Vendored library and artwork: change rarely, and a stale copy is only ever a
-# revalidation away. This is the repeat-visit win — 368 KB of ECharts gzipped.
+# Vendored libraries and artwork: change rarely, and a stale copy is only ever
+# a revalidation away. This is the repeat-visit win — ECharts and the React
+# Bits bundle are the two large ones, and neither moves between deploys.
 /assets/*
   Cache-Control: public, max-age=604800
 
