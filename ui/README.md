@@ -98,6 +98,39 @@ has to keep working when it is opened straight off a disk. `node_modules` is not
 committed and is not needed to serve the site — only to rebuild that pair of
 files. Re-run after any change under `ui/`, and commit what changes.
 
+## Checking
+
+```
+npx playwright install chromium     # once
+npm run check                       # -> scripts/check_ui.mjs
+```
+
+It drives `index.html` in a real browser and prints a PASS/FAIL line per
+check, in the style of `scripts/verify_totals.py`. Two rules earned
+themselves the hard way and are worth keeping:
+
+**Click, don't route.** The checks this replaced navigated by assigning
+`location.hash`. That is not what a visitor does — it never runs the
+navigation's click handler, so the travelling blob never appeared, so nobody
+noticed it was painting over the label and leaving the open section as a blank
+rectangle. Anything a visitor reaches by clicking is now reached by clicking,
+and a click that cannot land is reported as a failure naming what swallowed
+it, rather than throwing and taking the rest of the run with it. Never pass
+`force` to get a click through: interception is the thing being looked for.
+
+**Assert pixels, not the DOM.** Both bugs this suite was written for were
+invisible to the DOM. The vanished nav label was still the topmost node at the
+centre of its own pill — `elementFromPoint` returned it happily; it simply was
+not drawn. So `inkFraction()` screenshots the element, reads it back off a
+canvas as a data URI (no image library, and a `data:` image does not taint the
+canvas the way a `file://` one would) and measures how much of it differs from
+its own dominant colour. Edges are trimmed first: a pill's anti-aliased border
+and rounded corners read as ink against the band behind it, and an untrimmed
+version scored a completely blank pill at 2.01% and waved it through.
+
+The same measurement guards the gradient headings, which are painted through
+the glyphs and go invisible rather than absent if a colour fails to resolve.
+
 ## Licence
 
 The components under `reactbits/` are © David Haz, MIT with a Commons Clause —
