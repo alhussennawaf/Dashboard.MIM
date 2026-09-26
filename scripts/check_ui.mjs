@@ -202,8 +202,14 @@ async function main() {
       /* The bug: the blob painted over the item and the label vanished, so the
          open section was a flat rectangle. Hit-testing alone would have missed
          it — the label was still the topmost node, it just was not drawn. */
+      /* Threshold from measurement, not taste. With the label drawn, the six
+         pills run 3.8% to 8.1% ink — the low end being the shortest label in
+         the widest pill. With the blob painting over them they are 0.00%,
+         every one. The two populations are separated by about 250x, so
+         anything in that gap is a real guard; 1.5% sits in the middle of it
+         and survives a label getting shorter or a pill getting wider. */
       check(`section ${i + 1} (${state.hash || '#overview'}) keeps its label visible`,
-            ink > 0.04 && !state.covered && state.label.length > 0,
+            ink > 0.015 && !state.covered && state.label.length > 0,
             `label=${JSON.stringify(state.label)} ink=${(ink * 100).toFixed(1)}% ` +
             `covered=${state.covered}`);
 
@@ -270,19 +276,27 @@ async function main() {
       /* Looks at the stylesheet, not the page: most of these controls only
          exist on a view other than this one, and an earlier version bailed
          out when the element was absent and so reported "no press state" for
-         rules that were right there. */
-      const probe = sel => {
+         rules that were right there.
+         It takes a list of selectors per control, because which class carries
+         the press rule is a styling decision that may move — an earlier
+         version named .btn-reset:active directly and went red the moment
+         that rule moved up to a shared .btn:active. What must stay true is
+         that the control has one, not where it is written. */
+      const probe = (...sels) => {
         for (const sheet of document.styleSheets) {
           let rules; try { rules = sheet.cssRules; } catch { continue; }
           for (const r of rules) {
-            if (r.selectorText && r.selectorText.includes(sel + ':active')) return r.style.transform || 'set';
+            if (!r.selectorText) continue;
+            for (const sel of sels) {
+              if (r.selectorText.includes(sel + ':active')) return r.style.transform || 'set';
+            }
           }
         }
         return null;
       };
       return {
         chip: probe('.chip'), item: probe('.item'),
-        reset: probe('.btn-reset'), notice: probe('.notice button'),
+        reset: probe('.btn-reset', '.btn'), notice: probe('.notice button', '.btn'),
         skipLink: !!document.querySelector('.skip-link'),
         grain: !!document.querySelector('.grain'),
         heroReserved: document.querySelector('.hero').getBoundingClientRect().height > 150

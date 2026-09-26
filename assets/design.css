@@ -149,11 +149,37 @@
      a scale at all: the page had 2px, 3px, 0 and 999px scattered by hand,
      and inner elements were not stepping down from their containers.
      ---------------------------------------------------------------------- */
-  --r-xs: 2px;
-  --r-sm: 3px;
-  --r-md: 5px;
-  --r-lg: 8px;
+  --r-xs: 3px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --r-2xl: 30px;
   --r-pill: 999px;
+
+  /* -------------------------------------------------------------------------
+     Bezel
+
+     A surface is not a rectangle dropped on the page: it is a core seated in
+     a tray. The tray carries the outer radius and a hairline; the core sits
+     inside it by --bezel and takes a radius exactly that much smaller, so the
+     two curves stay concentric instead of one looking squeezed inside the
+     other.
+     ---------------------------------------------------------------------- */
+  --bezel: 6px;
+  --bezel-lg: 8px;
+  /* Core radii, derived. Change --r-* or --bezel and these follow. */
+  --r-core-lg: calc(var(--r-xl) - var(--bezel));
+  --r-core-xl: calc(var(--r-2xl) - var(--bezel-lg));
+
+  /* The tray: a barely-there ground, and the hairline that catches the light
+     along its top edge. Both are the brand's dark at low alpha — no new hue. */
+  --tray-bg:   rgba(26, 20, 40, .045);
+  --tray-ring: inset 0 0 0 1px rgba(26, 20, 40, .06);
+  /* The core's own top highlight, which is what makes it read as seated
+     rather than painted on. */
+  --core-lip:  inset 0 1px 0 rgba(255, 255, 255, .9);
+  --core-lip-dark: inset 0 1px 0 rgba(255, 255, 255, .08);
 
   /* -------------------------------------------------------------------------
      Elevation

@@ -42,17 +42,39 @@ body {
               var(--mim-purple) 0%, var(--mim-blue-600) 55%, var(--mim-purple-300) 100%);
 }
 .masthead img { height: clamp(38px, 4.6vw, 52px); width: auto; }
+/* The same nested pattern the dashboard's calls to action use. */
 .masthead a.home {
   margin-inline-start: auto;
-  font-size: 13.5px;
-  color: var(--mim-purple);
+  font-size: 13.5px; font-weight: 500;
+  color: var(--mim-grey-darkest);
   text-decoration: none;
-  border: 1px solid var(--mim-black-200);
-  padding: 9px 17px;
-  border-radius: 999px;
-  min-height: 40px;
+  border: 1px solid var(--mim-black-300);
+  background: #fff;
+  padding: 5px 18px 5px 6px;
+  border-radius: var(--r-pill);
+  min-height: 42px;
   display: inline-flex;
   align-items: center;
+  gap: 11px;
+  box-shadow: var(--shadow-sm);
+}
+:dir(ltr) .masthead a.home { padding: 5px 6px 5px 18px; }
+.btn-ico {
+  flex: none; width: 30px; height: 30px; border-radius: var(--r-pill);
+  background: rgba(26, 20, 40, .06);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; line-height: 1;
+  transition: transform var(--dur-base) var(--ease-out-soft),
+              background-color var(--dur-base) var(--ease-out-soft);
+}
+.masthead a.home:hover .btn-ico,
+.actions a:hover .btn-ico { transform: translate(-3px, -1px) scale(1.06); }
+:dir(ltr) .masthead a.home:hover .btn-ico,
+:dir(ltr) .actions a:hover .btn-ico { transform: translate(3px, -1px) scale(1.06); }
+.actions a.primary .btn-ico { background: rgba(255, 255, 255, .18); }
+.actions a.primary:hover .btn-ico { background: rgba(255, 255, 255, .28); }
+@media (prefers-reduced-motion: reduce) {
+  .masthead a.home:hover .btn-ico, .actions a:hover .btn-ico { transform: none; }
 }
 .masthead a.home {
   font-weight: 500;
@@ -67,17 +89,24 @@ body {
 main {
   flex: 1;
   width: 100%;
-  max-width: 760px;
-  margin: clamp(20px, 4vw, 40px) auto;
+  max-width: 800px;
+  margin: clamp(34px, 6vw, 76px) auto clamp(48px, 8vw, 104px);
   padding: 0 clamp(16px, 4vw, 24px);
 }
+/* Tray and core, as everywhere else. */
 .sheet {
-  background: #fff;
+  background: var(--tray-bg);
   border: none;
+  border-radius: var(--r-2xl);
+  box-shadow: var(--tray-ring);
+  padding: var(--bezel-lg);
+}
+.sheet-core {
+  background: #fff;
   border-top: 3px solid var(--mim-purple);
-  border-radius: var(--r-sm) var(--r-sm) var(--r-lg) var(--r-lg);
-  box-shadow: var(--shadow-md), var(--ring-hairline);
-  padding: clamp(24px, 4vw, 46px);
+  border-radius: var(--r-sm) var(--r-sm) var(--r-core-xl) var(--r-core-xl);
+  box-shadow: var(--shadow-md), var(--ring-hairline), var(--core-lip);
+  padding: clamp(26px, 4vw, 52px);
 }
 
 h1 {
@@ -166,18 +195,22 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-inline-start:
   direction: ltr;
   margin-bottom: 10px;
 }
-.actions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 24px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
 .actions a {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 10px 22px;
-  border-radius: 999px;
+  gap: 11px;
+  min-height: 46px;
+  padding: 6px 20px 6px 7px;
+  border-radius: var(--r-pill);
   text-decoration: none;
   font-size: 14.5px;
-  border: 1px solid var(--mim-black-200);
+  border: 1px solid var(--mim-black-300);
+  background: #fff;
   color: var(--mim-grey-darkest);
+  box-shadow: var(--shadow-sm);
 }
+:dir(ltr) .actions a { padding: 6px 7px 6px 20px; }
 .actions a {
   font-weight: 500;
   transition: background-color var(--dur-quick) var(--ease-out-quick),
