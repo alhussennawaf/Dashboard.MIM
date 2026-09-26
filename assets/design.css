@@ -1,0 +1,235 @@
+/* ============================================================================
+   Design system — everything that is a decision but not a brand value.
+   ----------------------------------------------------------------------------
+   assets/brand.css holds what the MIM guidelines set: the palette, and which
+   typefaces the identity names. It stays the source of truth for those and
+   nothing here overrides it.
+
+   This file holds the rest of the system — the faces that make the named
+   fallbacks real, and the scales for motion, radius, elevation and layering
+   that were previously ad-hoc values retyped at each call site.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Typefaces
+
+   The brand names Lyon Arabic and Diodrum Arabic. Both are licensed commercial
+   faces that are not redistributed with this repository, so in practice almost
+   every visitor fell through to the end of the stack and read the dashboard in
+   Times New Roman and Tahoma — which is not a typographic choice anyone made.
+
+   The two faces below are the openly-licensed stand-ins, self-hosted so that
+   the fallback is a decision rather than a guess about what a visitor happens
+   to have installed:
+
+     Noto Naskh Arabic      — already named in the brand's primary stack.
+                              Headings and figures.
+     IBM Plex Sans Arabic   — a humanist Arabic sans, much closer to Diodrum's
+                              proportions than Tahoma is. Body and interface.
+
+   Both sit AFTER the licensed faces in every stack, so a machine with Lyon or
+   Diodrum installed still renders the identity exactly as the guidelines
+   intend. Licences travel with the files in assets/fonts/.
+
+   Arabic and Latin are separate files with matching unicode-range, so a page
+   of Arabic never downloads the Latin glyphs it does not use.
+   -------------------------------------------------------------------------- */
+
+/* Arabic, Arabic Supplement, Arabic Extended-A, presentation forms. */
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url("fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1,
+                 U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF,
+                 U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  font-style: normal; font-weight: 500; font-display: swap;
+  src: url("fonts/ibm-plex-sans-arabic-arabic-500-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1,
+                 U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF,
+                 U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  font-style: normal; font-weight: 600; font-display: swap;
+  src: url("fonts/ibm-plex-sans-arabic-arabic-600-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1,
+                 U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF,
+                 U+FE70-FE74, U+FE76-FEFC;
+}
+/* Latin. The English sub-labels, the source filenames, and every figure on the
+   page — the digits are Latin even where the sentence around them is not. */
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url("fonts/ibm-plex-sans-arabic-latin-400-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+                 U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+                 U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  font-style: normal; font-weight: 500; font-display: swap;
+  src: url("fonts/ibm-plex-sans-arabic-latin-500-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+                 U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+                 U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  font-style: normal; font-weight: 600; font-display: swap;
+  src: url("fonts/ibm-plex-sans-arabic-latin-600-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+                 U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+                 U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Noto Naskh Arabic";
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url("fonts/noto-naskh-arabic-arabic-400-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1,
+                 U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF,
+                 U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Noto Naskh Arabic";
+  font-style: normal; font-weight: 600; font-display: swap;
+  src: url("fonts/noto-naskh-arabic-arabic-600-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1,
+                 U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF,
+                 U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Noto Naskh Arabic";
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url("fonts/noto-naskh-arabic-latin-400-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+                 U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+                 U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Noto Naskh Arabic";
+  font-style: normal; font-weight: 600; font-display: swap;
+  src: url("fonts/noto-naskh-arabic-latin-600-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+                 U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+                 U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  /* -------------------------------------------------------------------------
+     Motion
+
+     One curve does most of the work: a decelerating ease with a long tail, so
+     a thing that moves arrives rather than stops. The page shipped with a
+     single `ease` transition on one rule and nothing else; these are the
+     durations everything now shares.
+     ---------------------------------------------------------------------- */
+  --ease-out-soft:  cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-quick: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* Press. Shorter and flatter — a button going down should feel immediate
+     and the release should not bounce, which on a ministry page reads as a
+     glitch rather than as personality. */
+  --ease-press:     cubic-bezier(0.4, 0, 0.2, 1);
+
+  --dur-instant: 90ms;
+  --dur-quick:   160ms;
+  --dur-base:    240ms;
+  --dur-slow:    420ms;
+
+  /* -------------------------------------------------------------------------
+     Radius
+
+     The identity is square-shouldered — worked metal, not soft plastic — so
+     this is a tight scale, not a squircle system. What matters is that it is
+     a scale at all: the page had 2px, 3px, 0 and 999px scattered by hand,
+     and inner elements were not stepping down from their containers.
+     ---------------------------------------------------------------------- */
+  --r-xs: 2px;
+  --r-sm: 3px;
+  --r-md: 5px;
+  --r-lg: 8px;
+  --r-pill: 999px;
+
+  /* -------------------------------------------------------------------------
+     Elevation
+
+     Tinted, not black. The page sits on the brand's darkest grey rather than
+     on neutral black, so a pure-black shadow reads as dirt on it. These carry
+     a trace of the brand purple, which is where the light in the masthead
+     band comes from.
+     ---------------------------------------------------------------------- */
+  --shadow-sm: 0 1px 2px rgba(26, 20, 40, .06);
+  --shadow-md: 0 2px 4px rgba(26, 20, 40, .05), 0 6px 16px rgba(26, 20, 40, .07);
+  --shadow-lg: 0 4px 8px rgba(26, 20, 40, .05), 0 14px 38px rgba(26, 20, 40, .10);
+  --shadow-xl: 0 8px 16px rgba(19, 12, 36, .12), 0 28px 70px rgba(19, 12, 36, .22);
+  /* A hairline drawn as a ring rather than a border, so it can sit on an
+     element that already has one without doubling the edge. */
+  --ring-hairline: inset 0 0 0 1px rgba(26, 20, 40, .07);
+
+  /* -------------------------------------------------------------------------
+     Layering
+
+     Named, so a new overlay does not get a number picked by looking at what
+     the last one used. 29/30/60/70/200 were in the page with nothing saying
+     what sat between them.
+     ---------------------------------------------------------------------- */
+  --z-raised:   1;   /* a sticky table head inside its own scroll box       */
+  --z-nav:     20;   /* the section band                                    */
+  --z-filters: 19;   /* the filter strip, which docks under the band        */
+  --z-window:  40;   /* the specialization window and its backdrop          */
+  --z-notice:  50;   /* the privacy notice                                  */
+  --z-spark:   60;   /* the click spark, over everything, never hit-tested  */
+  --z-skiplink: 70;  /* only visible while focused, so it must clear all    */
+
+  /* -------------------------------------------------------------------------
+     Measure
+
+     A line of Arabic text stops being readable past roughly the same length a
+     line of Latin does. The dashboard's main column is deliberately very wide
+     — charts want the room — so prose inside it has to be constrained on its
+     own rather than inheriting the container.
+     ---------------------------------------------------------------------- */
+  --measure: 74ch;
+}
+
+/* ---------------------------------------------------------------------------
+   Grain
+
+   A fixed, unhittable film over the whole viewport at 3.5% — enough to keep
+   large flat fields from reading as dead vector, not enough to be visible as
+   texture. Monochrome, so it introduces no colour of its own.
+
+   Fixed and pointer-events:none on purpose: attached to a scrolling container
+   it would repaint every frame.
+   -------------------------------------------------------------------------- */
+.grain {
+  position: fixed; inset: 0; z-index: var(--z-raised);
+  pointer-events: none; opacity: .035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+@media (prefers-reduced-motion: reduce) { .grain { opacity: .02; } }
+
+/* ---------------------------------------------------------------------------
+   Skip link
+
+   The dashboard puts a masthead, an animated band, a six-item navigation and
+   a filter strip in front of the content. That is a long way to tab through
+   on every page load, and there was no way past it.
+   -------------------------------------------------------------------------- */
+.skip-link {
+  position: fixed; top: 0; inset-inline-start: 0; z-index: var(--z-skiplink);
+  transform: translateY(-120%);
+  transition: transform var(--dur-quick) var(--ease-out-quick);
+  background: var(--mim-purple); color: #fff;
+  padding: 13px 22px; border-radius: 0 0 var(--r-md) 0;
+  font-size: 14px; font-weight: 500; text-decoration: none;
+  box-shadow: var(--shadow-lg);
+}
+.skip-link:focus { transform: translateY(0); }
+.skip-link:focus-visible { outline: 2px solid var(--mim-blue-500); outline-offset: -5px; }

@@ -68,6 +68,26 @@ def main():
         sys.exit(f"expected one footlinks nav and one notice block, "
                  f"found {n_foot} and {n_note}")
 
+    # Fonts are referenced from inside the inlined CSS as url(fonts/NAME.woff2),
+    # which none of the checks below would catch — the standalone file would
+    # simply travel with every @font-face pointing at nothing, and silently
+    # fall back to Times New Roman, which is the thing self-hosting them was
+    # meant to stop. They are folded in here as data URIs.
+    n_font = 0
+
+    def inline_font(match):
+        nonlocal n_font
+        rel = "assets/" + match.group(1)
+        path = ROOT / rel
+        if not path.exists():
+            sys.exit(f"@font-face references a missing file: {rel}")
+        n_font += 1
+        return "url(" + data_uri(path, "font/woff2") + ")"
+
+    html = re.sub(r'url\("(fonts/[^"]+\.woff2)"\)', inline_font, html)
+    if "fonts/" in html and re.search(r'url\(["\']?fonts/', html):
+        sys.exit("a font url survived inlining")
+
     n_img = 0
     for rel, mime in [("assets/mim-logo-primary.svg", "image/svg+xml"),
                       ("assets/mim-emblem.svg", "image/svg+xml"),
@@ -93,7 +113,8 @@ def main():
                  f"alone are {floor:,} — stripping removed too much")
 
     OUT.write_text(html, encoding="utf-8")
-    print(f"inlined {n_js} script(s), {n_css} stylesheet(s), {n_img} image(s)")
+    print(f"inlined {n_js} script(s), {n_css} stylesheet(s), "
+          f"{n_font} font(s), {n_img} image(s)")
     print(f"wrote {OUT.relative_to(ROOT)}  ({OUT.stat().st_size:,} bytes)")
 
 
