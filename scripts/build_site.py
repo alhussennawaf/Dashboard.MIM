@@ -43,6 +43,7 @@ PUBLISHED = [
     "terms.html",
     "404.html",
     "assets/brand.css",
+    "assets/design.css",
     "assets/page.css",
     "assets/echarts.min.js",
     # Built from ui/ by scripts/build_ui.mjs and committed, same as ECharts.
@@ -55,6 +56,22 @@ PUBLISHED = [
     "assets/icon-512.png",
     "assets/og-image.png",
     "data/dashboard-data.js",
+    # The self-hosted faces the brand's fallback stacks name. Without these the
+    # pages fall through to Times New Roman and Tahoma, which is where they
+    # landed on almost every visit before they were vendored.
+    "assets/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2",
+    "assets/fonts/ibm-plex-sans-arabic-arabic-500-normal.woff2",
+    "assets/fonts/ibm-plex-sans-arabic-arabic-600-normal.woff2",
+    "assets/fonts/ibm-plex-sans-arabic-latin-400-normal.woff2",
+    "assets/fonts/ibm-plex-sans-arabic-latin-500-normal.woff2",
+    "assets/fonts/ibm-plex-sans-arabic-latin-600-normal.woff2",
+    "assets/fonts/noto-naskh-arabic-arabic-400-normal.woff2",
+    "assets/fonts/noto-naskh-arabic-arabic-600-normal.woff2",
+    "assets/fonts/noto-naskh-arabic-latin-400-normal.woff2",
+    "assets/fonts/noto-naskh-arabic-latin-600-normal.woff2",
+    # Their licences travel with them; both are OFL and require the notice.
+    "assets/fonts/LICENSE-IBM-Plex.txt",
+    "assets/fonts/LICENSE-Noto-Naskh.txt",
 ]
 
 # Pages that belong in the sitemap, with their change frequency.

@@ -21,11 +21,45 @@
  */
 
 import { chromium } from 'playwright';
+import { createServer } from 'node:http';
+import { createReadStream, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, extname, normalize } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const PAGE = 'file://' + join(ROOT, 'index.html');
+
+/* The page is checked over HTTP, not file://.
+ *
+ * It used to be file://, which is not how anyone reads this dashboard and
+ * which quietly changes the rules: a null origin fails CORS, so every
+ * @font-face is blocked and the whole page renders in the fallback stack.
+ * Checking the typography of a page whose fonts cannot load is checking
+ * nothing. The repository already knows this — it ships its data as .js
+ * rather than .json for the same reason.
+ *
+ * So: a static server over the repository root, which is what Cloudflare
+ * does with site/ in production. */
+const MIME = {
+  '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8', '.json': 'application/json',
+  '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png',
+  '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8'
+};
+
+const server = createServer((req, res) => {
+  const rel = normalize(decodeURIComponent(req.url.split('?')[0])).replace(/^(\.\.[/\\])+/, '');
+  const file = join(ROOT, rel === '/' ? 'index.html' : rel);
+  if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
+  let size;
+  try { size = statSync(file).size; } catch { res.writeHead(404).end('not found'); return; }
+  res.writeHead(200, {
+    'Content-Type': MIME[extname(file)] || 'application/octet-stream',
+    'Content-Length': size
+  });
+  createReadStream(file).pipe(res);
+});
+await new Promise(r => server.listen(0, '127.0.0.1', r));
+const PAGE = `http://127.0.0.1:${server.address().port}/index.html`;
 
 const launchOptions = { args: ['--no-sandbox', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'] };
 if (process.env.CHROMIUM_PATH) launchOptions.executablePath = process.env.CHROMIUM_PATH;
@@ -182,6 +216,103 @@ async function main() {
     }
 
     check('no console or page errors while navigating',
+          page.noise.length === 0, page.noise.slice(0, 4).join(' | '));
+    await page.context().close();
+  }
+
+  /* ---------------------------------------------------------------------
+     TYPOGRAPHY — the self-hosted faces actually arrived
+     --------------------------------------------------------------------- */
+  console.log('\nTYPOGRAPHY');
+  {
+    const page = await openPage(browser);
+    const t = await page.evaluate(async () => {
+      await document.fonts.ready;
+      const loaded = [...document.fonts].filter(f => f.status === 'loaded')
+                                        .map(f => f.family + ' ' + f.weight);
+      const used = name => {
+        const el = document.querySelector(name);
+        return el ? getComputedStyle(el).fontFamily.split(',')[0].replace(/["']/g, '') : null;
+      };
+      return {
+        loaded,
+        families: [...new Set([...document.fonts].filter(f => f.status === 'loaded')
+                                                 .map(f => f.family))],
+        heading: used('.kpi .value'),
+        body: used('body'),
+        tabular: getComputedStyle(document.querySelector('.kpi .value')).fontVariantNumeric
+      };
+    });
+    /* The whole point of vendoring them: before this, both stacks fell all the
+       way through to Times New Roman and Tahoma on nearly every visit. */
+    check('both self-hosted faces load',
+          t.families.includes('IBM Plex Sans Arabic') && t.families.includes('Noto Naskh Arabic'),
+          t.families.join(', '));
+    check('more than one weight is actually used',
+          t.loaded.length >= 3, `${t.loaded.length} faces: ${t.loaded.join(' | ')}`);
+    check('figures are set in tabular numerals',
+          /tabular-nums/.test(t.tabular), t.tabular);
+    check('no console or page errors while the fonts load',
+          page.noise.length === 0, page.noise.slice(0, 4).join(' | '));
+    await page.context().close();
+  }
+
+  /* ---------------------------------------------------------------------
+     STATES — press feedback, and the skeleton that precedes the first paint
+     --------------------------------------------------------------------- */
+  console.log('\nSTATES');
+  {
+    const page = await openPage(browser);
+    const st = await page.evaluate(() => {
+      /* A pressed control has to say so. Every one of these had no :active
+         rule at all before, so a tap that kicked off six chart redraws gave
+         no sign it had registered. */
+      /* Looks at the stylesheet, not the page: most of these controls only
+         exist on a view other than this one, and an earlier version bailed
+         out when the element was absent and so reported "no press state" for
+         rules that were right there. */
+      const probe = sel => {
+        for (const sheet of document.styleSheets) {
+          let rules; try { rules = sheet.cssRules; } catch { continue; }
+          for (const r of rules) {
+            if (r.selectorText && r.selectorText.includes(sel + ':active')) return r.style.transform || 'set';
+          }
+        }
+        return null;
+      };
+      return {
+        chip: probe('.chip'), item: probe('.item'),
+        reset: probe('.btn-reset'), notice: probe('.notice button'),
+        skipLink: !!document.querySelector('.skip-link'),
+        grain: !!document.querySelector('.grain'),
+        heroReserved: document.querySelector('.hero').getBoundingClientRect().height > 150
+      };
+    });
+    check('controls acknowledge a press',
+          !!(st.chip && st.item && st.reset && st.notice), JSON.stringify(st));
+    check('there is a skip link past the masthead and band', st.skipLink);
+    check('the grain overlay is present', st.grain);
+    check('the band reserves its height before it mounts', st.heroReserved);
+
+    /* The empty state a mistyped search lands on. */
+    await page.evaluate(() => { location.hash = '#voc'; });
+    await page.waitForTimeout(800);
+    await page.fill('#qVoc', 'زززز');
+    await page.waitForTimeout(500);
+    const empty = await page.evaluate(() => ({
+      composed: !!document.querySelector('#listVoc .nodata .nodata-title'),
+      echoesTerm: (document.querySelector('#listVoc .term') || {}).textContent || '',
+      hasAction: !!document.querySelector('#listVoc .btn-reset')
+    }));
+    check('a search that finds nothing offers a way out',
+          empty.composed && empty.hasAction && empty.echoesTerm.includes('زززز'),
+          JSON.stringify(empty));
+    await clickOrFail('clearing the search restores the list',
+                      page.locator('#listVoc .btn-reset'));
+    await page.waitForTimeout(500);
+    check('clearing the search restores the list',
+          await page.evaluate(() => document.querySelectorAll('#listVoc .item').length > 0));
+    check('no console or page errors across the states',
           page.noise.length === 0, page.noise.slice(0, 4).join(' | '));
     await page.context().close();
   }
@@ -347,6 +478,7 @@ async function main() {
   }
 
   await browser.close();
+  await new Promise(r => server.close(r));
 
   console.log('\n' + '='.repeat(60));
   const passed = results.filter(Boolean).length;

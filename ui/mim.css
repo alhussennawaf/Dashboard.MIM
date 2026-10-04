@@ -23,7 +23,7 @@
 /* The click spark canvas covers the viewport and never takes a click; the
    events are forwarded to it from the document (see ui/index.jsx). */
 .rb-spark-layer {
-  position: fixed; inset: 0; z-index: 200; pointer-events: none;
+  position: fixed; inset: 0; z-index: var(--z-spark); pointer-events: none;
 }
 .rb-spark-layer > div { pointer-events: none !important; }
 
@@ -39,7 +39,12 @@
   color: #fff;
   overflow: hidden;
   isolation: isolate;
+  /* The band is mounted by the bundle, so it is empty until three large
+     scripts have parsed. Reserving its height means the masthead does not
+     sit on the navigation and then get shoved down when the figures land. */
+  min-height: clamp(210px, 22vw, 290px);
 }
+.hero:empty { min-height: clamp(210px, 22vw, 290px); }
 .hero-inner {
   position: relative;
   padding: clamp(26px, 4.2vw, 54px) clamp(14px, 2.6vw, 36px) clamp(22px, 3.4vw, 40px);
@@ -62,21 +67,27 @@
 
 .hero-eyebrow.shiny-text,
 .hero-eyebrow {
-  font-size: clamp(11px, 1vw, 13px);
-  letter-spacing: .16em;
+  font-size: clamp(10.5px, 1vw, 12.5px);
+  font-weight: 500;
+  letter-spacing: .2em;
   text-transform: uppercase;
   display: inline-block;
-  margin-bottom: clamp(8px, 1.2vw, 14px);
+  margin-bottom: clamp(10px, 1.4vw, 16px);
 }
 
 /* GradientText centres itself in a pill and animates a gradient through the
    glyphs. Here it is a headline, so it sits at the start of the line and drops
    the pill: no border, no backdrop blur, no pointer affordance. */
 .hero-headline.animated-gradient-text {
-  margin: 0; max-width: none; justify-content: flex-start;
+  margin: 0; justify-content: flex-start;
   border-radius: 0; backdrop-filter: none; cursor: default;
   font-family: var(--mim-font-primary); font-weight: 400;
-  font-size: clamp(21px, 3.1vw, 44px); line-height: 1.28;
+  font-size: clamp(22px, 3.2vw, 46px); line-height: 1.24;
+  /* Display sizes need the tracking pulled in, and the headline is two lines
+     at most widths — so the break is balanced rather than left to chance. */
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  max-width: 20ch;
 }
 .hero-headline .text-content { display: inline; }
 
@@ -88,17 +99,23 @@
 .hero-figure-value {
   font-family: var(--mim-font-primary);
   font-size: clamp(22px, 2.4vw, 34px); line-height: 1.05;
+  letter-spacing: -0.018em;
   font-variant-numeric: tabular-nums; direction: ltr; text-align: start;
   color: #fff;
 }
 .hero-figure.is-lead .hero-figure-value {
-  font-size: clamp(34px, 5.2vw, 68px);
+  font-size: clamp(36px, 5.4vw, 72px);
+  letter-spacing: -0.032em;
   color: var(--mim-blue-300);
+  /* The one number the page is really about. A soft bloom in its own colour
+     lifts it off the band without adding a colour to the palette. */
+  text-shadow: 0 0 38px rgba(116, 243, 207, .22);
 }
 .hero-figure-label {
   font-size: clamp(10.5px, 1vw, 12.5px);
+  font-weight: 500;
   color: var(--mim-grey-medium);
-  margin-top: 6px; letter-spacing: .04em;
+  margin-top: 7px; letter-spacing: .05em;
 }
 .hero-period { margin-inline-start: auto; }
 
@@ -113,9 +130,9 @@
 .hero-inner.is-compact .hero-figure-value { font-size: clamp(18px, 1.9vw, 26px); }
 /* StarBorder's own metrics are made for a call-to-action button; this is a
    date range, so it is tightened and the text set in the numeric face. */
-.hero-period .star-border-container { border-radius: 3px; }
+.hero-period .star-border-container { border-radius: var(--r-md); }
 .hero-period .inner-content {
-  border-radius: 2px; padding: 9px 20px;
+  border-radius: var(--r-sm); padding: 10px 22px;
   font-family: var(--mim-font-numeric); font-size: clamp(13px, 1.25vw, 16px);
   letter-spacing: .1em; direction: ltr; backdrop-filter: blur(3px);
 }
@@ -139,18 +156,21 @@
   align-items: stretch;
 }
 .nav-gooey .gooey-nav-container nav ul li {
-  border-radius: 3px;
+  border-radius: var(--r-sm);
   white-space: nowrap;
   font-size: clamp(12.5px, 1.05vw, 15px);
+  font-weight: 500;
   color: var(--mim-grey-light);
   display: flex; align-items: center;
+  transition: color var(--dur-base) var(--ease-out-soft);
 }
+.nav-gooey .gooey-nav-container nav ul li:not(.active):hover { color: #fff; }
 .nav-gooey .gooey-nav-container nav ul li a {
   padding: 14px clamp(10px, 1.4vw, 20px);
   color: inherit; text-decoration: none;
   display: flex; align-items: center; gap: 7px;
 }
-.nav-gooey .gooey-nav-container nav ul li::after { border-radius: 3px; }
+.nav-gooey .gooey-nav-container nav ul li::after { border-radius: var(--r-sm); }
 .nav-gooey .gooey-nav-container nav ul li.active,
 .nav-gooey .gooey-nav-container .effect.text.active { color: var(--mim-grey-darkest); }
 .nav-gooey .gooey-nav-container nav ul li.active::after { background: var(--mim-blue-500); }
@@ -194,17 +214,21 @@
    spotlight itself is new.
    -------------------------------------------------------------------------- */
 .card-spotlight.kpi {
-  border-radius: 2px;
-  border: 1px solid var(--mim-black-200);
+  border-radius: var(--r-sm) var(--r-sm) var(--r-lg) var(--r-lg);
+  border: none;
   border-top: 3px solid var(--mim-grey-medium);
   background-color: #fff;
-  padding: 16px 18px;
-  transition: border-top-color .25s ease, transform .25s ease, box-shadow .25s ease;
+  padding: 17px 19px;
+  box-shadow: var(--shadow-sm), var(--ring-hairline);
+  transition: transform var(--dur-base) var(--ease-out-soft),
+              box-shadow var(--dur-base) var(--ease-out-soft);
 }
 .card-spotlight.kpi:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 26px rgba(26, 26, 26, .10);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg), var(--ring-hairline);
 }
+/* A tile is not a button, so the press is a settle rather than a click. */
+.card-spotlight.kpi:active { transform: translateY(-1px); }
 .card-spotlight.kpi.is-voc { border-top-color: var(--mim-purple); }
 .card-spotlight.kpi.is-uni { border-top-color: var(--mim-blue-600); }
 .card-spotlight.kpi:hover::before, .card-spotlight.kpi:focus-within::before { opacity: 1; }

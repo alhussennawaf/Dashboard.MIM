@@ -352,6 +352,48 @@ Noto Sans Arabic (sans, for Diodrum), then to system Arabic faces.
 
 **To install the real fonts:** drop the `.woff2`/`.otf` files into `assets/`
 and add `@font-face` rules naming them `Lyon Arabic` and `Diodrum Arabic`.
+
+**What actually renders, and why that changed.** Naming a licensed face first
+in a stack does nothing for a visitor who does not have it, and essentially
+nobody outside the ministry does. Until the fonts below were vendored, every
+stack ran all the way to its end, so the dashboard was read in **Times New
+Roman and Tahoma** on almost every visit — the one typographic outcome nobody
+chose.
+
+Two openly-licensed faces are now self-hosted under `assets/fonts/` and sit in
+each stack *after* the licensed names, so a machine with Lyon or Diodrum still
+renders the identity exactly as the guidelines intend:
+
+| Slot | Brand face (licensed) | Self-hosted stand-in | Licence |
+|---|---|---|---|
+| Primary — headings, figures | Lyon Arabic | **Noto Naskh Arabic** (400, 600) | OFL |
+| Secondary — body, interface | Diodrum Arabic | **IBM Plex Sans Arabic** (400, 500, 600) | OFL |
+| Numeric — every figure | Diodrum Arabic | **IBM Plex Sans Arabic** | OFL |
+
+Noto Naskh Arabic was already named in the primary stack; vendoring it only
+makes the documented fallback real rather than a guess about the visitor's
+machine. IBM Plex Sans Arabic replaces Noto Sans Arabic one position earlier
+in the secondary stack: it is a humanist Arabic sans much closer to Diodrum's
+proportions than Tahoma, and it carries the tabular Latin numerals that every
+figure on this dashboard is set in.
+
+Arabic and Latin ship as separate files with matching `unicode-range`, and the
+`@font-face` rules live in `assets/design.css`. Both licences travel with the
+files. `scripts/build_standalone.py` folds all ten into the portable build as
+data URIs, because a `file://` page cannot fetch a font at all — the same
+`null`-origin CORS rule that decides the data format in §10.
+
+### Design scales
+
+`assets/design.css` also holds the values that are decisions but not brand
+values: the motion curves and durations, the radius steps, the tinted
+elevation shadows, the named z-index layers, and the reading measure. They
+were previously retyped by hand at each call site — 2px, 3px, 0 and 999px
+radii side by side, z-indexes of 29, 30, 60, 70 and 200 with nothing saying
+what belonged between them, and exactly one `transition` rule in the whole
+page. Shadows are tinted toward the brand's dark purple rather than pure
+black, because the page sits on a warm-dark grey and a neutral shadow reads
+as dirt on it.
 The existing stacks will pick them up with no other change.
 
 ### Logo — supplied by the project owner as vector artwork

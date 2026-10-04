@@ -31,6 +31,9 @@
 <link rel="icon" type="image/svg+xml" href="assets/mim-emblem.svg">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <link rel="stylesheet" href="assets/brand.css">
+<!-- Scales for motion, radius, elevation and layering, and the self-hosted
+     faces that make the brand's named fallbacks real. -->
+<link rel="stylesheet" href="assets/design.css">
 <!-- The React Bits layer: one stylesheet and one bundle, both built from
      ui/ by scripts/build_ui.mjs and vendored the same way ECharts is. -->
 <link rel="stylesheet" href="assets/reactbits.css">
@@ -44,14 +47,51 @@
 
 body {
   margin: 0;
-  background: var(--mim-black-100);
+  /* Not a flat fill: a very wide, very faint wash off the top corner, so the
+     workspace has a direction to it instead of reading as one dead sheet.
+     Both stops are the same grey the page always used. */
+  background:
+    radial-gradient(120% 80% at 88% -10%, var(--mim-black-50) 0%, var(--mim-black-100) 58%)
+    var(--mim-black-100);
+  background-attachment: fixed;
   color: var(--mim-grey-darkest);
   font-family: var(--mim-font-secondary);
   font-size: 15px; line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* The identity's faces have real small-caps-ish alternates and proper
+     ligatures in Arabic; asking for them costs nothing and is what the
+     faces were drawn for. */
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
 }
-h1, h2, h3, h4 { font-family: var(--mim-font-primary); font-weight: 400; margin: 0; }
-a { color: var(--mim-purple); }
+
+/* Headings: the display face, and a weight that is actually set rather than
+   inherited. Large Arabic wants slightly tighter tracking than its default,
+   and every heading gets its last line balanced so a single word never sits
+   alone under a full one. */
+h1, h2, h3, h4 {
+  font-family: var(--mim-font-primary);
+  font-weight: 400; margin: 0;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+h1 { letter-spacing: -0.014em; }
+
+/* Every figure on the page is a Latin numeral inside an Arabic sentence, and
+   several sit in columns that must not shuffle as they count up. */
+.value, .hero-figure-value, .kpi .value, td.num, .count, .nav-count,
+.result-count, .meta, .sub, .period {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+a { color: var(--mim-purple); text-underline-offset: 0.18em; }
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--mim-blue-700); outline-offset: 2px; border-radius: var(--r-xs);
+}
+main#view:focus { outline: none; }
+strong, b { font-weight: 600; }
 
 /* ---------- masthead ----------
    The identity plate. It stays white and unanimated behind the logo: the
@@ -63,7 +103,7 @@ a { color: var(--mim-purple); }
   background: #fff;
   padding: 15px clamp(14px, 2.6vw, 36px);
   display: flex; align-items: center; gap: clamp(14px, 2.6vw, 32px); flex-wrap: wrap;
-  position: relative; z-index: 2;
+  position: relative; z-index: var(--z-nav);
 }
 .masthead img { height: clamp(34px, 4vw, 52px); width: auto; flex: none; }
 .masthead .titles { flex: 1 1 300px; min-width: 0; }
@@ -86,8 +126,10 @@ a { color: var(--mim-purple); }
    aurora above it needs to read as light rather than as a coloured panel. */
 .navband {
   background: var(--mim-black-500);
-  position: sticky; top: 0; z-index: 30;
-  box-shadow: 0 1px 0 rgba(255,255,255,.07), 0 6px 18px rgba(26,26,26,.20);
+  position: sticky; top: 0; z-index: var(--z-nav);
+  /* A hairline of light along the top edge, then the shadow it casts on the
+     workspace. Both read as one light source coming from above. */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), var(--shadow-lg);
 }
 .navband-inner {
   max-width: 2200px; margin: 0 auto;
@@ -109,45 +151,76 @@ a { color: var(--mim-purple); }
   display: flex; align-items: center; gap: 7px;
 }
 .navband-fallback a[aria-current="page"] {
-  background: var(--mim-blue-500); color: var(--mim-grey-darkest); border-radius: 3px;
+  background: var(--mim-blue-500); color: var(--mim-grey-darkest);
+  border-radius: var(--r-sm); font-weight: 600;
 }
 .navband-fallback .nav-count { font-size: 10.5px; opacity: .62; direction: ltr; }
 
 /* ---------- global filter strip ---------- */
 .globalbar {
-  background: #fff; border-bottom: 1px solid var(--mim-black-200);
-  padding: 10px clamp(14px, 2.6vw, 36px);
+  background: rgba(255, 255, 255, .88);
+  /* Fixed, so the blur is composited once rather than on every scrolled
+     frame of the content beneath it. */
+  backdrop-filter: saturate(150%) blur(12px);
+  -webkit-backdrop-filter: saturate(150%) blur(12px);
+  border-bottom: 1px solid var(--mim-black-200);
+  padding: 11px clamp(14px, 2.6vw, 36px);
   display: flex; gap: clamp(12px, 2vw, 28px); align-items: center; flex-wrap: wrap;
-  position: sticky; top: 48px; z-index: 29;
+  position: sticky; top: 48px; z-index: var(--z-filters);
 }
 .globalbar .lab {
-  font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase;
   color: var(--mim-grey-dark); font-weight: 600;
 }
 .chips { display: flex; gap: 5px; flex-wrap: wrap; }
 .chip {
-  font: inherit; font-size: 12.5px; font-variant-numeric: tabular-nums;
+  font: inherit; font-size: 12.5px; font-weight: 500;
   padding: 5px 13px; cursor: pointer; border: 1px solid var(--mim-black-300);
-  background: #fff; color: var(--mim-grey-dark); border-radius: 999px;
-  transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+  background: #fff; color: var(--mim-grey-dark); border-radius: var(--r-pill);
+  transition: background-color var(--dur-quick) var(--ease-out-quick),
+              border-color var(--dur-quick) var(--ease-out-quick),
+              color var(--dur-quick) var(--ease-out-quick),
+              transform var(--dur-instant) var(--ease-press),
+              box-shadow var(--dur-quick) var(--ease-out-quick);
 }
-.chip:hover { border-color: var(--mim-purple); color: var(--mim-purple); }
+.chip:hover { border-color: var(--mim-purple); color: var(--mim-purple); box-shadow: var(--shadow-sm); }
+/* Press. Nothing on this page acknowledged a click before it had finished
+   doing the work, which on a filter that re-runs six charts is a long time
+   to wonder whether the tap registered. */
+.chip:active { transform: scale(.96); box-shadow: none; }
 .chip[aria-pressed="true"] {
   background: var(--mim-purple); border-color: var(--mim-purple); color: #fff;
+  box-shadow: var(--shadow-sm);
 }
-.chip:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 2px; }
+.chip[aria-pressed="true"]:hover { background: var(--mim-purple-600); border-color: var(--mim-purple-600); }
 
-main { padding: clamp(14px, 2.2vw, 30px); max-width: 2200px; margin: 0 auto; }
+/* The grid wants every pixel of width it can have, so the container stays
+   wide; what it did not have was room to breathe against the band above it
+   or the footer below. Bottom is larger than top on purpose — optically they
+   read as equal once the footer's own rule is counted. */
+main {
+  padding: clamp(20px, 2.6vw, 38px) clamp(14px, 2.2vw, 30px) clamp(30px, 4vw, 60px);
+  max-width: 2200px; margin: 0 auto;
+}
 
 /* ---------- shared blocks ---------- */
 .scope-note {
-  background: #fff; border-inline-start: 3px solid var(--mim-blue-600);
-  padding: 12px 17px; margin-bottom: 18px; font-size: 13.5px; color: var(--mim-grey-dark);
+  background: #fff;
+  border-inline-start: 3px solid var(--mim-blue-600);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  padding: 14px 19px; margin-bottom: 20px;
+  font-size: 13.5px; line-height: 1.72; color: var(--mim-grey-dark);
+  box-shadow: var(--shadow-sm), var(--ring-hairline);
+  /* The column this sits in is as wide as the widest chart. A sentence is
+     not, so it stops at its own measure rather than the container's. */
+  max-width: var(--measure);
+  text-wrap: pretty;
 }
 .scope-note strong { color: var(--mim-grey-darkest); font-weight: 600; }
 .warn-note { border-inline-start-color: #B8860B; }
+:dir(rtl) .scope-note { border-radius: var(--r-md) 0 0 var(--r-md); }
 
-.kpis { display: grid; gap: 13px; margin-bottom: 18px;
+.kpis { display: grid; gap: clamp(13px, 1.1vw, 17px); margin-bottom: clamp(18px, 1.8vw, 26px);
         grid-template-columns: repeat(auto-fit, minmax(196px, 1fr)); }
 /* The tile's shell — white, square, hairline, coloured top rule — is stated
    in ui/mim.css, where it overrides SpotlightCard's own dark panel. What is
@@ -156,19 +229,36 @@ main { padding: clamp(14px, 2.2vw, 30px); max-width: 2200px; margin: 0 auto; }
    the static markup or the SpotlightCard that replaces it. */
 .kpi-island { display: flex; min-width: 0; }
 .kpi-island > * { flex: 1 1 auto; min-width: 0; }
-.kpi { background: #fff; padding: 16px 18px; border: 1px solid var(--mim-black-200);
-       border-top: 3px solid var(--mim-grey-medium); }
+.kpi {
+  background: #fff; padding: 17px 19px; border: none;
+  border-top: 3px solid var(--mim-grey-medium);
+  border-radius: var(--r-sm) var(--r-sm) var(--r-lg) var(--r-lg);
+  box-shadow: var(--shadow-sm), var(--ring-hairline);
+}
 .kpi.is-voc { border-top-color: var(--mim-purple); }
 .kpi.is-uni { border-top-color: var(--mim-blue-600); }
-.kpi .label { font-size: 12px; color: var(--mim-grey-dark); margin-bottom: 5px; }
-.kpi .value { font-family: var(--mim-font-primary); font-size: clamp(24px, 2.7vw, 37px);
-              line-height: 1.1; font-variant-numeric: tabular-nums; direction: ltr; text-align: right; }
-.kpi .sub { font-size: 11.5px; color: var(--mim-grey-dark); margin-top: 4px;
-            font-variant-numeric: tabular-nums; }
+.kpi .label {
+  font-size: 11.5px; font-weight: 500; color: var(--mim-grey-dark);
+  margin-bottom: 6px; letter-spacing: .012em;
+}
+/* The figure is the reason the tile exists: display face, optical tracking,
+   and the descenders given room so a comma never clips. */
+.kpi .value {
+  font-family: var(--mim-font-primary);
+  font-size: clamp(25px, 2.7vw, 38px);
+  line-height: 1.14; letter-spacing: -0.022em;
+  font-variant-numeric: tabular-nums; direction: ltr; text-align: right;
+  color: var(--mim-grey-darkest);
+}
+.kpi .sub {
+  font-size: 11.5px; color: var(--mim-grey-dark); margin-top: 5px;
+  font-variant-numeric: tabular-nums; line-height: 1.55;
+}
 
 /* align-items:start keeps a short card from stretching to match a tall
    neighbour, which otherwise leaves a large void beside long lists. */
-.grid { display: grid; gap: 15px; grid-template-columns: repeat(12, 1fr); align-items: start; }
+.grid { display: grid; gap: clamp(15px, 1.3vw, 20px);
+        grid-template-columns: repeat(12, 1fr); align-items: start; }
 /* Every card is wrapped so React Bits' AnimatedContent can reveal it on
    scroll. The wrapper is the grid child, which is why the column spans live
    on it and not on the card — and why it is in the markup from the start,
@@ -176,10 +266,25 @@ main { padding: clamp(14px, 2.2vw, 30px); max-width: 2200px; margin: 0 auto; }
    measures itself before the bundle hydrates, and it must measure the width
    it is going to keep. */
 .cardwrap { grid-column: span 12; min-width: 0; }
-.card { background: #fff; border: 1px solid var(--mim-black-200);
-        padding: 15px clamp(11px, 1.3vw, 19px) 11px; min-width: 0; }
-.card > h2 { font-size: clamp(14px, 1.25vw, 18px); margin-bottom: 2px; }
-.card > .hint { font-size: 11.5px; color: var(--mim-grey-dark); margin-bottom: 9px; }
+/* The border is gone. A hairline ring plus a tinted shadow says "this is a
+   surface above the page" without drawing a hard box around every figure —
+   and with twenty of these on the overview, twenty hard boxes was most of
+   what you saw. */
+.card {
+  background: #fff; border: none; border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm), var(--ring-hairline);
+  padding: 17px clamp(13px, 1.4vw, 21px) 13px; min-width: 0;
+  transition: box-shadow var(--dur-slow) var(--ease-out-soft);
+}
+.card:hover { box-shadow: var(--shadow-md), var(--ring-hairline); }
+.card > h2 {
+  font-size: clamp(14.5px, 1.25vw, 18px); margin-bottom: 3px;
+  letter-spacing: -0.008em;
+}
+.card > .hint {
+  font-size: 11.5px; color: var(--mim-grey-dark); margin-bottom: 11px;
+  max-width: var(--measure); line-height: 1.6; text-wrap: pretty;
+}
 /* A figure that rests on a level assigned outside the framework, pending
    confirmation. Marked wherever it is shown, never folded in silently. */
 .card > .hint.prov { color: var(--mim-grey-dark); }
@@ -199,30 +304,49 @@ table { border-collapse: collapse; width: 100%; font-size: 13px; }
 th, td { padding: 7px 11px; text-align: right; border-bottom: 1px solid var(--mim-black-200); }
 thead th { position: sticky; top: 0; background: var(--mim-black-100); font-weight: 600;
            font-size: 11px; letter-spacing: .05em; color: var(--mim-grey-dark);
-           text-transform: uppercase; z-index: 1; }
+           text-transform: uppercase; z-index: var(--z-raised); }
 td.num { font-variant-numeric: tabular-nums; direction: ltr; }
+tbody tr { transition: background-color var(--dur-quick) var(--ease-out-quick); }
 tbody tr:hover { background: var(--mim-purple-50); }
 tr.clickable { cursor: pointer; }
 tr.clickable:hover td:first-child { color: var(--mim-purple); font-weight: 600; }
+tr.clickable:active { background: var(--mim-purple-100); }
 
 /* ---------- browse list ---------- */
 .browse-head { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
 input[type="search"], select {
-  font: inherit; font-size: 14px; padding: 7px 12px; border: 1px solid var(--mim-black-300);
-  border-radius: 2px; background: #fff; color: inherit;
+  font: inherit; font-size: 14px; padding: 9px 14px;
+  border: 1px solid var(--mim-black-300);
+  border-radius: var(--r-md); background: #fff; color: inherit;
+  transition: border-color var(--dur-quick) var(--ease-out-quick),
+              box-shadow var(--dur-quick) var(--ease-out-quick);
 }
+input[type="search"]:hover, select:hover { border-color: var(--mim-grey-medium); }
+input[type="search"]:focus { border-color: var(--mim-purple); box-shadow: var(--shadow-sm); }
 input[type="search"] { min-width: 250px; }
 input[type="search"]:focus-visible, select:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 1px; }
 .result-count { font-size: 12.5px; color: var(--mim-grey-dark); font-variant-numeric: tabular-nums; }
 
 .cardlist { display: grid; gap: 11px; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); }
+/* The empty state replaces the whole list, so it spans the whole track set
+   rather than standing in the first column looking like a result. */
+.cardlist > .nodata, .cardlist > .empty { grid-column: 1 / -1; }
 .item {
   background: #fff; border: 1px solid var(--mim-black-200);
   border-inline-start: 3px solid var(--mim-grey-medium);
-  padding: 13px 15px; cursor: pointer; text-align: start; font: inherit; color: inherit;
+  border-radius: var(--r-xs) var(--r-md) var(--r-md) var(--r-xs);
+  padding: 14px 16px; cursor: pointer; text-align: start; font: inherit; color: inherit;
   display: block; width: 100%;
+  transition: border-color var(--dur-base) var(--ease-out-soft),
+              background-color var(--dur-base) var(--ease-out-soft),
+              transform var(--dur-base) var(--ease-out-soft),
+              box-shadow var(--dur-base) var(--ease-out-soft);
 }
-.item:hover { border-inline-start-color: var(--mim-purple); background: var(--mim-purple-50); }
+.item:hover {
+  border-inline-start-color: var(--mim-purple); background: var(--mim-purple-50);
+  transform: translateY(-2px); box-shadow: var(--shadow-md);
+}
+.item:active { transform: translateY(0) scale(.994); box-shadow: var(--shadow-sm); }
 .item:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 1px; }
 .item .name { font-size: 14.5px; font-weight: 600; line-height: 1.4; }
 .item .en { font-size: 11.5px; color: var(--mim-grey-dark); direction: ltr; text-align: right;
@@ -234,12 +358,23 @@ input[type="search"]:focus-visible, select:focus-visible { outline: 2px solid va
 /* ---------- detail ---------- */
 .crumb { font-size: 12.5px; color: var(--mim-grey-dark); margin-bottom: 12px;
          display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
-.crumb button { font: inherit; font-size: 12.5px; background: none; border: none; padding: 0;
-                color: var(--mim-purple); cursor: pointer; text-decoration: underline; }
+.crumb button {
+  font: inherit; font-size: 12.5px; background: none; border: none; padding: 0;
+  color: var(--mim-purple); cursor: pointer; text-decoration: underline;
+  text-underline-offset: 0.18em;
+  transition: color var(--dur-quick) var(--ease-out-quick);
+}
+.crumb button:hover { color: var(--mim-purple-700); text-decoration-thickness: 2px; }
+.crumb button:active { color: var(--mim-purple-800); }
 .crumb .sep { color: var(--mim-grey-medium); }
 
-.detail-head { background: #fff; border: 1px solid var(--mim-black-200);
-               border-top: 3px solid var(--mim-purple); padding: 18px 20px; margin-bottom: 16px; }
+.detail-head {
+  background: #fff; border: none;
+  border-top: 3px solid var(--mim-purple);
+  border-radius: var(--r-sm) var(--r-sm) var(--r-lg) var(--r-lg);
+  box-shadow: var(--shadow-md), var(--ring-hairline);
+  padding: 20px 22px; margin-bottom: 18px;
+}
 .detail-head h2 { font-size: clamp(19px, 2vw, 28px); line-height: 1.3; }
 /* GradientText centres itself and offers a pointer; as a page heading it does
    neither. The gradient runs purple -> teal -> purple, all brand values. */
@@ -253,8 +388,11 @@ input[type="search"]:focus-visible, select:focus-visible { outline: 2px solid va
 .detail-head .en { font-size: 13px; color: var(--mim-grey-dark); direction: ltr;
                    text-align: right; margin-top: 3px; }
 .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 11px; }
-.tag { font-size: 11.5px; padding: 3px 10px; border-radius: 2px;
-       background: var(--mim-black-200); color: var(--mim-grey-dark); }
+.tag {
+  font-size: 11.5px; font-weight: 500; padding: 4px 11px;
+  border-radius: var(--r-pill);
+  background: var(--mim-black-200); color: var(--mim-grey-dark);
+}
 .tag.accent { background: var(--mim-purple); color: #fff; }
 .tag.teal { background: var(--mim-blue-800); color: #fff; }
 .tag.warn { background: #8A6A00; color: #fff; }
@@ -297,9 +435,16 @@ mark { background: var(--mim-blue-100); color: var(--mim-blue-900); padding: 0 2
 .specitem {
   background: var(--mim-blue-50); border: 1px solid var(--mim-blue-200);
   border-inline-start: 3px solid var(--mim-blue-600);
-  padding: 11px 13px; cursor: pointer; text-align: start; font: inherit; color: inherit;
+  border-radius: var(--r-xs) var(--r-md) var(--r-md) var(--r-xs);
+  padding: 12px 14px; cursor: pointer; text-align: start; font: inherit; color: inherit;
+  transition: background-color var(--dur-base) var(--ease-out-soft),
+              transform var(--dur-base) var(--ease-out-soft),
+              box-shadow var(--dur-base) var(--ease-out-soft);
 }
-.specitem:hover { background: var(--mim-blue-100); }
+.specitem:hover {
+  background: var(--mim-blue-100); transform: translateY(-2px); box-shadow: var(--shadow-md);
+}
+.specitem:active { transform: translateY(0) scale(.994); box-shadow: var(--shadow-sm); }
 /* GlareHover supplies the sweep, the tile supplies the box. */
 .rb-glare > .specitem { width: 100%; height: 100%; }
 .specitem:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 1px; }
@@ -308,8 +453,10 @@ mark { background: var(--mim-blue-100); color: var(--mim-blue-900); padding: 0 2
 .specitem .meta { font-size: 11px; color: var(--mim-grey-dark); margin-top: 6px;
                   display: flex; gap: 10px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
 
-.badge { font-size: 11px; padding: 1px 7px; border-radius: 2px;
-         background: var(--mim-purple); color: #fff; font-variant-numeric: tabular-nums; }
+.badge {
+  font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: var(--r-pill);
+  background: var(--mim-purple); color: #fff; font-variant-numeric: tabular-nums;
+}
 
 .parent-of { font-size: 12px; color: var(--mim-grey-dark); margin-bottom: 4px; }
 .parent-of button { font: inherit; font-size: 12px; background: none; border: none; padding: 0;
@@ -318,33 +465,47 @@ mark { background: var(--mim-blue-100); color: var(--mim-blue-900); padding: 0 2
 .siblings { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
 .siblings .lbl { font-size: 11.5px; color: var(--mim-grey-dark); }
 .siblings button {
-  font: inherit; font-size: 12px; padding: 4px 11px; cursor: pointer; border-radius: 2px;
+  font: inherit; font-size: 12px; font-weight: 500;
+  padding: 5px 12px; cursor: pointer; border-radius: var(--r-pill);
   background: #fff; border: 1px solid var(--mim-black-300); color: var(--mim-grey-dark);
+  transition: border-color var(--dur-quick) var(--ease-out-quick),
+              color var(--dur-quick) var(--ease-out-quick),
+              transform var(--dur-instant) var(--ease-press);
 }
 .siblings button:hover { border-color: var(--mim-purple); color: var(--mim-purple); }
+.siblings button:active { transform: scale(.96); }
 .siblings button.on { background: var(--mim-blue-800); border-color: var(--mim-blue-800); color: #fff; }
 
 /* The specialization window sits over its occupation: the page behind stays
    put, so closing returns you exactly where you were. */
 body.win-open { overflow: hidden; }
 .win-overlay {
-  position: fixed; inset: 0; z-index: 60; display: flex;
+  position: fixed; inset: 0; z-index: var(--z-window); display: flex;
   align-items: flex-start; justify-content: center;
   padding: clamp(0px, 3vh, 34px) clamp(0px, 3vw, 28px);
   background: rgba(19, 12, 36, .55); backdrop-filter: blur(2px);
   animation: winFade .16s ease-out;
 }
 @keyframes winFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes noticeRise { from { transform: translateY(100%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .notice { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .win-overlay { animation: none; } }
 
 .win {
   background: var(--mim-black-100); width: min(1120px, 100%);
   max-height: 100%; display: flex; flex-direction: column;
-  border: 1px solid var(--mim-black-300);
-  box-shadow: 0 18px 60px rgba(19, 12, 36, .38);
+  border: none; border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  animation: winRise var(--dur-slow) var(--ease-out-soft) both;
 }
+@keyframes winRise {
+  from { transform: translateY(14px) scale(.985); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .win { animation: none; } }
 .win-head {
-  background: #fff; padding: 16px clamp(14px, 2vw, 24px) 14px;
+  background: #fff; padding: 17px clamp(14px, 2vw, 24px) 15px;
   border-top: 3px solid var(--mim-blue-600);
   border-bottom: 1px solid var(--mim-black-200); flex: none;
 }
@@ -354,32 +515,126 @@ body.win-open { overflow: hidden; }
                 direction: ltr; text-align: right; margin-top: 2px; }
 .win-x {
   font: inherit; font-size: 15px; line-height: 1; flex: none; cursor: pointer;
-  width: 32px; height: 32px; border-radius: 2px;
+  width: 34px; height: 34px; border-radius: var(--r-pill);
   background: var(--mim-black-200); border: none; color: var(--mim-grey-dark);
+  transition: background-color var(--dur-quick) var(--ease-out-quick),
+              color var(--dur-quick) var(--ease-out-quick),
+              transform var(--dur-instant) var(--ease-press);
 }
 .win-x:hover { background: var(--mim-purple); color: #fff; }
+.win-x:active { transform: scale(.9); }
 .win-x:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 2px; }
 
 .win-nav { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 .win-nav button {
-  font: inherit; font-size: 12px; padding: 5px 13px; cursor: pointer; border-radius: 2px;
+  font: inherit; font-size: 12px; font-weight: 500;
+  padding: 6px 14px; cursor: pointer; border-radius: var(--r-pill);
   background: #fff; border: 1px solid var(--mim-black-300); color: var(--mim-grey-dark);
+  transition: border-color var(--dur-quick) var(--ease-out-quick),
+              color var(--dur-quick) var(--ease-out-quick),
+              transform var(--dur-instant) var(--ease-press);
 }
 .win-nav button:hover { border-color: var(--mim-purple); color: var(--mim-purple); }
+.win-nav button:active { transform: scale(.95); }
 .win-nav .pos { font-size: 11.5px; color: var(--mim-grey-dark);
                 font-variant-numeric: tabular-nums; }
 
 .win-body { overflow-y: auto; padding: 16px clamp(12px, 2vw, 22px) 24px; flex: 1; }
 .win-body .kpis { margin-bottom: 15px; }
 
-.nodata { padding: 34px 16px; text-align: center; color: var(--mim-grey-dark); font-size: 14px; }
-.empty { padding: 14px 0; color: var(--mim-grey-dark); font-size: 13px; }
+/* ---------- empty, loading and failed states ----------
+   A search that matches nothing is the most common thing a visitor will see
+   after the overview, and it used to be one grey sentence with nothing to do
+   next. These say what happened, and offer the way out. */
+.nodata {
+  padding: 40px 22px; text-align: center; color: var(--mim-grey-dark); font-size: 14px;
+  background: #fff; border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm), var(--ring-hairline);
+}
+.nodata .nodata-title {
+  font-family: var(--mim-font-primary); font-size: 17px; line-height: 1.4;
+  color: var(--mim-grey-darkest); margin: 0 0 6px;
+}
+.nodata .hint {
+  font-size: 13px; color: var(--mim-grey-dark); margin: 0 auto;
+  max-width: 46ch; line-height: 1.65; text-wrap: pretty;
+}
+.nodata .term {
+  font-weight: 600; color: var(--mim-purple);
+  /* A search term is the visitor's own words echoed back; it must not be able
+     to break out of the sentence around it in an RTL line. */
+  unicode-bidi: isolate;
+}
+.empty { padding: 14px 0; color: var(--mim-grey-dark); font-size: 13px;
+         max-width: var(--measure); line-height: 1.65; }
 
-footer { padding: 20px clamp(14px, 2.6vw, 36px) 36px; color: var(--mim-grey-dark);
-         font-size: 11.5px; line-height: 1.75; border-top: 1px solid var(--mim-black-200);
-         margin-top: 24px; }
-footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5px;
-              border-radius: 2px; direction: ltr; display: inline-block; }
+/* Was an unstyled browser default button sitting in the one composed empty
+   state the dashboard already had. */
+.btn-reset {
+  font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+  margin-top: 14px; padding: 9px 20px; min-height: 40px;
+  border-radius: var(--r-pill);
+  background: var(--mim-purple); border: 1px solid var(--mim-purple); color: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: background-color var(--dur-quick) var(--ease-out-quick),
+              border-color var(--dur-quick) var(--ease-out-quick),
+              transform var(--dur-instant) var(--ease-press),
+              box-shadow var(--dur-quick) var(--ease-out-quick);
+}
+.btn-reset:hover {
+  background: var(--mim-purple-600); border-color: var(--mim-purple-600);
+  box-shadow: var(--shadow-md);
+}
+.btn-reset:active { transform: scale(.97); box-shadow: none; }
+.btn-reset:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 2px; }
+
+/* The first screen. Three scripts totalling about five megabytes parse before
+   a single figure can be drawn, and until this existed that whole window was
+   a blank page under a masthead. The shapes match what replaces them, so the
+   layout does not jump when the real thing arrives. */
+/* Announced, not drawn. The skeleton is aria-hidden, so without this a
+   screen reader is told nothing at all during the load. */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+.boot { display: grid; gap: 15px; }
+.boot-kpis {
+  display: grid; gap: 13px;
+  grid-template-columns: repeat(auto-fit, minmax(196px, 1fr));
+}
+.boot-grid { display: grid; gap: 15px; grid-template-columns: repeat(12, 1fr); }
+.sk {
+  background: #fff; border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm), var(--ring-hairline);
+  position: relative; overflow: hidden;
+}
+.sk-kpi { height: 108px; border-radius: var(--r-sm) var(--r-sm) var(--r-lg) var(--r-lg); }
+.sk-card { height: 320px; grid-column: span 12; }
+@media (min-width: 880px)  { .sk-card.sk-6 { grid-column: span 6; } }
+@media (min-width: 1320px) { .sk-card.sk-8 { grid-column: span 8; }
+                             .sk-card.sk-4 { grid-column: span 4; } }
+/* One pass of light, travelling the way the page reads. Transform only, so
+   it never lays out a second time. */
+.sk::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to left, transparent 0%,
+              var(--mim-black-100) 45%, var(--mim-black-100) 55%, transparent 100%);
+  transform: translateX(-100%);
+  animation: sk-sweep 1.5s var(--ease-out-soft) infinite;
+}
+@keyframes sk-sweep { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .sk::after { animation: none; background: var(--mim-black-100); opacity: .5; }
+}
+
+footer { padding: 26px clamp(14px, 2.6vw, 36px) 40px; color: var(--mim-grey-dark);
+         font-size: 11.5px; line-height: 1.8; border-top: 1px solid var(--mim-black-200);
+         margin-top: 0; background: #fff; }
+footer #provenance { max-width: 108ch; text-wrap: pretty; }
+footer code { font-size: 11px; background: var(--mim-black-200); padding: 2px 6px;
+              border-radius: var(--r-xs); direction: ltr; display: inline-block; }
 .footlinks { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
 .footlinks a { color: var(--mim-grey-dark); display: inline-flex; align-items: center;
                min-height: 44px; padding: 0 8px; }
@@ -390,9 +645,10 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5p
 
 /* ---------- privacy notice ---------- */
 .notice {
-  position: fixed; inset-inline: 0; bottom: 0; z-index: 70;
+  position: fixed; inset-inline: 0; bottom: 0; z-index: var(--z-notice);
   background: #fff; border-top: 3px solid var(--mim-purple);
-  box-shadow: 0 -3px 16px rgba(26,26,26,.12);
+  box-shadow: 0 -4px 24px rgba(26, 20, 40, .13);
+  animation: noticeRise var(--dur-slow) var(--ease-out-soft) both;
   padding: 13px clamp(14px, 2.6vw, 36px);
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   font-size: 13px; color: var(--mim-grey-dark);
@@ -400,11 +656,20 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5p
 .notice[hidden] { display: none; }   /* display:flex above would win otherwise */
 .notice p { margin: 0; flex: 1 1 300px; }
 .notice button {
-  font: inherit; font-size: 13px; cursor: pointer; flex: none;
+  font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; flex: none;
   background: var(--mim-purple); color: #fff; border: 1px solid var(--mim-purple);
-  border-radius: 2px; padding: 9px 22px; min-height: 44px;
+  border-radius: var(--r-pill); padding: 9px 26px; min-height: 44px;
+  box-shadow: var(--shadow-sm);
+  transition: background-color var(--dur-quick) var(--ease-out-quick),
+              border-color var(--dur-quick) var(--ease-out-quick),
+              transform var(--dur-instant) var(--ease-press),
+              box-shadow var(--dur-quick) var(--ease-out-quick);
 }
-.notice button:hover { background: var(--mim-purple-600); border-color: var(--mim-purple-600); }
+.notice button:hover {
+  background: var(--mim-purple-600); border-color: var(--mim-purple-600);
+  box-shadow: var(--shadow-md);
+}
+.notice button:active { transform: scale(.97); box-shadow: none; }
 
 /* ---------- touch targets and section overflow (small screens) ---------- */
 /* The section band scrolls sideways under ~700px, which hid three of the six
@@ -422,6 +687,11 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5p
 </style>
 </head>
 <body>
+
+<!-- The masthead, the band, six sections and a filter strip stand between a
+     keyboard user and the figures. This is the way past them. -->
+<a class="skip-link" href="#view">تخطَّ إلى المحتوى</a>
+<div class="grain" aria-hidden="true"></div>
 
 <header class="masthead">
   <img src="assets/mim-logo-primary.svg"
@@ -456,7 +726,21 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 1px 5p
   <div class="chips" id="fMeasure" role="group" aria-label="الترتيب حسب"></div>
 </div>
 
-<main id="view"></main>
+<main id="view" tabindex="-1">
+  <!-- Replaced by the first route(). It is here rather than written by script
+       because the scripts are exactly what the visitor is waiting for. -->
+  <div class="boot" aria-hidden="true">
+    <div class="boot-kpis">
+      <div class="sk sk-kpi"></div><div class="sk sk-kpi"></div><div class="sk sk-kpi"></div>
+      <div class="sk sk-kpi"></div><div class="sk sk-kpi"></div><div class="sk sk-kpi"></div>
+    </div>
+    <div class="boot-grid">
+      <div class="sk sk-card sk-8"></div><div class="sk sk-card sk-4"></div>
+      <div class="sk sk-card sk-6"></div><div class="sk sk-card sk-6"></div>
+    </div>
+  </div>
+  <p class="visually-hidden" role="status">جارٍ تحميل البيانات…</p>
+</main>
 
 <footer>
   <div id="provenance" data-rb="FadeContent"
@@ -544,6 +828,31 @@ function rbHead(text) {
     { colors: ["@purple", "@blueDeep", "@purpleGlow", "@purple"],
       animationSpeed: 11, yoyo: false }) + esc(text) + "</span>";
 }
+/* A search that found nothing. It says what was looked for and offers the way
+   back, rather than the one grey sentence that used to sit here — which left
+   a visitor who had mistyped with nothing to do but mistype again. */
+function emptySearch(q, inputId, what) {
+  return '<div class="nodata">' +
+    '<p class="nodata-title">لا توجد نتائج مطابقة</p>' +
+    '<p class="hint">' +
+      (q ? 'لا يطابق <span class="term">«' + esc(q) + '»</span> أي عنصر في ' + esc(what) + '.'
+         : 'لا توجد عناصر في ' + esc(what) + ' ضمن السنوات المحددة.') +
+      ' جرّب كلمة أقصر، أو وسّع سنوات التخرج من الشريط أعلى الصفحة.</p>' +
+    (q ? '<button class="btn-reset" data-clear="' + esc(inputId) + '">مسح البحث</button>' : "") +
+    '</div>';
+}
+/* The button above is rewritten with the list on every keystroke, so it is
+   wired each time rather than once. */
+function wireEmptySearch(inputId, repaint) {
+  var btn = document.querySelector('[data-clear="' + inputId + '"]');
+  if (!btn) return;
+  btn.addEventListener("click", function () {
+    var input = document.getElementById(inputId);
+    if (input) { input.value = ""; input.focus(); }
+    repaint();
+  });
+}
+
 /* A browse list. FadeContent brings the whole grid in as one body; searching
    inside it afterwards only replaces the list's own innerHTML, which the
    component neither sees nor minds. */
@@ -1054,7 +1363,8 @@ function viewUniBrowse(levelKey, parentKey, parentIdx) {
         '<div class="meta"><span><b>' + fmt(e[1].grads) + '</b> خريج</span>' +
         '<span><b>' + fmt(e[1].emp) + '</b> متوظف</span>' +
         '<span>نسبة التوظيف <b>' + pct(e[1].emp, e[1].grads) + '</b></span></div></button>';
-    }).join("") : '<p class="empty">لا توجد نتائج مطابقة.</p>';
+    }).join("") : emptySearch(q, "qUni", lvl.label);
+    wireEmptySearch("qUni", function () { paint(""); });
   }
   paint("");
   var t;
@@ -1161,7 +1471,8 @@ function viewVocBrowse() {
         '<div class="meta"><span><b>' + fmt(e[1].grads) + '</b> خريج</span>' +
         '<span><b>' + fmt(e[1].emp) + '</b> متوظف</span>' +
         '<span>نسبة التوظيف <b>' + pct(e[1].emp, e[1].grads) + '</b></span></div></button>';
-    }).join("") : '<p class="empty">لا توجد نتائج مطابقة.</p>';
+    }).join("") : emptySearch(q, "qVoc", "التخصصات المهنية");
+    wireEmptySearch("qVoc", function () { paint(""); });
   }
   paint("");
   var t;
@@ -1392,9 +1703,13 @@ function viewOccBrowse() {
         }).join("") +
         (shown.length > 300
           ? '<p class="empty">يعرض أول 300 من ' + fmt(shown.length) + '. حدّد البحث أكثر.</p>' : "")
-      : '<div class="nodata"><p style="font-size:15px;margin:0 0 6px">لا توجد مهن مطابقة</p>' +
-        '<p class="hint">جرّب توسيع البحث أو إزالة بعض الفلاتر.</p>' +
-        '<button class="btn-reset" id="occReset" style="margin-top:10px">إعادة تعيين الفلاتر</button></div>';
+      : '<div class="nodata"><p class="nodata-title">لا توجد مهن مطابقة</p>' +
+        '<p class="hint">' +
+          (occFilter.q
+            ? 'لا يطابق <span class="term">«' + esc(occFilter.q) + '»</span> أي مهنة ضمن الفلاتر الحالية.'
+            : 'لا توجد مهن ضمن الفلاتر الحالية.') +
+          ' جرّب توسيع البحث أو إزالة بعض الفلاتر.</p>' +
+        '<button class="btn-reset" id="occReset">إعادة تعيين الفلاتر</button></div>';
 
     var rb = document.getElementById("occReset");
     if (rb) rb.addEventListener("click", function () {

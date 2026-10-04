@@ -65,10 +65,20 @@
      Secondary (AR + EN): Diodrum Arabic Regular — subheadings
      Both are licensed commercial faces and are NOT redistributed here, so
      the stacks below name them first and fall back to metrically comparable
-     faces already present on most systems. See data/README.md.             */
+     faces already present on most systems. See data/README.md.
+
+     The face after each licensed name is self-hosted (see assets/design.css),
+     so the fallback is one that was chosen rather than whatever the visitor's
+     machine happened to have. Before they were added these stacks ran all the
+     way down to Times New Roman and Tahoma in practice, on almost every
+     visit.                                                                 */
   --mim-font-primary:   "Lyon Arabic", "Lyon Text", "Noto Naskh Arabic",
                         "Times New Roman", Georgia, serif;
-  --mim-font-secondary: "Diodrum Arabic", "Diodrum", "Noto Sans Arabic",
+  --mim-font-secondary: "Diodrum Arabic", "Diodrum", "IBM Plex Sans Arabic",
+                        "Noto Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+  /* Figures are Latin even inside an Arabic sentence, and they are the thing
+     this dashboard exists to show, so they get the face with the best tabular
+     numerals in the stack rather than the nearest sans.                     */
+  --mim-font-numeric:   "Diodrum Arabic", "IBM Plex Sans Arabic",
                         "Segoe UI", Tahoma, Arial, sans-serif;
-  --mim-font-numeric:   "Diodrum Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
 }

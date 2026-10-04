@@ -105,9 +105,16 @@ npx playwright install chromium     # once
 npm run check                       # -> scripts/check_ui.mjs
 ```
 
-It drives `index.html` in a real browser and prints a PASS/FAIL line per
-check, in the style of `scripts/verify_totals.py`. Two rules earned
-themselves the hard way and are worth keeping:
+It serves the repository over HTTP and drives `index.html` in a real browser,
+printing a PASS/FAIL line per check in the style of `scripts/verify_totals.py`.
+Three rules earned themselves the hard way and are worth keeping:
+
+**Serve it, don't `file://` it.** The checks used to open the page off disk,
+which is not how anyone reads this dashboard and which quietly changes the
+rules: a `null` origin fails CORS, so every `@font-face` is blocked and the
+whole page renders in the fallback stack. Checking the typography of a page
+whose fonts cannot load is checking nothing. The suite now runs a small static
+server, which is what Cloudflare does with `site/` in production.
 
 **Click, don't route.** The checks this replaced navigated by assigning
 `location.hash`. That is not what a visitor does — it never runs the
