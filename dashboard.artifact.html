@@ -858,69 +858,77 @@ body.win-open { overflow: hidden; }
 .win-body { overflow-y: auto; padding: 16px clamp(12px, 2vw, 22px) 24px; flex: 1; }
 .win-body .kpis { margin-bottom: 15px; }
 
-/* ---------- region grid ----------
-   A pick-one-or-two control, not a list of links: the first click reads a
-   region, the second reads it against another. The two selected states are
-   coloured apart because every comparison below them is drawn in those two
-   colours, and a reader has to know which column is which without a legend. */
-.regiongrid {
-  display: grid; gap: clamp(10px, 1vw, 14px); margin-bottom: clamp(18px, 2vw, 26px);
-  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+/* ---------- region tile map ----------
+   A tile grid rather than a projection: every region gets the same square, so
+   a small one is as easy to hit as a large one, and no region is lost at a
+   glance because its land area is small. The container is forced to LTR — a
+   map of the Kingdom has the east coast on the right whichever way the text
+   around it reads — and each tile turns its own text back to RTL. */
+.regionmap {
+  direction: ltr;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-auto-rows: minmax(92px, auto);
+  gap: clamp(7px, .8vw, 12px);
+  max-width: 920px;
+  margin: 0 auto clamp(20px, 2.4vw, 32px);
 }
-.regioncard {
-  position: relative; text-align: start; font: inherit; color: inherit; cursor: pointer;
-  background: #fff; border: none; border-radius: var(--r-lg);
+.rtile {
+  direction: rtl;
+  display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  text-align: center; font: inherit; cursor: pointer;
+  border: none; border-radius: var(--r-lg); padding: 10px 8px;
   box-shadow: var(--shadow-sm), var(--ring-hairline);
-  padding: 14px 16px 13px;
   transition: transform var(--dur-base) var(--ease-out-soft),
               box-shadow var(--dur-base) var(--ease-out-soft);
 }
-.regioncard:hover { transform: translateY(-2px); box-shadow: var(--shadow-md), var(--ring-hairline); }
-.regioncard:active { transform: translateY(0) scale(.99); }
-.regioncard:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 2px; }
-.regioncard .rc-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-.regioncard .rc-value {
-  font-family: var(--mim-font-primary); font-size: 25px; line-height: 1.1;
-  letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
-  direction: ltr; text-align: start;
+.rtile:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg), var(--ring-hairline); }
+.rtile:active { transform: translateY(-1px) scale(.99); }
+.rtile:focus-visible { outline: 3px solid var(--mim-blue-500); outline-offset: 2px; }
+.rt-name { font-size: 12.5px; font-weight: 600; line-height: 1.3; }
+.rt-value {
+  font-family: var(--mim-font-primary); font-size: clamp(18px, 1.7vw, 25px);
+  line-height: 1.1; letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums; direction: ltr;
 }
-.regioncard .rc-bar {
-  height: 5px; border-radius: var(--r-pill); background: var(--mim-black-200);
-  margin: 9px 0 8px; overflow: hidden;
+.rt-meta { font-size: 10px; opacity: .78; font-variant-numeric: tabular-nums; }
+@media (max-width: 700px) {
+  .regionmap { grid-auto-rows: minmax(76px, auto); }
+  .rt-meta { display: none; }
 }
-.regioncard .rc-bar i {
-  display: block; height: 100%; background: var(--mim-grey-medium);
-  transition: background-color var(--dur-base) var(--ease-out-soft);
-}
-.regioncard .rc-meta {
-  font-size: 11px; color: var(--mim-grey-dark); display: flex; gap: 10px;
-  flex-wrap: wrap; font-variant-numeric: tabular-nums;
-}
-.regioncard .rc-meta b { color: var(--mim-grey-darkest); font-weight: 600; }
-/* The tick only exists once a card is chosen; an empty circle on every card
-   would read as a checkbox list and invite picking all thirteen. */
-.regioncard .rc-pick {
-  position: absolute; inset-block-start: 12px; inset-inline-end: 14px;
-  width: 20px; height: 20px; border-radius: var(--r-pill);
-  opacity: 0; transform: scale(.6);
-  transition: opacity var(--dur-quick) var(--ease-out-soft),
-              transform var(--dur-quick) var(--ease-out-soft);
-}
-.regioncard .rc-pick::after {
-  content: "✓"; position: absolute; inset: 0; display: flex;
-  align-items: center; justify-content: center; font-size: 12px; color: #fff;
-}
-.regioncard.is-sel .rc-pick { opacity: 1; transform: scale(1); }
-.regioncard.is-sel { box-shadow: var(--shadow-md), inset 0 0 0 2px var(--mim-purple); }
-.regioncard.is-a .rc-pick { background: var(--mim-purple); }
-.regioncard.is-a .rc-bar i { background: var(--mim-purple); }
-.regioncard.is-b { box-shadow: var(--shadow-md), inset 0 0 0 2px var(--mim-blue-700); }
-.regioncard.is-b .rc-pick { background: var(--mim-blue-700); }
-.regioncard.is-b .rc-bar i { background: var(--mim-blue-600); }
 
-/* A difference between two regions. Direction is stated by the arrow and the
-   sign, never by colour alone — and the colours are the brand's two accents,
-   which are the only pair that stay apart under colour-vision deficiency. */
+/* A region the data holds but the map has no square for. */
+.linkish {
+  font: inherit; font-size: inherit; background: none; border: none; padding: 0;
+  color: var(--mim-purple); cursor: pointer; text-decoration: underline;
+  text-underline-offset: .18em;
+}
+
+/* The compare picker, inside the region window's header. */
+.rgpicker {
+  margin-top: 13px; padding-top: 13px;
+  border-top: 1px solid var(--mim-black-200);
+}
+.rgpicker[hidden] { display: none; }
+.rgpicker .lbl { font-size: 12px; color: var(--mim-grey-dark); display: block; margin-bottom: 8px; }
+.rgpick-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.rgpick {
+  font: inherit; font-size: 12.5px; cursor: pointer;
+  display: inline-flex; align-items: baseline; gap: 7px;
+  padding: 6px 13px; border-radius: var(--r-pill);
+  background: #fff; border: 1px solid var(--mim-black-300); color: var(--mim-grey-darkest);
+  transition: border-color var(--dur-quick) var(--ease-out-quick),
+              background-color var(--dur-quick) var(--ease-out-quick),
+              transform var(--dur-instant) var(--ease-press);
+}
+.rgpick:hover { border-color: var(--mim-purple); color: var(--mim-purple); }
+.rgpick:active { transform: scale(.96); }
+.rgpick.on { background: var(--mim-blue-700); border-color: var(--mim-blue-700); color: #fff; }
+.rgpick-n { font-size: 10.5px; opacity: .7; font-variant-numeric: tabular-nums; direction: ltr; }
+
+/* A difference between two regions. Direction is carried by the arrow and the
+   sign, never by colour alone — and the two colours are the brand's accents,
+   the only pair that stays apart under colour-vision deficiency. */
 .delta { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 .delta.up { color: var(--mim-blue-800); }
 .delta.up::before { content: "▲ "; font-size: 9px; }
@@ -3057,8 +3065,6 @@ function viewSupplyDemand() {
 /* Graduates only. The workforce sheet carries no region at all, so employment
    and Saudization cannot be cut this way and are not shown here; putting a
    national figure on a regional card would read as that region's. */
-var regionSel = [];
-
 function regionList() {
   var seen = {}, out = [];
   function add(rows) {
@@ -3232,289 +3238,390 @@ function pairBarChart(id, entries, nameA, nameB, opts) {
   });
 }
 
-/* -------------------------------- view ---------------------------------- */
-function viewRegions() {
-  var names = regionList();
-  var stats = names.map(regionStats);
-  var maxG = stats.reduce(function (a, s) { return Math.max(a, s.grads); }, 0) || 1;
+/* ------------------------------ the map --------------------------------- */
+/* A tile grid, not a projection: every region gets the same square so a small
+   one is as clickable as a large one, placed where it actually sits. The grid
+   is forced to LTR — a map has east on the right whatever direction the text
+   around it runs — and each tile turns its own text back to RTL.
 
-  var html =
+   Columns run west (1) to east (5), rows north (1) to south (5). */
+var REGION_MAP = [
+  { name: "تبوك",             col: 2, row: 1 },
+  { name: "الجوف",            col: 3, row: 1 },
+  { name: "الحدود الشمالية",  col: 4, row: 1 },
+  { name: "المدينة المنورة",  col: 2, row: 2 },
+  { name: "حائل",             col: 3, row: 2 },
+  { name: "القصيم",           col: 4, row: 2 },
+  { name: "الشرقية",          col: 5, row: 2, rowSpan: 2 },
+  { name: "مكة المكرمة",      col: 2, row: 3 },
+  { name: "الرياض",           col: 4, row: 3 },
+  { name: "الباحة",           col: 2, row: 4 },
+  { name: "عسير",             col: 2, row: 5 },
+  { name: "نجران",            col: 3, row: 5 },
+  { name: "جازان",            col: 1, row: 5 }
+];
+
+function regionRank(name) {
+  var all = regionList().map(regionStats).sort(function (a, b) { return b.grads - a.grads; });
+  for (var i = 0; i < all.length; i++) if (all[i].name === name) return i + 1;
+  return null;
+}
+function nationalTotals() {
+  var v = total(vocRows()), u = total(uniRows());
+  return { grads: v.grads + u.grads, emp: v.emp + u.emp };
+}
+
+/* ------------------------------ the window ------------------------------ */
+var regionKeyHandler = null;
+function closeRegionWindow() {
+  var el = document.getElementById("regionWin");
+  if (el) el.remove();
+  document.body.classList.remove("win-open");
+  if (regionKeyHandler) {
+    document.removeEventListener("keydown", regionKeyHandler);
+    regionKeyHandler = null;
+  }
+}
+
+function viewRegions(openIdx, vsIdx) {
+  var names = regionList();
+  var stats = {};
+  names.forEach(function (n) { stats[n] = regionStats(n); });
+  var maxG = names.reduce(function (a, n) { return Math.max(a, stats[n].grads); }, 0) || 1;
+  var nat = nationalTotals();
+
+  /* Placed regions first, then anything the data has that the map does not —
+     a region added to the source later shows up under the map rather than
+     disappearing from the page. */
+  var placed = {}; REGION_MAP.forEach(function (t) { placed[t.name] = 1; });
+  var unplaced = names.filter(function (n) { return !placed[n]; });
+
+  function shadeOf(g) {
+    /* Darker is bigger. Same purple ramp the NQF chart uses, so a dark tile
+       means the same thing here as a dark bar does there. */
+    var i = Math.round(Math.pow(g / maxG, 0.6) * (NQF_RAMP.length - 1));
+    return NQF_RAMP[Math.max(0, Math.min(NQF_RAMP.length - 1, i))];
+  }
+  function tileHtml(t) {
+    var s = stats[t.name];
+    if (!s) return "";
+    var bg = shadeOf(s.grads);
+    var dark = s.grads / maxG > 0.34;
+    return '<button class="rtile" data-region="' + esc(t.name) + '"' +
+      ' style="grid-column:' + t.col + ';grid-row:' + t.row +
+        (t.rowSpan ? " / span " + t.rowSpan : "") + ';background:' + bg +
+        ';color:' + (dark ? "#fff" : "var(--mim-grey-darkest)") + '"' +
+      ' aria-label="' + esc(t.name + " — " + fmt(s.grads) + " خريجًا") + '">' +
+      '<span class="rt-name">' + esc(t.name) + '</span>' +
+      '<span class="rt-value">' + fmt(s.grads) + '</span>' +
+      '<span class="rt-meta">' + fmt(s.universities) + ' جامعة · ' +
+        fmt(s.majors) + ' تخصص</span>' +
+    '</button>';
+  }
+
+  document.getElementById("view").innerHTML =
     '<p class="scope-note"><strong>نطاق الصفحة:</strong> أعداد الخريجين حسب منطقة ' +
       'الجهة التعليمية، من مصدري المهني والتقني والجامعات. ' +
       '<strong>بيانات العاملين ونسب التوطين لا تحمل منطقة</strong> في مصدرها، ' +
       'فلا تظهر هنا — ووضع رقم وطني على بطاقة منطقة يُقرأ على أنه رقمها.</p>' +
     '<div class="browse-head">' +
-      '<span class="result-count" id="rgHint"></span>' +
+      '<span class="result-count">اضغط منطقة لعرض بياناتها، ومن داخلها يمكنك مقارنتها بأخرى · ' +
+        'الأغمق أكثر خريجين</span>' +
       '<button class="btn-reset" id="rgExportAll" style="margin-top:0">تصدير كل المناطق (CSV)</button>' +
-      '<button class="btn-reset" id="rgClear" style="margin-top:0;background:#fff;color:var(--mim-grey-darkest);border-color:var(--mim-black-300)">إلغاء التحديد</button>' +
     '</div>' +
-    '<div class="regiongrid" id="rgGrid">' +
-      stats.sort(function (a, b) { return b.grads - a.grads; }).map(function (s) {
-        return '<button class="regioncard" data-region="' + esc(s.name) + '">' +
-          '<div class="rc-name">' + esc(s.name) + '</div>' +
-          '<div class="rc-value">' + fmt(s.grads) + '</div>' +
-          '<div class="rc-bar"><i style="width:' + (s.grads / maxG * 100).toFixed(1) + '%"></i></div>' +
-          '<div class="rc-meta"><span>مهني <b>' + fmt(s.voc.grads) + '</b></span>' +
-            '<span>جامعي <b>' + fmt(s.uni.grads) + '</b></span>' +
-            '<span>توظيف <b>' + pct(s.emp, s.grads) + '</b></span></div>' +
-          '<span class="rc-pick" aria-hidden="true"></span>' +
-        '</button>';
-      }).join("") +
+    '<div class="regionmap" id="rgMap" role="group" aria-label="خريطة المناطق">' +
+      REGION_MAP.map(tileHtml).join("") +
     '</div>' +
-    '<div id="rgBody"></div>';
-  document.getElementById("view").innerHTML = html;
+    (unplaced.length
+      ? '<p class="empty">مناطق في البيانات بلا موضع على الخريطة: ' +
+        unplaced.map(function (n) {
+          return '<button class="linkish" data-region="' + esc(n) + '">' + esc(n) + '</button>';
+        }).join("، ") + '</p>'
+      : "") +
+    '<div class="grid" style="margin-top:4px">' +
+      chartCard("ترتيب المناطق", "المهني والتقني مقابل الجامعي", "rgAll", "span6", "tall") +
+      chartCard("نسبة التوظيف حسب المنطقة", "المتوظفون من الخريجين", "rgRate", "span6", "tall") +
+    '</div>';
 
-  function mark() {
-    Array.prototype.forEach.call(document.querySelectorAll(".regioncard"), function (b) {
-      var i = regionSel.indexOf(b.getAttribute("data-region"));
-      b.classList.toggle("is-sel", i !== -1);
-      b.classList.toggle("is-a", i === 0);
-      b.classList.toggle("is-b", i === 1);
-      b.setAttribute("aria-pressed", String(i !== -1));
-    });
-    var h = document.getElementById("rgHint");
-    h.textContent = regionSel.length === 0
-      ? "اختر منطقة لعرض بياناتها، ثم منطقة أخرى للمقارنة"
-      : regionSel.length === 1
-        ? "المعروضة: " + regionSel[0] + " — اختر منطقة ثانية للمقارنة"
-        : "المقارنة: " + regionSel[0] + " مقابل " + regionSel[1];
-  }
-
-  document.getElementById("rgGrid").addEventListener("click", function (e) {
-    var b = e.target.closest(".regioncard");
-    if (!b) return;
-    var name = b.getAttribute("data-region");
-    var i = regionSel.indexOf(name);
-    if (i !== -1) regionSel.splice(i, 1);
-    else if (regionSel.length < 2) regionSel.push(name);
-    /* A third pick replaces the older of the two rather than being ignored:
-       the common move is to keep one region and swap what it is read against. */
-    else regionSel = [regionSel[1], name];
-    mark(); paint();
-  });
-  document.getElementById("rgClear").addEventListener("click", function () {
-    regionSel = []; mark(); paint();
-  });
   document.getElementById("rgExportAll").addEventListener("click", exportAllRegions);
+  document.getElementById("view").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-region]");
+    if (!b) return;
+    var i = names.indexOf(b.getAttribute("data-region"));
+    if (i !== -1) location.hash = "#regions/" + i;
+  });
 
-  function paint() {
-    disposeCharts();
-    var body = document.getElementById("rgBody");
-    if (!regionSel.length) { paintAll(body); }
-    else if (regionSel.length === 1) { paintOne(body, regionSel[0]); }
-    else { paintTwo(body, regionSel[0], regionSel[1]); }
-    if (ui()) ui().hydrate(body);
-  }
+  var ordered = names.map(function (n) { return stats[n]; })
+                     .sort(function (a, b) { return a.grads - b.grads; });
+  barChart("rgAll", ordered.map(function (s) { return [s.name, s.grads, s.uni.grads]; }),
+    { labelWidth: 150, legendColor: C.uni,
+      outerName: "إجمالي الخريجين", innerName: "منهم خريجو الجامعات",
+      ratioName: "حصة الجامعي" });
+  barChart("rgRate", ordered.slice().sort(function (a, b) {
+    return (a.grads ? a.emp / a.grads : 0) - (b.grads ? b.emp / b.grads : 0);
+  }).map(function (s) {
+    return [s.name, +(s.grads ? s.emp / s.grads * 100 : 0).toFixed(1)];
+  }), { labelWidth: 150, labelRoom: 64, unit: "٪ توظيف",
+        colorFn: function () { return C.voc; } });
 
-  function paintAll(body) {
-    body.innerHTML =
-      kpiHtml([
-        { label: "المناطق المشمولة", value: names.length, sub: "Regions" },
-        { label: "إجمالي الخريجين", value: stats.reduce(function (a, s) { return a + s.grads; }, 0),
-          sub: "في كل المناطق · " + state.years.length + " سنوات" },
-        { cls: "is-voc", label: "أعلى منطقة", raw: esc(stats[0].name),
-          sub: fmt(stats[0].grads) + " خريجًا" },
-        { cls: "is-uni", label: "أدنى منطقة", raw: esc(stats[stats.length - 1].name),
-          sub: fmt(stats[stats.length - 1].grads) + " خريجًا" }
-      ]) +
-      '<div class="grid">' +
-        chartCard("الخريجون حسب المنطقة", "المهني والتقني مقابل الجامعي",
-          "rgAll", "span6", "tall") +
-        chartCard("نسبة التوظيف حسب المنطقة", "المتوظفون من الخريجين",
-          "rgRate", "span6", "tall") +
-      '</div>';
-    barChart("rgAll", stats.slice().reverse().map(function (s) {
-      return [s.name, s.grads, s.uni.grads];
-    }), { labelWidth: 150, legendColor: C.uni,
-          outerName: "إجمالي الخريجين", innerName: "منهم خريجو الجامعات",
-          ratioName: "حصة الجامعي" });
-    barChart("rgRate", stats.slice().sort(function (a, b) {
-      return (a.grads ? a.emp / a.grads : 0) - (b.grads ? b.emp / b.grads : 0);
-    }).map(function (s) {
-      return [s.name, +(s.grads ? s.emp / s.grads * 100 : 0).toFixed(1)];
-    }), { labelWidth: 150, labelRoom: 64, unit: "٪ توظيف",
-          colorFn: function () { return C.voc; } });
-  }
+  if (openIdx === undefined || !names[openIdx]) return;
+  openRegionWindow(names, openIdx, vsIdx, stats, nat);
+}
 
-  function paintOne(body, name) {
-    var s = regionStats(name);
-    body.innerHTML =
-      '<div class="browse-head" style="margin-top:4px">' +
-        '<button class="btn-reset" id="rgExportOne" style="margin-top:0">تصدير بيانات ' +
-          esc(name) + ' (CSV)</button></div>' +
-      kpiHtml([
-        { label: "إجمالي الخريجين", value: s.grads, sub: esc(name) + " · " + state.years.length + " سنوات" },
-        { cls: "is-voc", label: "المهني والتقني", value: s.voc.grads,
-          sub: pct(s.voc.grads, s.grads) + " من المنطقة" },
-        { cls: "is-uni", label: "الجامعات", value: s.uni.grads,
-          sub: pct(s.uni.grads, s.grads) + " من المنطقة" },
-        { label: "المتوظفون", value: s.emp, sub: "نسبة التوظيف " + pct(s.emp, s.grads) },
-        { label: "الجهات التدريبية", value: s.institutions, sub: fmt(s.universities) + " جامعة" },
-        { label: "التخصصات", value: s.majors, sub: "مهنية وجامعية" }
-      ]) +
-      '<div class="grid">' +
-        chartCard("الخريجون حسب السنة", "المهني والتقني مقابل الجامعي", "rgTrend", "span8") +
-        chartCard("التوزيع حسب الجنس", "", "rgGender", "span4") +
-        chartCard("أعلى التخصصات المهنية", "", "rgVoc", "span6", "tall") +
-        chartCard("أعلى التخصصات الجامعية", "", "rgUni", "span6", "tall") +
-        chartCard("الجهات التدريبية", "بترتيب عدد الخريجين", "rgInst", "span6", "tall") +
-        chartCard("الجامعات", "بترتيب عدد الخريجين", "rgUniv", "span6", "tall") +
-      '</div>';
-    document.getElementById("rgExportOne").addEventListener("click", function () {
-      exportRegionDetail(name);
+function openRegionWindow(names, openIdx, vsIdx, stats, nat) {
+  var a = names[openIdx];
+  var b = vsIdx !== undefined && names[vsIdx] !== undefined ? names[vsIdx] : null;
+  var sa = stats[a], sb = b ? stats[b] : null;
+
+  document.body.classList.add("win-open");
+  resetReveals();
+  document.body.insertAdjacentHTML("beforeend",
+    '<div class="win-overlay" id="regionWin" role="dialog" aria-modal="true" ' +
+      'aria-label="' + esc(b ? a + " مقابل " + b : a) + '">' +
+      '<div class="win">' +
+        '<header class="win-head">' +
+          '<div class="win-head-top">' +
+            '<div class="parent-of">' + (b ? "مقارنة منطقتين" : "منطقة") + '</div>' +
+            '<button class="win-x" id="rgClose" aria-label="إغلاق">✕</button>' +
+          '</div>' +
+          '<h2>' + esc(b ? a + "  مقابل  " + b : a) + '</h2>' +
+          '<div class="tags">' +
+            '<span class="tag accent">الترتيب ' + regionRank(a) + ' من ' + names.length + '</span>' +
+            '<span class="tag teal">' + pct(sa.grads, nat.grads) + ' من خريجي المملكة</span>' +
+            (b ? '<span class="tag">' + esc(b) + ' · الترتيب ' + regionRank(b) + '</span>' : "") +
+          '</div>' +
+          '<div class="win-nav">' +
+            (b
+              ? '<button id="rgUncompare">إلغاء المقارنة</button>' +
+                '<button id="rgPick">تغيير منطقة المقارنة</button>' +
+                '<button id="rgExportCmp">تصدير المقارنة (CSV)</button>'
+              : '<button id="rgPick">قارن مع منطقة أخرى…</button>' +
+                '<button id="rgExportOne">تصدير بيانات ' + esc(a) + ' (CSV)</button>') +
+            '<span class="pos">' + esc(a) + '</span>' +
+          '</div>' +
+          '<div class="rgpicker" id="rgPicker" hidden>' +
+            '<span class="lbl">اختر منطقة للمقارنة مع ' + esc(a) + ':</span>' +
+            '<div class="rgpick-grid">' +
+              names.map(function (n, i) {
+                if (n === a) return "";
+                return '<button class="rgpick' + (n === b ? " on" : "") +
+                  '" data-vs="' + i + '">' + esc(n) +
+                  '<span class="rgpick-n">' + fmt(stats[n].grads) + '</span></button>';
+              }).join("") +
+            '</div>' +
+          '</div>' +
+        '</header>' +
+        '<div class="win-body" id="rgWinBody"></div>' +
+      '</div>' +
+    '</div>');
+
+  var body = document.getElementById("rgWinBody");
+  if (b) paintRegionCompare(body, sa, sb, a, b);
+  else paintRegionOne(body, sa, a, nat);
+
+  var back = "#regions";
+  function close() { location.hash = back; }
+  document.getElementById("rgClose").addEventListener("click", close);
+  document.getElementById("regionWin").addEventListener("click", function (e) {
+    if (e.target.id === "regionWin") close();
+  });
+  var picker = document.getElementById("rgPicker");
+  document.getElementById("rgPick").addEventListener("click", function () {
+    picker.hidden = !picker.hidden;
+    if (!picker.hidden) {
+      var first = picker.querySelector(".rgpick");
+      if (first) first.focus();
+    }
+  });
+  picker.addEventListener("click", function (e) {
+    var p = e.target.closest(".rgpick");
+    if (p) location.hash = "#regions/" + openIdx + "/" + p.getAttribute("data-vs");
+  });
+  if (b) {
+    document.getElementById("rgUncompare").addEventListener("click", function () {
+      location.hash = "#regions/" + openIdx;
     });
-    var vY = agg(s.rows.voc, function (f) { return f.year; });
-    var uY = agg(s.rows.uni, function (f) { return f.year; });
-    trendChart("rgTrend", [
-      { name: "خريجو المهني والتقني", empName: "متوظفو المهني والتقني", color: C.voc,
-        data: YEARS.map(function (y) { return vY.has(y) ? vY.get(y).grads : 0; }),
-        emp: YEARS.map(function (y) { return vY.has(y) ? vY.get(y).emp : 0; }) },
-      { name: "خريجو الجامعات", empName: "متوظفو الجامعات", color: C.uni,
-        data: YEARS.map(function (y) { return uY.has(y) ? uY.get(y).grads : 0; }),
-        emp: YEARS.map(function (y) { return uY.has(y) ? uY.get(y).emp : 0; }) }
-    ]);
-    var g = agg(s.rows.voc.concat(s.rows.uni), function (f) { return genderLabel(f.gender); });
-    barChart("rgGender", GENDERS.map(function (x) {
-      var c0 = g.get(x); return [x, c0 ? c0.grads : 0, c0 ? c0.emp : 0];
-    }), { colorFn: function (e) {
-            return e[0] === "ذكر" ? C.voc : e[0] === "أنثى" ? C.uni : C.neutral; },
-          hatchFn: function (e) { return e[0] === "غير متوفر"; }, labelWidth: 90 });
-    barChart("rgVoc", ranked(agg(s.rows.voc, function (f) { return f.major; }), state.measure)
-      .slice(0, 12).reverse().map(pair), { labelWidth: 190 });
-    barChart("rgUni", ranked(agg(s.rows.uni, function (f) { return f.m; }), state.measure)
-      .slice(0, 12).reverse().map(pair),
-      { labelWidth: 190, colorFn: function () { return C.uni; }, legendColor: C.uni });
-    barChart("rgInst", ranked(agg(s.rows.voc, function (f) { return f.inst; }), state.measure)
-      .slice(0, 12).reverse().map(pair), { labelWidth: 230, labelRoom: 78 });
-    barChart("rgUniv", ranked(agg(s.rows.uni, function (f) { return f.uni; }), state.measure)
-      .slice(0, 12).reverse().map(pair),
-      { labelWidth: 230, labelRoom: 78, colorFn: function () { return C.uni; },
-        legendColor: C.uni });
-  }
-
-  function paintTwo(body, a, b) {
-    var sa = regionStats(a), sb = regionStats(b);
-    function delta(x, y) {
-      var d = x - y;
-      var cls = d > 0 ? "up" : d < 0 ? "down" : "same";
-      return '<span class="delta ' + cls + '">' + (d > 0 ? "+" : "") + fmt(d) +
-        (y ? "  (" + (d > 0 ? "+" : "") + (d / y * 100).toFixed(1) + "٪)" : "") + '</span>';
-    }
-    function row(label, x, y, isPct) {
-      return '<tr><td>' + esc(label) + '</td>' +
-        '<td class="num">' + (isPct ? x.toFixed(1) + "%" : fmt(x)) + '</td>' +
-        '<td class="num">' + (isPct ? y.toFixed(1) + "%" : fmt(y)) + '</td>' +
-        '<td class="num">' + (isPct
-          ? '<span class="delta ' + (x > y ? "up" : x < y ? "down" : "same") + '">' +
-            (x > y ? "+" : "") + (x - y).toFixed(1) + " نقطة</span>"
-          : delta(x, y)) + '</td></tr>';
-    }
-    var ra = sa.grads ? sa.emp / sa.grads * 100 : 0;
-    var rb = sb.grads ? sb.emp / sb.grads * 100 : 0;
-    body.innerHTML =
-      '<div class="browse-head" style="margin-top:4px">' +
-        '<button class="btn-reset" id="rgExportCmp" style="margin-top:0">تصدير المقارنة (CSV)</button>' +
-        '<span class="result-count">العمود الأول ' + esc(a) + '، والثاني ' + esc(b) +
-          '، والفرق محسوب بينهما</span></div>' +
-      '<div class="grid">' +
-        card("مقارنة " + a + " و " + b, "الفرق موجب حين تتقدم " + a,
-          '<div class="table-wrap"><table><thead><tr>' +
-            '<th>المؤشر</th><th class="num">' + esc(a) + '</th>' +
-            '<th class="num">' + esc(b) + '</th><th class="num">الفرق</th>' +
-          '</tr></thead><tbody>' +
-            row("إجمالي الخريجين", sa.grads, sb.grads) +
-            row("خريجو المهني والتقني", sa.voc.grads, sb.voc.grads) +
-            row("خريجو الجامعات", sa.uni.grads, sb.uni.grads) +
-            row("المتوظفون", sa.emp, sb.emp) +
-            row("نسبة التوظيف", ra, rb, true) +
-            row("الجهات التدريبية", sa.institutions, sb.institutions) +
-            row("الجامعات", sa.universities, sb.universities) +
-            row("التخصصات", sa.majors, sb.majors) +
-          '</tbody></table></div>', "span6") +
-        chartCard("الخريجون حسب السنة", esc(a) + " مقابل " + esc(b), "rgCmpTrend", "span6") +
-        chartCard("مقارنة المؤشرات", "القيم مطبّعة إلى ١٠٠ لأكبر المنطقتين في كل مؤشر",
-          "rgCmpBars", "span6", "tall") +
-        chartCard("أعلى التخصصات في المنطقتين",
-          "أعلى ١٠ تخصصات في " + esc(a) + " وما يقابلها في " + esc(b),
-          "rgCmpMaj", "span6", "tall") +
-      '</div>';
     document.getElementById("rgExportCmp").addEventListener("click", function () {
       exportComparison(a, b);
     });
-    function yearly(s) {
-      return YEARS.map(function (y) {
-        return total(s.rows.voc.filter(function (f) { return f.year === y; })).grads +
-               total(s.rows.uni.filter(function (f) { return f.year === y; })).grads;
-      });
-    }
-    trendChart("rgCmpTrend", [
-      { name: a, empName: a + " — متوظفون", color: C.voc, data: yearly(sa),
-        emp: YEARS.map(function (y) {
-          return total(sa.rows.voc.filter(function (f) { return f.year === y; })).emp +
-                 total(sa.rows.uni.filter(function (f) { return f.year === y; })).emp; }) },
-      { name: b, empName: b + " — متوظفون", color: C.uni, data: yearly(sb),
-        emp: YEARS.map(function (y) {
-          return total(sb.rows.voc.filter(function (f) { return f.year === y; })).emp +
-                 total(sb.rows.uni.filter(function (f) { return f.year === y; })).emp; }) }
-    ]);
-    /* Normalised, because employment rate and graduate counts cannot share an
-       axis: the rate would be an invisible line beside a five-figure bar. */
-    var metrics = [
-      ["إجمالي الخريجين", sa.grads, sb.grads],
-      ["المهني والتقني", sa.voc.grads, sb.voc.grads],
-      ["الجامعات", sa.uni.grads, sb.uni.grads],
-      ["المتوظفون", sa.emp, sb.emp],
-      ["نسبة التوظيف", ra, rb],
-      ["الجهات التدريبية", sa.institutions, sb.institutions],
-      ["التخصصات", sa.majors, sb.majors]
-    ];
-    var cmp = mount("rgCmpBars");
-    if (cmp) {
-      cmp.setOption({
-        textStyle: baseText(),
-        grid: { left: 8, right: 70, top: 30, bottom: 8, containLabel: true },
-        legend: { top: 0, right: 2, left: 2, icon: "roundRect", itemWidth: 13, itemHeight: 9,
-                  textStyle: { color: C.muted, fontFamily: FONT, fontSize: 12 } },
-        tooltip: tip({ trigger: "axis", axisPointer: { type: "shadow" },
-          formatter: function (ps) {
-            var m = metrics[metrics.length - 1 - ps[0].dataIndex];
-            var isRate = m[0] === "نسبة التوظيف";
-            return esc(m[0]) + "<br>" + esc(a) + " <b>" +
-              (isRate ? m[1].toFixed(1) + "%" : fmt(m[1])) + "</b><br>" + esc(b) + " <b>" +
-              (isRate ? m[2].toFixed(1) + "%" : fmt(m[2])) + "</b>"; } }),
-        xAxis: Object.assign({ type: "value", max: 100 }, AXIS,
-          { axisLine: { show: false }, splitLine: { show: false }, axisLabel: { show: false } }),
-        yAxis: Object.assign({ type: "category",
-          data: metrics.slice().reverse().map(function (m) { return m[0]; }) },
-          AXIS, { splitLine: { show: false }, axisLine: { show: false },
-                  axisLabel: { color: C.muted, fontFamily: FONT, fontSize: 11.5,
-                               width: 150, overflow: "truncate" } }),
-        series: [a, b].map(function (nm, si) {
-          return { name: nm, type: "bar", barWidth: "34%",
-            itemStyle: { color: si === 0 ? C.voc : C.uni, borderRadius: [0, 4, 4, 0] },
-            data: metrics.slice().reverse().map(function (m) {
-              var mx = Math.max(m[1], m[2]) || 1;
-              return { value: +(m[si + 1] / mx * 100).toFixed(1) };
-            }),
-            label: { show: true, position: "right", color: C.ink, fontFamily: FONT,
-                     fontSize: 11, fontWeight: 600,
-                     formatter: function (p) {
-                       var m = metrics[metrics.length - 1 - p.dataIndex];
-                       return m[0] === "نسبة التوظيف"
-                         ? m[si + 1].toFixed(1) + "%" : fmt(m[si + 1]); } } };
-        })
-      });
-    }
-    var topA = ranked(agg(sa.rows.voc.concat(sa.rows.uni),
-      function (f) { return f.major || f.m; }), "grads").slice(0, 10);
-    var mapB = agg(sb.rows.voc.concat(sb.rows.uni), function (f) { return f.major || f.m; });
-    pairBarChart("rgCmpMaj", topA.slice().reverse().map(function (e) {
-      var other = mapB.get(e[0]);
-      return [e[0], e[1].grads, other ? other.grads : 0];
-    }), a, b, { labelWidth: 200, labelRoom: 84 });
+  } else {
+    document.getElementById("rgExportOne").addEventListener("click", function () {
+      exportRegionDetail(a);
+    });
   }
+  regionKeyHandler = function (e) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (!picker.hidden) { picker.hidden = true; return; }
+      close();
+    }
+  };
+  document.addEventListener("keydown", regionKeyHandler);
+  if (ui()) ui().hydrate(document.getElementById("regionWin"));
+}
 
-  mark(); paint();
+function paintRegionOne(body, s, name, nat) {
+  body.innerHTML =
+    kpiHtml([
+      { label: "إجمالي الخريجين", value: s.grads,
+        sub: pct(s.grads, nat.grads) + " من المملكة · " + state.years.length + " سنوات" },
+      { cls: "is-voc", label: "المهني والتقني", value: s.voc.grads,
+        sub: pct(s.voc.grads, s.grads) + " من المنطقة" },
+      { cls: "is-uni", label: "الجامعات", value: s.uni.grads,
+        sub: pct(s.uni.grads, s.grads) + " من المنطقة" },
+      { label: "المتوظفون", value: s.emp,
+        sub: "نسبة التوظيف " + pct(s.emp, s.grads) },
+      { label: "الجهات التدريبية", value: s.institutions,
+        sub: fmt(s.universities) + " جامعة" },
+      { label: "التخصصات", value: s.majors, sub: "مهنية وجامعية" }
+    ]) +
+    '<div class="grid">' +
+      chartCard("الخريجون حسب السنة", "المهني والتقني مقابل الجامعي", "rgTrend", "span8") +
+      chartCard("التوزيع حسب الجنس", "", "rgGender", "span4") +
+      chartCard("أعلى التخصصات المهنية", "", "rgVoc", "span6", "tall") +
+      chartCard("أعلى التخصصات الجامعية", "", "rgUni", "span6", "tall") +
+      chartCard("الجهات التدريبية", "بترتيب عدد الخريجين", "rgInst", "span6", "tall") +
+      chartCard("الجامعات", "بترتيب عدد الخريجين", "rgUniv", "span6", "tall") +
+    '</div>';
+  var vY = agg(s.rows.voc, function (f) { return f.year; });
+  var uY = agg(s.rows.uni, function (f) { return f.year; });
+  trendChart("rgTrend", [
+    { name: "خريجو المهني والتقني", empName: "متوظفو المهني والتقني", color: C.voc,
+      data: YEARS.map(function (y) { return vY.has(y) ? vY.get(y).grads : 0; }),
+      emp: YEARS.map(function (y) { return vY.has(y) ? vY.get(y).emp : 0; }) },
+    { name: "خريجو الجامعات", empName: "متوظفو الجامعات", color: C.uni,
+      data: YEARS.map(function (y) { return uY.has(y) ? uY.get(y).grads : 0; }),
+      emp: YEARS.map(function (y) { return uY.has(y) ? uY.get(y).emp : 0; }) }
+  ]);
+  var g = agg(s.rows.voc.concat(s.rows.uni), function (f) { return genderLabel(f.gender); });
+  barChart("rgGender", GENDERS.map(function (x) {
+    var c0 = g.get(x); return [x, c0 ? c0.grads : 0, c0 ? c0.emp : 0];
+  }), { colorFn: function (e) {
+          return e[0] === "ذكر" ? C.voc : e[0] === "أنثى" ? C.uni : C.neutral; },
+        hatchFn: function (e) { return e[0] === "غير متوفر"; }, labelWidth: 90 });
+  barChart("rgVoc", ranked(agg(s.rows.voc, function (f) { return f.major; }), state.measure)
+    .slice(0, 12).reverse().map(pair), { labelWidth: 190 });
+  barChart("rgUni", ranked(agg(s.rows.uni, function (f) { return f.m; }), state.measure)
+    .slice(0, 12).reverse().map(pair),
+    { labelWidth: 190, colorFn: function () { return C.uni; }, legendColor: C.uni });
+  barChart("rgInst", ranked(agg(s.rows.voc, function (f) { return f.inst; }), state.measure)
+    .slice(0, 12).reverse().map(pair), { labelWidth: 230, labelRoom: 78 });
+  barChart("rgUniv", ranked(agg(s.rows.uni, function (f) { return f.uni; }), state.measure)
+    .slice(0, 12).reverse().map(pair),
+    { labelWidth: 230, labelRoom: 78, colorFn: function () { return C.uni; },
+      legendColor: C.uni });
+}
+
+function paintRegionCompare(body, sa, sb, a, b) {
+  function delta(x, y) {
+    var d = x - y;
+    var cls = d > 0 ? "up" : d < 0 ? "down" : "same";
+    return '<span class="delta ' + cls + '">' + (d > 0 ? "+" : "") + fmt(d) +
+      (y ? "  (" + (d > 0 ? "+" : "") + (d / y * 100).toFixed(1) + "٪)" : "") + '</span>';
+  }
+  function row(label, x, y, isPct) {
+    return '<tr><td>' + esc(label) + '</td>' +
+      '<td class="num">' + (isPct ? x.toFixed(1) + "%" : fmt(x)) + '</td>' +
+      '<td class="num">' + (isPct ? y.toFixed(1) + "%" : fmt(y)) + '</td>' +
+      '<td class="num">' + (isPct
+        ? '<span class="delta ' + (x > y ? "up" : x < y ? "down" : "same") + '">' +
+          (x > y ? "+" : "") + (x - y).toFixed(1) + " نقطة</span>"
+        : delta(x, y)) + '</td></tr>';
+  }
+  var ra = sa.grads ? sa.emp / sa.grads * 100 : 0;
+  var rb = sb.grads ? sb.emp / sb.grads * 100 : 0;
+  body.innerHTML =
+    '<div class="grid">' +
+      card("جدول المقارنة", "الفرق موجب حين تتقدم " + a,
+        '<div class="table-wrap"><table><thead><tr>' +
+          '<th>المؤشر</th><th class="num">' + esc(a) + '</th>' +
+          '<th class="num">' + esc(b) + '</th><th class="num">الفرق</th>' +
+        '</tr></thead><tbody>' +
+          row("إجمالي الخريجين", sa.grads, sb.grads) +
+          row("خريجو المهني والتقني", sa.voc.grads, sb.voc.grads) +
+          row("خريجو الجامعات", sa.uni.grads, sb.uni.grads) +
+          row("المتوظفون", sa.emp, sb.emp) +
+          row("نسبة التوظيف", ra, rb, true) +
+          row("الجهات التدريبية", sa.institutions, sb.institutions) +
+          row("الجامعات", sa.universities, sb.universities) +
+          row("التخصصات", sa.majors, sb.majors) +
+        '</tbody></table></div>', "span6") +
+      chartCard("الخريجون حسب السنة", esc(a) + " مقابل " + esc(b), "rgCmpTrend", "span6") +
+      chartCard("مقارنة المؤشرات", "القيم مطبّعة إلى ١٠٠ لأكبر المنطقتين في كل مؤشر",
+        "rgCmpBars", "span6", "tall") +
+      chartCard("أعلى التخصصات في المنطقتين",
+        "أعلى ١٠ تخصصات في " + esc(a) + " وما يقابلها في " + esc(b),
+        "rgCmpMaj", "span6", "tall") +
+    '</div>';
+  function yearlyG(s) {
+    return YEARS.map(function (y) {
+      return total(s.rows.voc.filter(function (f) { return f.year === y; })).grads +
+             total(s.rows.uni.filter(function (f) { return f.year === y; })).grads;
+    });
+  }
+  function yearlyE(s) {
+    return YEARS.map(function (y) {
+      return total(s.rows.voc.filter(function (f) { return f.year === y; })).emp +
+             total(s.rows.uni.filter(function (f) { return f.year === y; })).emp;
+    });
+  }
+  trendChart("rgCmpTrend", [
+    { name: a, empName: a + " — متوظفون", color: C.voc, data: yearlyG(sa), emp: yearlyE(sa) },
+    { name: b, empName: b + " — متوظفون", color: C.uni, data: yearlyG(sb), emp: yearlyE(sb) }
+  ]);
+  var metrics = [
+    ["إجمالي الخريجين", sa.grads, sb.grads],
+    ["المهني والتقني", sa.voc.grads, sb.voc.grads],
+    ["الجامعات", sa.uni.grads, sb.uni.grads],
+    ["المتوظفون", sa.emp, sb.emp],
+    ["نسبة التوظيف", ra, rb],
+    ["الجهات التدريبية", sa.institutions, sb.institutions],
+    ["التخصصات", sa.majors, sb.majors]
+  ];
+  var cmp = mount("rgCmpBars");
+  if (cmp) {
+    cmp.setOption({
+      textStyle: baseText(),
+      grid: { left: 8, right: 70, top: 30, bottom: 8, containLabel: true },
+      legend: { top: 0, right: 2, left: 2, icon: "roundRect", itemWidth: 13, itemHeight: 9,
+                textStyle: { color: C.muted, fontFamily: FONT, fontSize: 12 } },
+      tooltip: tip({ trigger: "axis", axisPointer: { type: "shadow" },
+        formatter: function (ps) {
+          var m = metrics[metrics.length - 1 - ps[0].dataIndex];
+          var isRate = m[0] === "نسبة التوظيف";
+          return esc(m[0]) + "<br>" + esc(a) + " <b>" +
+            (isRate ? m[1].toFixed(1) + "%" : fmt(m[1])) + "</b><br>" + esc(b) + " <b>" +
+            (isRate ? m[2].toFixed(1) + "%" : fmt(m[2])) + "</b>"; } }),
+      xAxis: Object.assign({ type: "value", max: 100 }, AXIS,
+        { axisLine: { show: false }, splitLine: { show: false }, axisLabel: { show: false } }),
+      yAxis: Object.assign({ type: "category",
+        data: metrics.slice().reverse().map(function (m) { return m[0]; }) },
+        AXIS, { splitLine: { show: false }, axisLine: { show: false },
+                axisLabel: { color: C.muted, fontFamily: FONT, fontSize: 11.5,
+                             width: 150, overflow: "truncate" } }),
+      series: [a, b].map(function (nm, si) {
+        return { name: nm, type: "bar", barWidth: "34%",
+          itemStyle: { color: si === 0 ? C.voc : C.uni, borderRadius: [0, 4, 4, 0] },
+          data: metrics.slice().reverse().map(function (m) {
+            var mx = Math.max(m[1], m[2]) || 1;
+            return { value: +(m[si + 1] / mx * 100).toFixed(1) };
+          }),
+          label: { show: true, position: "right", color: C.ink, fontFamily: FONT,
+                   fontSize: 11, fontWeight: 600,
+                   formatter: function (p) {
+                     var m = metrics[metrics.length - 1 - p.dataIndex];
+                     return m[0] === "نسبة التوظيف"
+                       ? m[si + 1].toFixed(1) + "%" : fmt(m[si + 1]); } } };
+      })
+    });
+  }
+  var topA = ranked(agg(sa.rows.voc.concat(sa.rows.uni),
+    function (f) { return f.major || f.m; }), "grads").slice(0, 10);
+  var mapB = agg(sb.rows.voc.concat(sb.rows.uni), function (f) { return f.major || f.m; });
+  pairBarChart("rgCmpMaj", topA.slice().reverse().map(function (e) {
+    var other = mapB.get(e[0]);
+    return [e[0], e[1].grads, other ? other.grads : 0];
+  }), a, b, { labelWidth: 200, labelRoom: 84 });
 }
 
 /* ========================================================================= */
@@ -3711,6 +3818,7 @@ var HERO_HEADLINE = "مسار الكفاءات الوطنية إلى قطاع ا
 
 function route() {
   closeSpecWindow();
+  closeRegionWindow();
   disposeCharts();
   var u0 = ui();
   if (u0) u0.unmountView();
@@ -3735,7 +3843,11 @@ function route() {
     else viewOccBrowse();
   } else if (tab === "workforce") { viewWorkforce(); }
   else if (tab === "supply") { viewSupplyDemand(); }
-  else if (tab === "regions") { viewRegions(); }
+  else if (tab === "regions") {
+    /* #regions · #regions/<i> · #regions/<i>/<j> */
+    viewRegions(p[1] === undefined || p[1] === "" ? undefined : Number(p[1]),
+                p[2] === undefined || p[2] === "" ? undefined : Number(p[2]));
+  }
   else if (tab === "nqf") { viewNqf(); }
   else if (tab === "data") { viewData(); }
   else { markTab("overview"); viewOverview(); }

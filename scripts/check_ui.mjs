@@ -323,7 +323,7 @@ async function main() {
   }
 
   /* ---------------------------------------------------------------------
-     REGIONS — pick one, pick two, and get the file out
+     REGIONS — read the map, open one, compare from inside it
      --------------------------------------------------------------------- */
   console.log('\nREGIONS');
   {
@@ -334,50 +334,104 @@ async function main() {
     page.on('pageerror', e => noise.push('pageerror: ' + e.message));
     page.on('console', m => { if (m.type() === 'error') noise.push('console: ' + m.text()); });
     await page.goto(PAGE + '#regions', { waitUntil: 'load' });
-    await page.waitForSelector('.regioncard', { timeout: 15000 });
+    await page.waitForSelector('.rtile', { timeout: 15000 });
     await page.waitForTimeout(2500);
 
-    const cards = await page.locator('.regioncard').count();
-    check('every region is on the grid', cards === 13, `${cards} cards`);
+    const tiles = await page.locator('.rtile').count();
+    check('every region has a tile on the map', tiles === 13, `${tiles} tiles`);
 
-    await clickOrFail('picking a region shows it', page.locator('.regioncard').first());
-    await page.waitForTimeout(1400);
+    /* The map is a cartogram, so its only real promise is that it reads as
+       Saudi Arabia: east on the right even though the page is RTL, and the
+       north above the south. A grid that silently inherited `direction: rtl`
+       would still render 13 tiles, which is why this is geometry and not a
+       count. */
+    const geo = await page.evaluate(() => {
+      const box = n => {
+        const el = [...document.querySelectorAll('.rtile')]
+          .find(t => t.dataset.region === n);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      };
+      return { east: box('الشرقية'), west: box('مكة المكرمة'),
+               north: box('تبوك'), south: box('جازان') };
+    });
+    check('the map reads as the country, east on the right',
+          geo.east && geo.west && geo.north && geo.south &&
+          geo.east.x > geo.west.x && geo.north.y < geo.south.y,
+          JSON.stringify(geo));
+
+    /* Tiles must not pile into one cell: a `grid-row`/`grid-column` typo
+       collapses the map into a stack that still passes every count. */
+    const cells = await page.evaluate(() => {
+      const seen = new Set();
+      for (const t of document.querySelectorAll('.rtile')) {
+        const r = t.getBoundingClientRect();
+        seen.add(Math.round(r.left) + ':' + Math.round(r.top));
+      }
+      return seen.size;
+    });
+    check('no two tiles sit in the same cell', cells === 13, `${cells} distinct positions`);
+
+    await clickOrFail('clicking a region opens its window',
+                      page.locator('.rtile', { hasText: 'الرياض' }).first());
+    await page.waitForTimeout(1600);
     const one = await page.evaluate(() => ({
-      sel: document.querySelectorAll('.regioncard.is-sel').length,
-      kpis: document.querySelectorAll('#rgBody .kpi').length,
-      charts: document.querySelectorAll('#rgBody canvas').length,
-      flat: [...document.querySelectorAll('#rgBody .chart')]
+      open: !!document.getElementById('regionWin'),
+      hash: location.hash,
+      heading: (document.querySelector('#regionWin h2') || {}).textContent || '',
+      kpis: document.querySelectorAll('#rgWinBody .kpi').length,
+      charts: document.querySelectorAll('#rgWinBody canvas').length,
+      flat: [...document.querySelectorAll('#rgWinBody .chart')]
               .filter(e => e.getBoundingClientRect().width < 100).length
     }));
-    check('one region draws its own figures',
-          one.sel === 1 && one.kpis >= 6 && one.charts >= 5 && one.flat === 0,
+    check('one region draws its own figures in the window',
+          one.open && /^#regions\/\d+$/.test(one.hash) &&
+          one.heading.indexOf('الرياض') !== -1 &&
+          one.kpis >= 6 && one.charts >= 5 && one.flat === 0,
           JSON.stringify(one));
 
-    await clickOrFail('picking a second compares them', page.locator('.regioncard').nth(1));
-    await page.waitForTimeout(1600);
+    /* The compare picker is the whole point of the window, and it starts
+       hidden — a button that toggles nothing would leave the page looking
+       finished. */
+    const hiddenFirst = await page.evaluate(() =>
+      document.getElementById('rgPicker').hidden);
+    await clickOrFail('the compare button opens the picker', page.locator('#rgPick'));
+    await page.waitForTimeout(500);
+    const picker = await page.evaluate(() => ({
+      shown: !document.getElementById('rgPicker').hidden,
+      options: document.querySelectorAll('#rgPicker .rgpick').length,
+      self: [...document.querySelectorAll('#rgPicker .rgpick')]
+              .some(p => p.textContent.indexOf('الرياض') === 0)
+    }));
+    check('the compare picker offers every other region',
+          hiddenFirst && picker.shown && picker.options === 12 && !picker.self,
+          JSON.stringify({ hiddenFirst, ...picker }));
+
+    await clickOrFail('choosing a region compares the two',
+                      page.locator('#rgPicker .rgpick').first());
+    await page.waitForTimeout(1800);
     const two = await page.evaluate(() => ({
-      sel: document.querySelectorAll('.regioncard.is-sel').length,
-      a: document.querySelectorAll('.regioncard.is-a').length,
-      b: document.querySelectorAll('.regioncard.is-b').length,
-      rows: document.querySelectorAll('#rgBody tbody tr').length,
-      deltas: document.querySelectorAll('#rgBody .delta').length,
-      charts: document.querySelectorAll('#rgBody canvas').length
+      hash: location.hash,
+      heading: (document.querySelector('#regionWin h2') || {}).textContent || '',
+      rows: document.querySelectorAll('#rgWinBody tbody tr').length,
+      deltas: document.querySelectorAll('#rgWinBody .delta').length,
+      charts: document.querySelectorAll('#rgWinBody canvas').length,
+      flat: [...document.querySelectorAll('#rgWinBody .chart')]
+              .filter(e => e.getBoundingClientRect().width < 100).length
     }));
     check('two regions compare side by side',
-          two.sel === 2 && two.a === 1 && two.b === 1 && two.rows === 8 &&
-          two.deltas === 8 && two.charts >= 3, JSON.stringify(two));
+          /^#regions\/\d+\/\d+$/.test(two.hash) && two.heading.indexOf('مقابل') !== -1 &&
+          two.rows === 8 && two.deltas === 8 && two.charts >= 3 && two.flat === 0,
+          JSON.stringify(two));
 
-    /* A third pick swaps the older one out rather than being ignored — the
-       common move is keeping one region and changing what it is read against. */
-    const before = await page.evaluate(() =>
-      [...document.querySelectorAll('.regioncard.is-sel')].map(c => c.dataset.region));
-    await clickOrFail('a third pick replaces the older', page.locator('.regioncard').nth(2));
-    await page.waitForTimeout(1200);
-    const after = await page.evaluate(() =>
-      [...document.querySelectorAll('.regioncard.is-sel')].map(c => c.dataset.region));
-    check('a third pick replaces the older, keeping two',
-          after.length === 2 && after[0] === before[1] && !after.includes(before[0]),
-          `${before.join('/')} -> ${after.join('/')}`);
+    /* A difference shown in colour alone is unreadable to a chunk of the
+       people this is for, so each delta carries a sign or an arrow too. */
+    const signed = await page.evaluate(() =>
+      [...document.querySelectorAll('#rgWinBody .delta')]
+        .every(d => /[+\-−٠-٩0-9]/.test(d.textContent) &&
+                    /(up|down|same)/.test(d.className)));
+    check('every difference is readable without colour', signed);
 
     /* The export is the deliverable people actually take to a meeting, so it
        is checked as a real download with real content, not as a live button. */
@@ -396,8 +450,57 @@ async function main() {
       check('the comparison exports as a readable CSV', false, e.message.split('\n')[0]);
     }
 
-    await page.click('#rgClear');
-    await page.waitForTimeout(1000);
+    /* Dropping back to one region, then out to the map. Escape has to work:
+       the window covers the map, so a dialog that only closes by its ✕ is a
+       trap for anyone on a keyboard. */
+    await clickOrFail('the comparison can be dropped', page.locator('#rgUncompare'));
+    await page.waitForTimeout(1200);
+    check('dropping the comparison keeps the region open',
+          await page.evaluate(() => /^#regions\/\d+$/.test(location.hash) &&
+            !!document.getElementById('regionWin') &&
+            document.querySelectorAll('#rgWinBody tbody tr').length !== 8));
+
+    try {
+      const [dl] = await Promise.all([
+        page.waitForEvent('download', { timeout: 10000 }),
+        page.click('#rgExportOne')
+      ]);
+      const text = readFileSync(await dl.path(), 'utf8');
+      check('a single region exports as a readable CSV',
+            text.charCodeAt(0) === 0xFEFF && text.indexOf('الرياض') !== -1 &&
+            text.split('\r\n').filter(Boolean).length > 8,
+            `${text.split('\r\n').filter(Boolean).length} lines`);
+    } catch (e) {
+      check('a single region exports as a readable CSV', false, e.message.split('\n')[0]);
+    }
+
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(900);
+    const closed = await page.evaluate(() => ({
+      gone: !document.getElementById('regionWin'),
+      hash: location.hash,
+      locked: document.body.classList.contains('win-open'),
+      map: document.querySelectorAll('.rtile').length
+    }));
+    check('Escape closes the window and leaves the map behind',
+          closed.gone && closed.hash === '#regions' && !closed.locked && closed.map === 13,
+          JSON.stringify(closed));
+
+    /* Deep links are how a region gets shared, so the hash has to stand on
+       its own from a cold load, comparison and all. */
+    await page.goto(PAGE + '#regions/3/0', { waitUntil: 'load' });
+    await page.waitForTimeout(3000);
+    const deep = await page.evaluate(() => ({
+      open: !!document.getElementById('regionWin'),
+      rows: document.querySelectorAll('#rgWinBody tbody tr').length,
+      charts: document.querySelectorAll('#rgWinBody canvas').length
+    }));
+    check('a comparison link opens on its own from a cold load',
+          deep.open && deep.rows === 8 && deep.charts >= 3, JSON.stringify(deep));
+
+    await page.goto(PAGE + '#regions', { waitUntil: 'load' });
+    await page.waitForSelector('.rtile', { timeout: 15000 });
+    await page.waitForTimeout(2000);
     try {
       const [dl] = await Promise.all([
         page.waitForEvent('download', { timeout: 10000 }),
