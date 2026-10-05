@@ -988,6 +988,31 @@ body.win-open { overflow: hidden; }
 .btn-reset:active { transform: scale(.97); box-shadow: none; }
 .btn-reset:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 2px; }
 
+/* Every view that exports carries the same three buttons, in the same order:
+   the file for someone who will work the numbers, and the two pictures for
+   someone who will look at them once. Secondary to whatever the view's own
+   action is, so they are outlined rather than filled. */
+.exportbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.exportbar button {
+  font: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer;
+  padding: 8px 15px; min-height: 36px;
+  border-radius: var(--r-sm);
+  background: #fff; border: 1px solid var(--mim-black-200);
+  color: var(--mim-grey-dark);
+  transition: border-color var(--dur-quick) var(--ease-out-quick),
+              color var(--dur-quick) var(--ease-out-quick),
+              transform var(--dur-instant) var(--ease-press);
+}
+.exportbar button:hover:not(:disabled) {
+  border-color: var(--mim-purple); color: var(--mim-purple);
+}
+.exportbar button:active:not(:disabled) { transform: scale(.96); }
+/* A card takes a moment to draw, so the button says so instead of looking
+   dead to a second click. */
+.exportbar button:disabled { opacity: .65; cursor: progress; }
+.exportbar button:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 2px; }
+.win-head .exportbar { margin-top: 12px; }
+
 /* The first screen. Three scripts totalling about five megabytes parse before
    a single figure can be drawn, and until this existed that whole window was
    a blank page under a masthead. The shapes match what replaces them, so the
@@ -2472,6 +2497,7 @@ function viewOccDetail(code) {
 
     '<div class="detail-head"><h2>' + rbHead(o.ar) + '</h2>' +
       '<div class="en">' + esc(o.en || "") + '</div>' +
+      exportBar("occ", "تصدير بيانات المهنة (CSV)") +
       '<div class="tags">' +
         '<span class="tag accent">' + esc(t.code) + '</span>' +
         (o.nqfLevel !== null
@@ -2507,6 +2533,8 @@ function viewOccDetail(code) {
 
     describe(o, t, undefined);
 
+  wireExports("occ", function () { exportOccupation(o, t); },
+              function () { return occupationCardSpec(o, t); });
   drawWorkforceCharts(o);
 }
 
@@ -2684,6 +2712,10 @@ function viewWorkforce() {
                       .map(function (j) { return j.name; });
 
   var html =
+    '<div class="browse-head">' +
+      '<span class="result-count">' + fmt(JOBS.length) + ' مهنة · لقطة حالية بلا سنة ولا منطقة</span>' +
+      exportBar("wf", "تصدير جدول العاملين (CSV)") +
+    '</div>' +
     '<p class="scope-note"><strong>نطاق البيانات:</strong> ' + esc(WF_NOTE) + '</p>' +
     (gapNote
       ? '<p class="scope-note warn-note"><strong>فرق في مجموع المصدر.</strong> ' +
@@ -2747,6 +2779,7 @@ function viewWorkforce() {
           }).join("") + '</tbody></table></div>') +
     '</div>';
   document.getElementById("view").innerHTML = html;
+  wireExports("wf", exportWorkforce, workforceCardSpec);
 
   barChart("wBlock", WF.blocks.map(function (b, i) {
     var x = jobTotals(JOBS.filter(function (j) { return j.block === i; }));
@@ -2933,25 +2966,18 @@ function viewSupplyDemand() {
                  '>' + esc(n) + '</option>'; }).join("") + '</select>' +
       '<span class="result-count" id="sdCount"></span>' +
       '<button class="btn-reset" id="sdReset" style="margin-top:0">إعادة تعيين</button>' +
+      exportBar("sd", "تصدير الجدول (CSV)") +
     '</div>' +
     '<div id="sdBody"></div>';
   document.getElementById("view").innerHTML = html;
 
   function paint() {
-    var rows = sdRows();
-    var t = jobTotals(rows);
-    var withSupply = [], noSupply = [];
-    rows.forEach(function (j) {
-      var sp = j.occ ? supplyFor(j.occ) : null;
-      if (sp && sp.grads > 0) withSupply.push({ j: j, sp: sp });
-      else noSupply.push(j);
-    });
-    /* Deduplicated: see supplyUnion. The per-occupation figures in the table
-       below are pools and may legitimately overlap; this one may not. */
-    var union = supplyUnion(withSupply.map(function (x) { return x.j; }));
-    var supplyTotal = union.grads;
-    var demandCovered = withSupply.reduce(function (a, x) { return a + x.j.total; }, 0);
-    var gapCovered = withSupply.reduce(function (a, x) { return a + x.j.other; }, 0);
+    /* One summary, read by the page and by its card: an export that disagrees
+       with the screen it was taken from is worse than no export. */
+    var S = sdSummary();
+    var rows = S.rows, t = S.t, withSupply = S.withSupply, noSupply = S.noSupply;
+    var union = S.union, supplyTotal = S.supplyTotal;
+    var demandCovered = S.demandCovered, gapCovered = S.gapCovered;
 
     document.getElementById("sdCount").textContent =
       fmt(rows.length) + " مهنة · " + fmt(withSupply.length) + " منها لها عرض مرتبط";
@@ -3061,6 +3087,7 @@ function viewSupplyDemand() {
       paint();
     });
   });
+  wireExports("sd", exportSupply, supplyCardSpec);
   document.getElementById("sdReset").addEventListener("click", function () {
     sdFilter = { sector: "", region: "", q: "", skill: "", isced: "" };
     viewSupplyDemand();
@@ -3206,6 +3233,760 @@ function exportComparison(a, b) {
   downloadCsv("مقارنة-" + a + "-و-" + b + "-" + yearsLabel() + ".csv", rows);
 }
 
+/* ============================== export cards =============================
+   A card is the view you are looking at as a single picture: the same
+   figures, the same charts, the brand's own type and colour, in one PNG that
+   can be sent in a message or dropped into a deck. Every view that exports a
+   CSV exports a card too — the CSV is for someone who will work the numbers,
+   the card for someone who will look at them once.
+
+   Two shapes. Portrait is for sending and for printing on one page; 16:9 is
+   sized for a slide, so nothing has to be cropped to present it.
+
+   It is drawn on a canvas rather than rasterised out of the DOM. That keeps
+   it dependency-free and keeps it working from a file:// copy — but the
+   reason that decided it is the charts: each one is re-rendered at the width
+   the card gives it, instead of being a screenshot of a 700px chart stretched
+   to 1016 with its labels grown to match.                                   */
+
+var CARD_PAD = 48;
+
+function cardTok() {
+  if (cardTok.c) return cardTok.c;
+  var CS = getComputedStyle(document.body);
+  function t(n) { return CS.getPropertyValue(n).trim(); }
+  cardTok.c = {
+    fp: t("--mim-font-primary"), fs: t("--mim-font-secondary"),
+    fn: t("--mim-font-numeric"),
+    ink: t("--mim-grey-darkest") || "#1A1A1A",
+    wash: t("--mim-black-100") || "#F3F3F3",
+    line: t("--mim-black-200") || "#E8E8E8",
+    grey: t("--mim-grey-dark") || "#666666",
+    greyMid: t("--mim-grey-medium") || "#B3B3B3",
+    purple: t("--mim-purple") || "#413258",
+    blue: t("--mim-blue-600") || "#14B8B8",
+    blueBright: t("--mim-blue-300") || "#74F3CF"
+  };
+  return cardTok.c;
+}
+
+/* Arabic runs right to left, figures stay left to right, and the two sit in
+   the same card — so direction is set per call rather than once. */
+function cText(ctx, s, x, y, o) {
+  o = o || {};
+  var T = cardTok();
+  ctx.save();
+  ctx.direction = o.dir || "rtl";
+  ctx.textAlign = o.align || "right";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = o.color || T.ink;
+  ctx.font = (o.weight || 400) + " " + (o.size || 18) + "px " + (o.font || T.fs);
+  if (o.ls && "letterSpacing" in ctx) ctx.letterSpacing = o.ls + "px";
+  ctx.fillText(String(s), x, y);
+  ctx.restore();
+}
+function cLine(ctx, x1, y, x2, color) {
+  ctx.save();
+  ctx.strokeStyle = color || cardTok().line;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x1, y + 0.5); ctx.lineTo(x2, y + 0.5); ctx.stroke();
+  ctx.restore();
+}
+/* ctx.roundRect is recent enough that Safari may not have it. */
+function cRound(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/* Draw one of the page's own charts off-screen at the card's size and take
+   it as an image. The instance is disposed and taken back out of `live`, so
+   a card never leaves a chart behind for the next repaint to resize. */
+function cChart(w, h, draw) {
+  var host = document.createElement("div");
+  host.id = "cardchart" + Math.random().toString(36).slice(2);
+  host.style.cssText = "position:fixed;left:-99999px;top:0;width:" + w +
+                       "px;height:" + h + "px";
+  document.body.appendChild(host);
+  var url = "";
+  try {
+    draw(host.id);
+    var inst = echarts.getInstanceByDom(host);
+    if (inst) {
+      var i = live.indexOf(inst);
+      if (i !== -1) live.splice(i, 1);
+      /* The chart is mid-animation the instant after setOption; turning
+         animation off redraws it in its final state at once. */
+      inst.setOption({ animation: false });
+      url = inst.getDataURL({ pixelRatio: 2, backgroundColor: "#FFFFFF" });
+      inst.dispose();
+    }
+  } catch (e) { url = ""; }
+  host.remove();
+  return url;
+}
+function cLoad(urls) {
+  return Promise.all(urls.map(function (u) {
+    return new Promise(function (res) {
+      if (!u) return res(null);
+      var im = new Image();
+      im.onload = function () { res(im); };
+      im.onerror = function () { res(null); };
+      im.src = u;
+    });
+  }));
+}
+
+function cHeader(ctx, W, h, spec, titleSize) {
+  var T = cardTok(), PAD = CARD_PAD;
+  ctx.fillStyle = T.ink; ctx.fillRect(0, 0, W, h);
+  cText(ctx, "وزارة الصناعة والثروة المعدنية", W - PAD, h * 0.34,
+        { size: 19, ls: 3.4, color: T.greyMid, weight: 500 });
+  cText(ctx, spec.title, W - PAD, h * 0.65,
+        { size: titleSize, font: T.fp, color: "#FFFFFF" });
+  if (spec.kicker) cText(ctx, spec.kicker, W - PAD, h * 0.86,
+                         { size: 20, color: T.greyMid });
+  if (spec.badge) {
+    ctx.save();
+    ctx.font = "500 21px " + T.fs;
+    var tw = ctx.measureText(spec.badge).width;
+    ctx.strokeStyle = "rgba(116,243,207,.45)"; ctx.lineWidth = 1;
+    cRound(ctx, PAD, h * 0.47 - 23, tw + 36, 46, 3);
+    ctx.stroke();
+    ctx.restore();
+    cText(ctx, spec.badge, PAD + tw + 18, h * 0.47 + 7,
+          { size: 21, color: T.blueBright, weight: 500 });
+  }
+}
+
+/* Every card says what it is of and when it was taken, because a picture on
+   someone's desktop does not carry the filters that produced it. */
+function cFooter(ctx, W, y, note, compact) {
+  var T = cardTok(), PAD = CARD_PAD;
+  cLine(ctx, PAD, y, W - PAD);
+  y += 36;
+  if (compact) {
+    cText(ctx, "المصدر: وزارة الصناعة والثروة المعدنية · سنوات التخرج " + yearsLabel() +
+               (note ? " · " + note : ""), W - PAD, y, { size: 17, color: T.grey });
+    cText(ctx, "dashboard-mim.nawaf-husn.workers.dev", PAD, y,
+          { size: 16, color: T.greyMid, dir: "ltr", align: "left" });
+    return y + 24;
+  }
+  cText(ctx, "المصدر: وزارة الصناعة والثروة المعدنية — بيانات الخريجين والتوظيف",
+        W - PAD, y, { size: 17, color: T.grey });
+  y += 28;
+  cText(ctx, "سنوات التخرج: " + yearsLabel() + "  ·  أُعدت " +
+             new Date().toISOString().slice(0, 10), W - PAD, y,
+        { size: 17, color: T.grey });
+  if (note) { y += 28; cText(ctx, note, W - PAD, y, { size: 16, color: T.greyMid }); }
+  y += 34;
+  cText(ctx, "dashboard-mim.nawaf-husn.workers.dev", W - PAD, y,
+        { size: 16, color: T.greyMid, dir: "ltr", align: "right" });
+  return y + 30;
+}
+
+function cKpis(ctx, x0, y, width, items, cols, th) {
+  var T = cardTok(), gap = 16;
+  var tw = (width - gap * (cols - 1)) / cols;
+  items.forEach(function (it, i) {
+    var col = i % cols, row = Math.floor(i / cols);
+    var x = x0 + width - tw - col * (tw + gap);          /* right to left */
+    var ty = y + row * (th + gap);
+    ctx.fillStyle = "#FFFFFF"; ctx.fillRect(x, ty, tw, th);
+    ctx.strokeStyle = T.line; ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, ty + 0.5, tw - 1, th - 1);
+    ctx.fillStyle = it.accent || T.greyMid; ctx.fillRect(x, ty, tw, 4);
+    cText(ctx, it.label, x + tw - 18, ty + th * 0.32, { size: 18, color: T.grey });
+    cText(ctx, it.raw !== undefined ? it.raw : fmt(it.value), x + tw - 18, ty + th * 0.70,
+          { size: th > 125 ? 38 : 32, font: T.fn, weight: 600, dir: "ltr" });
+    if (it.sub) cText(ctx, it.sub, x + tw - 18, ty + th * 0.90, { size: 16, color: T.grey });
+  });
+  return y + Math.ceil(items.length / cols) * (th + gap);
+}
+
+/* The same eight-row comparison the window draws, with the difference
+   carrying an arrow and a sign so it is not colour alone that says which
+   way it went. */
+function cTable(ctx, x0, y, width, t, rh, fs) {
+  var T = cardTok();
+  var xInd = x0 + width, xA = x0 + width * 0.66, xB = x0 + width * 0.44;
+  cText(ctx, "المؤشر", xInd, y, { size: 18, color: T.grey });
+  cText(ctx, t.a, xA, y, { size: 19, color: T.purple, weight: 600 });
+  cText(ctx, t.b, xB, y, { size: 19, color: T.blue, weight: 600 });
+  cText(ctx, "الفرق", x0, y, { size: 18, color: T.grey, align: "left" });
+  y += 12;
+  cLine(ctx, x0, y, x0 + width, T.greyMid);
+  t.rows.forEach(function (r, i) {
+    var top = y + i * rh, base = top + rh * 0.65, isPct = r[3] === 1;
+    if (i % 2 === 0) { ctx.fillStyle = T.wash; ctx.fillRect(x0, top, width, rh); }
+    cText(ctx, r[0], xInd, base, { size: fs });
+    cText(ctx, isPct ? r[1].toFixed(1) + "%" : fmt(r[1]), xA, base,
+          { size: fs + 2, font: T.fn, weight: 600, dir: "ltr" });
+    cText(ctx, isPct ? r[2].toFixed(1) + "%" : fmt(r[2]), xB, base,
+          { size: fs + 2, font: T.fn, weight: 600, dir: "ltr", color: T.grey });
+    var d = r[1] - r[2];
+    var mark = d > 0 ? "▲" : d < 0 ? "▼" : "=";
+    var val = isPct
+      ? (d > 0 ? "+" : "") + d.toFixed(1) + " نقطة"
+      : (d > 0 ? "+" : "") + fmt(Math.round(d)) +
+        (r[2] ? "  (" + (d > 0 ? "+" : "") + (d / r[2] * 100).toFixed(1) + "%)" : "");
+    cText(ctx, mark + " " + val, x0, base, { size: fs - 1, align: "left", dir: "ltr" });
+  });
+  return y + t.rows.length * rh;
+}
+
+function cBlock(ctx, x, y, w, h, c, img) {
+  var T = cardTok();
+  cText(ctx, c.title, x + w, y + 26, { size: 25, font: T.fp });
+  if (c.sub) cText(ctx, c.sub, x + w, y + 54, { size: 17, color: T.grey });
+  var top = y + (c.sub ? 74 : 46);
+  if (img) ctx.drawImage(img, x, top, w, h);
+  return top + h + 10;
+}
+
+function downloadPng(canvas, filename) {
+  function hand(url, revoke) {
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    if (revoke) setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  if (canvas.toBlob) canvas.toBlob(function (b) { hand(URL.createObjectURL(b), true); },
+                                   "image/png");
+  else hand(canvas.toDataURL("image/png"), false);
+}
+
+/* spec: { title, kicker, badge, lead, kpis, table, charts, note, file }
+   shape: "wide" for 16:9, anything else for portrait. */
+function buildCard(spec, shape) {
+  return document.fonts.ready.then(function () {
+    var T = cardTok(), PAD = CARD_PAD;
+    var wide = shape === "wide";
+    var W = wide ? 1920 : 1080;
+    var headH = wide ? 150 : 210;
+    var charts = spec.charts || [];
+    var sizes;
+
+    if (wide) {
+      var lw = spec.table ? 820 : 1180;
+      var room = 1080 - headH - 26 - 68;
+      var each = charts.length ? (room - (charts.length - 1) * 14) / charts.length : 0;
+      sizes = charts.map(function (c) {
+        return { w: lw, h: Math.round(each - (c.sub ? 74 : 46) - 10) };
+      });
+    } else {
+      sizes = charts.map(function (c) { return { w: W - PAD * 2, h: c.h || 300 }; });
+    }
+
+    var imgs = charts.map(function (c, i) { return cChart(sizes[i].w, sizes[i].h, c.draw); });
+    return cLoad(imgs).then(function (im) {
+      var canvas = document.createElement("canvas");
+      var tall = wide ? 1080 : 2600;
+      canvas.width = W * 2; canvas.height = tall * 2;
+      var ctx = canvas.getContext("2d");
+      ctx.scale(2, 2);
+      ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, W, tall);
+      cHeader(ctx, W, headH, spec, wide ? 44 : 52);
+
+      var end;
+      if (wide) {
+        var lw2 = spec.table ? 820 : 1180;
+        var rw = W - PAD * 2 - lw2 - 44, rx = W - PAD - rw;
+        var ry = headH + 26;
+        if (spec.table) {
+          cTable(ctx, rx, headH + 44, rw, spec.table, 86, 21);
+        } else {
+          if (spec.lead) {
+            ctx.fillStyle = T.wash; ctx.fillRect(rx, ry, rw, 150);
+            cText(ctx, spec.lead.raw !== undefined ? spec.lead.raw : fmt(spec.lead.value),
+                  W - PAD - 22, ry + 92,
+                  { size: 74, font: T.fn, weight: 600, color: T.purple, dir: "ltr" });
+            cText(ctx, spec.lead.label + (spec.lead.side
+                    ? " · " + spec.lead.side +
+                      (spec.lead.sideLabel ? " " + spec.lead.sideLabel : "") : ""),
+                  W - PAD - 22, ry + 126, { size: 19, color: T.grey });
+            ry += 150 + 18;
+          }
+          if (spec.kpis) cKpis(ctx, rx, ry, rw, spec.kpis, 2, 118);
+        }
+        var ly = headH + 26;
+        charts.forEach(function (c, i) {
+          ly = cBlock(ctx, PAD, ly, sizes[i].w, sizes[i].h, c, im[i]) + 4;
+        });
+        cFooter(ctx, W, 1012, spec.note, true);
+        end = 1080;
+      } else {
+        var y = headH;
+        if (spec.lead) {
+          ctx.fillStyle = T.wash; ctx.fillRect(0, y, W, 190);
+          cText(ctx, spec.lead.raw !== undefined ? spec.lead.raw : fmt(spec.lead.value),
+                W - PAD, y + 112,
+                { size: 92, font: T.fn, weight: 600, color: T.purple, dir: "ltr" });
+          cText(ctx, spec.lead.label, W - PAD, y + 150, { size: 23, color: T.grey });
+          if (spec.lead.side) {
+            cText(ctx, spec.lead.side, PAD, y + 92,
+                  { size: 44, font: T.fn, weight: 600, dir: "ltr", align: "left" });
+            cText(ctx, spec.lead.sideLabel || "", PAD, y + 124,
+                  { size: 19, color: T.grey, align: "left" });
+          }
+          y += 190;
+        }
+        y += 34;
+        if (spec.table) { y = cTable(ctx, PAD, y, W - PAD * 2, spec.table, 68, 20) + 14;
+                          cLine(ctx, PAD, y, W - PAD); y += 30; }
+        if (spec.kpis) y = cKpis(ctx, PAD, y, W - PAD * 2, spec.kpis, 3, 136) + 22;
+        charts.forEach(function (c, i) {
+          y = cBlock(ctx, PAD, y, sizes[i].w, sizes[i].h, c, im[i]) + 20;
+        });
+        end = cFooter(ctx, W, y + 4, spec.note);
+      }
+
+      /* Drawn tall, then cut to what was used: a card with one chart is not
+         a card with a field of white under it. */
+      var out = document.createElement("canvas");
+      out.width = canvas.width; out.height = Math.round(end * 2);
+      out.getContext("2d").drawImage(canvas, 0, 0);
+      downloadPng(out, spec.file + (wide ? "-عرض" : "") + ".png");
+      return out;
+    });
+  });
+}
+
+/* The three buttons every exporting view carries, and their wiring. The card
+   takes a moment — fonts, then a chart render per block — so the button says
+   so rather than looking dead. */
+function exportBar(prefix, csvLabel) {
+  return '<div class="exportbar">' +
+    '<button id="' + prefix + 'Csv">' + esc(csvLabel) + '</button>' +
+    '<button id="' + prefix + 'Card">بطاقة PNG</button>' +
+    '<button id="' + prefix + 'Wide">بطاقة 16:9</button>' +
+  '</div>';
+}
+function wireExports(prefix, csvFn, specFn) {
+  var csv = document.getElementById(prefix + "Csv");
+  if (csv) csv.addEventListener("click", csvFn);
+  [["Card", "portrait"], ["Wide", "wide"]].forEach(function (p) {
+    var b = document.getElementById(prefix + p[0]);
+    if (!b) return;
+    b.addEventListener("click", function () {
+      if (b.disabled) return;
+      var label = b.textContent;
+      b.textContent = "جارٍ التصدير…"; b.disabled = true;
+      function done() { b.textContent = label; b.disabled = false; }
+      buildCard(specFn(), p[1]).then(done, function (e) {
+        done();
+        if (window.console) console.error(e);
+      });
+    });
+  });
+}
+/* ------------------------- what each view exports -----------------------
+   One spec per view. The charts are the page's own recipes, handed to the
+   card at the size it will draw them. */
+
+function regionCardSpec(name) {
+  var s = regionStats(name), nat = nationalTotals();
+  var vY = agg(s.rows.voc, function (f) { return f.year; });
+  var uY = agg(s.rows.uni, function (f) { return f.year; });
+  return {
+    title: name,
+    kicker: "خريجو المهني والتقني والجامعات · " + yearsLabel(),
+    badge: "الترتيب " + regionRank(name) + " من " + regionList().length,
+    lead: { value: s.grads, label: "إجمالي الخريجين",
+            side: pct(s.grads, nat.grads), sideLabel: "من خريجي المملكة" },
+    kpis: [
+      { label: "المهني والتقني", value: s.voc.grads, accent: cardTok().purple,
+        sub: pct(s.voc.grads, s.grads) + " من المنطقة" },
+      { label: "الجامعات", value: s.uni.grads, accent: cardTok().blue,
+        sub: pct(s.uni.grads, s.grads) + " من المنطقة" },
+      { label: "المتوظفون", value: s.emp, sub: "نسبة التوظيف " + pct(s.emp, s.grads) },
+      { label: "الجهات التدريبية", value: s.institutions, sub: "مهنية وتقنية" },
+      { label: "الجامعات والكليات", value: s.universities, sub: "جهات جامعية" },
+      { label: "التخصصات", value: s.majors, sub: "مهنية وجامعية" }
+    ],
+    charts: [
+      { title: "الخريجون حسب السنة", h: 300,
+        sub: "المهني والتقني مقابل الجامعي، والمتوظفون منهما",
+        draw: function (id) {
+          trendChart(id, [
+            { name: "خريجو المهني والتقني", empName: "متوظفو المهني والتقني", color: C.voc,
+              data: YEARS.map(function (y) { return vY.has(y) ? vY.get(y).grads : 0; }),
+              emp: YEARS.map(function (y) { return vY.has(y) ? vY.get(y).emp : 0; }) },
+            { name: "خريجو الجامعات", empName: "متوظفو الجامعات", color: C.uni,
+              data: YEARS.map(function (y) { return uY.has(y) ? uY.get(y).grads : 0; }),
+              emp: YEARS.map(function (y) { return uY.has(y) ? uY.get(y).emp : 0; }) }
+          ]);
+        } },
+      { title: "أعلى التخصصات", sub: "بعدد الخريجين في المنطقة", h: 360,
+        draw: function (id) {
+          barChart(id, ranked(agg(s.rows.voc.concat(s.rows.uni),
+            function (f) { return f.major || f.m; }), "grads")
+            .slice(0, 8).reverse().map(pair), { labelWidth: 230, labelRoom: 80 });
+        } }
+    ],
+    note: "بيانات العاملين ونسب التوطين لا تحمل منطقة في مصدرها، فلا تظهر هنا.",
+    file: "منطقة-" + name + "-" + yearsLabel()
+  };
+}
+
+function regionCompareSpec(a, b) {
+  var sa = regionStats(a), sb = regionStats(b);
+  var ra = sa.grads ? sa.emp / sa.grads * 100 : 0;
+  var rb = sb.grads ? sb.emp / sb.grads * 100 : 0;
+  var topA = ranked(agg(sa.rows.voc.concat(sa.rows.uni),
+    function (f) { return f.major || f.m; }), "grads").slice(0, 10);
+  var mapB = agg(sb.rows.voc.concat(sb.rows.uni), function (f) { return f.major || f.m; });
+  return {
+    title: a + "  مقابل  " + b,
+    kicker: "مقارنة منطقتين · " + yearsLabel(),
+    badge: "الترتيب " + regionRank(a) + " و " + regionRank(b),
+    table: { a: a, b: b, rows: [
+      ["إجمالي الخريجين", sa.grads, sb.grads, 0],
+      ["خريجو المهني والتقني", sa.voc.grads, sb.voc.grads, 0],
+      ["خريجو الجامعات", sa.uni.grads, sb.uni.grads, 0],
+      ["المتوظفون", sa.emp, sb.emp, 0],
+      ["نسبة التوظيف", ra, rb, 1],
+      ["الجهات التدريبية", sa.institutions, sb.institutions, 0],
+      ["الجامعات والكليات", sa.universities, sb.universities, 0],
+      ["التخصصات", sa.majors, sb.majors, 0]
+    ] },
+    charts: [
+      { title: "أعلى التخصصات في " + a, sub: "وما يقابلها في " + b, h: 420,
+        draw: function (id) {
+          pairBarChart(id, topA.slice().reverse().map(function (e) {
+            var other = mapB.get(e[0]);
+            return [e[0], e[1].grads, other ? other.grads : 0];
+          }), a, b, { labelWidth: 230, labelRoom: 84 });
+        } }
+    ],
+    note: "الفرق موجب حين تتقدم " + a + ". بيانات العاملين لا تحمل منطقة في مصدرها.",
+    file: "مقارنة-" + a + "-و-" + b + "-" + yearsLabel()
+  };
+}
+
+function regionsOverviewSpec() {
+  var names = regionList();
+  var stats = names.map(regionStats);
+  var nat = nationalTotals();
+  var ordered = stats.slice().sort(function (x, y) { return x.grads - y.grads; });
+  var top = ordered[ordered.length - 1];
+  return {
+    title: "المناطق",
+    kicker: "خريجو المملكة موزّعين على مناطق الجهات التعليمية · " + yearsLabel(),
+    badge: fmt(names.length) + " منطقة",
+    lead: { value: nat.grads, label: "إجمالي خريجي المملكة",
+            side: pct(top.grads, nat.grads), sideLabel: "حصة " + top.name + "، الأكبر" },
+    kpis: [
+      { label: "المهني والتقني", value: stats.reduce(function (a, s) { return a + s.voc.grads; }, 0),
+        accent: cardTok().purple, sub: "مجموع المناطق" },
+      { label: "الجامعات", value: stats.reduce(function (a, s) { return a + s.uni.grads; }, 0),
+        accent: cardTok().blue, sub: "مجموع المناطق" },
+      { label: "المتوظفون", value: nat.emp, sub: "نسبة التوظيف " + pct(nat.emp, nat.grads) },
+      { label: "الجهات التدريبية", value: stats.reduce(function (a, s) { return a + s.institutions; }, 0),
+        sub: "مهنية وتقنية" },
+      { label: "الجامعات والكليات", value: stats.reduce(function (a, s) { return a + s.universities; }, 0),
+        sub: "جهات جامعية" },
+      { label: "أصغر منطقة", value: ordered[0].grads, sub: ordered[0].name }
+    ],
+    charts: [
+      { title: "ترتيب المناطق", sub: "المهني والتقني مقابل الجامعي", h: 420,
+        draw: function (id) {
+          barChart(id, ordered.map(function (s) { return [s.name, s.grads, s.uni.grads]; }),
+            { labelWidth: 150, legendColor: C.uni,
+              outerName: "إجمالي الخريجين", innerName: "منهم خريجو الجامعات",
+              ratioName: "حصة الجامعي" });
+        } },
+      { title: "نسبة التوظيف حسب المنطقة", sub: "المتوظفون من الخريجين", h: 380,
+        draw: function (id) {
+          barChart(id, ordered.slice().sort(function (x, y) {
+            return (x.grads ? x.emp / x.grads : 0) - (y.grads ? y.emp / y.grads : 0);
+          }).map(function (s) {
+            return [s.name, +(s.grads ? s.emp / s.grads * 100 : 0).toFixed(1)];
+          }), { labelWidth: 150, labelRoom: 64, unit: "٪ توظيف",
+                colorFn: function () { return C.voc; } });
+        } }
+    ],
+    note: "بيانات العاملين ونسب التوطين لا تحمل منطقة في مصدرها، فلا تظهر هنا.",
+    file: "المناطق-" + yearsLabel()
+  };
+}
+
+function occupationCardSpec(rec, tree) {
+  var T = cardTok();
+  var w = workforceOf(rec);
+  var fieldNames = rec.fields.map(function (f) { return L.fields[f]; });
+  var linked = uniRows().filter(function (r) { return fieldNames.indexOf(r.d) !== -1; });
+  var lt = total(linked);
+  var nSkills = ["technical", "basic", "general", "leadership"]
+    .reduce(function (a, k) { return a + rec.skills[k].length; }, 0);
+  var spec = {
+    title: rec.ar,
+    kicker: (rec.en ? rec.en + " · " : "") + (tree ? tree.code : rec.code || ""),
+    badge: rec.nqfLevel !== null && rec.nqfLevel !== undefined
+      ? "الإطار الوطني · المستوى " + rec.nqfLevel : UNCLASSIFIED,
+    file: "مهنة-" + rec.ar + "-" + yearsLabel(),
+    charts: []
+  };
+  if (w) {
+    var all = jobTotals(JOBS);
+    var peers = [];
+    (rec.sectors || []).forEach(function (si) {
+      JOBS.forEach(function (j) {
+        if ((j.sectors || []).indexOf(si) !== -1 && peers.indexOf(j) === -1) peers.push(j);
+      });
+    });
+    spec.lead = { value: w.total, label: "مجموع العاملين",
+                  side: pct(w.saudi, w.total), sideLabel: "نسبة التوطين" };
+    spec.kpis = [
+      { label: "العاملون السعوديون", value: w.saudi, accent: T.purple,
+        sub: "Saudi · " + rec.type },
+      { label: "فجوة التوطين", value: w.other, sub: "وظائف يشغلها غير سعوديين" },
+      { label: "نسبة التوطين", raw: pct(w.saudi, w.total), accent: T.blue,
+        sub: "متوسط المهن جميعًا " + pct(all.saudi, all.total) },
+      { label: "القطاعات التي تخدمها", value: rec.sectors.length, sub: "من ١٣ قطاعًا فرعيًا" },
+      { label: "المهارات", value: nSkills, sub: fmt(rec.tasks.length) + " مهام رئيسية" },
+      { label: "خريجو المجالات المرتبطة", value: lt.grads,
+        sub: linked.length ? "نسبة التوظيف " + pct(lt.emp, lt.grads) : "لا يوجد مجال مطابق" }
+    ];
+    spec.charts.push({ title: "نسبة التوطين مقارنةً بمحيطها", h: 220,
+      sub: "المهنة مقابل متوسط قطاعاتها ومقابل جميع المهن · بالنسبة لا بالعدد",
+      draw: function (id) {
+        var cmp = [["جميع المهن", +(all.saudi / all.total * 100).toFixed(1)]];
+        if (peers.length) {
+          var pt = jobTotals(peers);
+          cmp.push(["قطاعات هذه المهنة  (" + fmt(peers.length) + " مهنة)",
+                    +(pt.saudi / pt.total * 100).toFixed(1)]);
+        }
+        cmp.push([rec.ar, +(w.rate * 100).toFixed(1)]);
+        barChart(id, cmp, { labelWidth: 215, labelRoom: 64, unit: "٪ توطين",
+          colorFn: function (e) { return e[0] === rec.ar ? C.uni : C.neutral; } });
+      } });
+    spec.charts.push({ title: "ترتيب المهنة بين أكبر فجوات التوطين", h: 340,
+      sub: "أعلى عشر فجوات، والمهنة الحالية مُبرزة",
+      draw: function (id) {
+        var top = JOBS.slice().sort(function (x, y) { return y.other - x.other; }).slice(0, 10);
+        var here = JOBS.filter(function (j) { return j.code === rec.code; })[0];
+        if (here && top.indexOf(here) === -1) top.push(here);
+        barChart(id, top.sort(function (x, y) { return x.other - y.other; })
+          .map(function (j) { return [j.name, j.other]; }),
+          { labelWidth: 195, labelRoom: 80, unit: "وظيفة يشغلها غير سعودي",
+            colorFn: function (e) { return e[0] === rec.ar ? C.uni : C.neutral; } });
+      } });
+    spec.note = WF_NOTE;
+  } else {
+    spec.lead = { value: lt.grads, label: "خريجو المجالات المرتبطة",
+                  side: linked.length ? pct(lt.emp, lt.grads) : "—",
+                  sideLabel: "نسبة التوظيف" };
+    spec.kpis = [
+      { label: "القطاعات التي تخدمها", value: rec.sectors.length, sub: "من ١٣ قطاعًا فرعيًا" },
+      { label: "المهارات", value: nSkills, sub: "مهنية وأساسية وعامة وقيادية" },
+      { label: "المهام الرئيسية", value: rec.tasks.length, sub: "كما وردت في المصدر" },
+      { label: "التخصصات المهنية", value: tree ? tree.children.length : 0,
+        sub: "تندرج تحت المهنة" },
+      { label: "مستوى المهنة", raw: rec.occLevel || "غير متوفر", sub: "Occupation level" },
+      { label: "المجالات التعليمية", value: rec.fields.length, sub: "تشير إليها المهنة" }
+    ];
+    if (linked.length) spec.charts.push({
+      title: "أعلى التخصصات في المجالات المرتبطة", sub: "بعدد الخريجين", h: 340,
+      draw: function (id) {
+        barChart(id, ranked(agg(linked, function (r) { return r.m; }), "grads")
+          .slice(0, 10).reverse().map(pair), { labelWidth: 230, labelRoom: 80,
+            colorFn: function () { return C.uni; }, legendColor: C.uni });
+      } });
+    spec.note = "لا تَرِد هذه المهنة في جدول العاملين، فلا تتوفر لها أعداد عمالة أو نسبة توطين.";
+  }
+  return spec;
+}
+
+function workforceCardSpec() {
+  var T = cardTok(), t = jobTotals(JOBS);
+  var zero = JOBS.filter(function (j) { return j.saudi === 0; });
+  var full = JOBS.filter(function (j) { return j.total > 0 && j.saudi === j.total; });
+  return {
+    title: "العاملون في سوق العمل",
+    kicker: "لقطة حالية · " + fmt(JOBS.length) + " مهنة",
+    badge: "نسبة التوطين " + pct(t.saudi, t.total),
+    lead: { value: t.total, label: "إجمالي العاملين",
+            side: fmt(t.saudi), sideLabel: "منهم سعوديون" },
+    kpis: [
+      { label: "العاملون السعوديون", value: t.saudi, accent: T.purple,
+        sub: "نسبة التوطين " + pct(t.saudi, t.total) },
+      { label: "وظائف يشغلها غير سعوديين", value: t.other, sub: "حجم فرصة التوطين" },
+      { label: "مهن بلا سعوديين", value: zero.length,
+        sub: fmt(jobTotals(zero).total) + " وظيفة بنسبة صفر" },
+      { label: "مهن توطينها كامل", value: full.length,
+        sub: fmt(jobTotals(full).total) + " وظيفة بنسبة ١٠٠٪" },
+      { label: "متوسط التوطين للمهنة", accent: T.blue,
+        raw: pct(JOBS.reduce(function (a, j) { return a + j.rate; }, 0), JOBS.length),
+        sub: "غير مرجّح بالحجم" },
+      { label: "القطاعات الصناعية", value: SECTORS.length, sub: "قد تخدم المهنة أكثر من قطاع" }
+    ],
+    charts: [
+      { title: "أكبر المهن توظيفًا", sub: "الشريط كامله مجموع العمالة والمملوء منه السعوديون",
+        h: 420,
+        draw: function (id) {
+          barChart(id, JOBS.slice().sort(function (a, b) { return b.total - a.total; })
+            .slice(0, 12).reverse().map(function (j) { return [j.name, j.total, j.saudi]; }),
+            Object.assign({ labelWidth: 195, legendColor: C.voc }, WF_NAMES));
+        } },
+      { title: "أكبر فجوات التوطين", sub: "بعدد الوظائف التي يشغلها غير سعوديون", h: 420,
+        draw: function (id) {
+          barChart(id, JOBS.slice().sort(function (a, b) { return b.other - a.other; })
+            .slice(0, 12).reverse().map(function (j) {
+              return [j.name + "  (" + pct(j.saudi, j.total) + ")", j.other];
+            }), { labelWidth: 235, labelRoom: 84, unit: "وظيفة يشغلها غير سعودي",
+                  colorFn: function () { return C.neutral; } });
+        } }
+    ],
+    note: WF_NOTE,
+    file: "العاملون-في-سوق-العمل"
+  };
+}
+
+/* The filters are part of the figure, so they are written into the card
+   rather than left to whoever receives it to guess. */
+function sdFilterLabel() {
+  var bits = [];
+  if (sdFilter.q) bits.push("بحث: " + sdFilter.q);
+  if (sdFilter.sector) bits.push(SECTORS[Number(sdFilter.sector)]);
+  if (sdFilter.skill) bits.push(sdFilter.skill);
+  if (sdFilter.isced) bits.push("مؤهل: " + sdFilter.isced);
+  if (sdFilter.region) bits.push("منطقة العرض: " + sdFilter.region);
+  return bits.length ? bits.join(" · ") : "كل المهن، دون تصفية";
+}
+function sdSummary() {
+  var rows = sdRows(), t = jobTotals(rows);
+  var withSupply = [], noSupply = [];
+  rows.forEach(function (j) {
+    var sp = j.occ ? supplyFor(j.occ) : null;
+    if (sp && sp.grads > 0) withSupply.push({ j: j, sp: sp });
+    else noSupply.push(j);
+  });
+  var union = supplyUnion(withSupply.map(function (x) { return x.j; }));
+  return { rows: rows, t: t, withSupply: withSupply, noSupply: noSupply, union: union,
+           supplyTotal: union.grads,
+           demandCovered: withSupply.reduce(function (a, x) { return a + x.j.total; }, 0),
+           gapCovered: withSupply.reduce(function (a, x) { return a + x.j.other; }, 0) };
+}
+
+function supplyCardSpec() {
+  var T = cardTok(), S = sdSummary();
+  var top = S.withSupply.slice().sort(function (a, b) { return b.j.total - a.j.total; })
+                        .slice(0, 12);
+  return {
+    title: "العرض والطلب",
+    kicker: sdFilterLabel() + " · " + yearsLabel(),
+    badge: fmt(S.rows.length) + " مهنة · " + fmt(S.withSupply.length) + " لها عرض",
+    lead: { value: S.t.total, label: "الطلب — إجمالي العاملين",
+            side: fmt(S.supplyTotal), sideLabel: "العرض — خريجون مرتبطون" },
+    kpis: [
+      { label: "فجوة التوطين", value: S.t.other, accent: T.purple,
+        sub: "نسبة التوطين " + pct(S.t.saudi, S.t.total) },
+      { label: "العرض بلا تكرار", value: S.supplyTotal, accent: T.blue,
+        sub: fmt(S.union.majors) + " تخصصًا مميزًا" },
+      { label: "تغطية الربط", raw: pct(S.withSupply.length, S.rows.length),
+        sub: fmt(S.noSupply.length) + " مهنة بلا تخصص مرتبط" },
+      { label: "خريجون لكل وظيفة غير مشغولة بسعودي",
+        raw: S.gapCovered ? (S.supplyTotal / S.gapCovered).toFixed(2) : "غير متوفر",
+        sub: "عرض بلا تكرار ÷ فجوة المهن المرتبطة" },
+      { label: "الطلب المغطّى بالربط", value: S.demandCovered,
+        sub: pct(S.demandCovered, S.t.total) + " من وظائف التصفية" },
+      { label: "المهن ضمن التصفية", value: S.rows.length, sub: "من " + fmt(JOBS.length) + " مهنة" }
+    ],
+    charts: top.length ? [
+      { title: "العرض مقابل الطلب في أكبر المهن", h: 440,
+        sub: "الشريط كامله مجموع العمالة والمملوء منه السعوديون · وبين القوسين العرض",
+        draw: function (id) {
+          barChart(id, top.slice().reverse().map(function (x) {
+            return [x.j.name + "  (عرض " + fmt(x.sp.grads) + ")", x.j.total, x.j.saudi];
+          }), Object.assign({ labelWidth: 290, labelRoom: 80, legendColor: C.voc }, WF_NAMES));
+        } },
+      { title: "فجوة التوطين مقابل العرض السنوي", sub: "المهن المرتبطة فقط", h: 400,
+        draw: function (id) {
+          barChart(id, top.slice().sort(function (a, b) { return a.j.other - b.j.other; })
+            .map(function (x) { return [x.j.name, x.sp.grads, x.j.other]; }),
+            { labelWidth: 210, labelRoom: 80, legendColor: C.uni,
+              colorFn: function () { return C.uni; },
+              outerName: "الخريجون المرتبطون", innerName: "فجوة التوطين",
+              ratioName: "الفجوة كنسبة من العرض" });
+        } }
+    ] : [],
+    note: sdFilter.region
+      ? "المنطقة تصفّي العرض وحده؛ الطلب يبقى على مستوى المملكة."
+      : WF_NOTE,
+    file: "العرض-والطلب-" + yearsLabel()
+  };
+}
+
+/* ------------------------- the CSVs those views lacked ------------------ */
+function exportOccupation(rec, tree) {
+  var w = workforceOf(rec);
+  var fieldNames = rec.fields.map(function (f) { return L.fields[f]; });
+  var linked = uniRows().filter(function (r) { return fieldNames.indexOf(r.d) !== -1; });
+  var lt = total(linked);
+  var rows = [["المهنة", rec.ar], ["بالإنجليزية", rec.en || ""],
+              ["الرمز", tree ? tree.code : (rec.code || "")],
+              ["المجموعة الرئيسية", rec.group], ["الوحدة", rec.unit],
+              ["نوع المهنة", rec.type || ""],
+              ["مستوى الإطار الوطني", rec.nqfLabel || "غير متوفر"],
+              ["مستوى ISCED 11", rec.isced || "غير متوفر"], []];
+  rows.push(["العاملون"]);
+  if (w) {
+    rows.push(["مجموع العاملين", w.total]);
+    rows.push(["العاملون السعوديون", w.saudi]);
+    rows.push(["فجوة التوطين", w.other]);
+    rows.push(["نسبة التوطين", +(w.rate * 100).toFixed(1)]);
+    rows.push(["ملاحظة", WF_NOTE]);
+  } else {
+    rows.push(["غير واردة في جدول العاملين"]);
+  }
+  rows.push([]);
+  rows.push(["الخريجون في المجالات التعليمية المرتبطة", "سنوات " + yearsLabel()]);
+  rows.push(["إجمالي الخريجين", lt.grads]);
+  rows.push(["المتوظفون", lt.emp]);
+  rows.push([]);
+  rows.push(["أعلى التخصصات المرتبطة", "الخريجون", "المتوظفون"]);
+  ranked(agg(linked, function (r) { return r.m; }), "grads").slice(0, 25)
+    .forEach(function (e) { rows.push([e[0], e[1].grads, e[1].emp]); });
+  downloadCsv("مهنة-" + rec.ar + "-" + yearsLabel() + ".csv", rows);
+}
+
+function exportWorkforce() {
+  var rows = [["المهنة", "الرمز", "الفئة", "مستوى المهارة", "المؤهل المطلوب",
+               "القطاعات", "مجموع العمالة", "سعوديون", "غير سعوديين", "نسبة التوطين"]];
+  JOBS.slice().sort(function (a, b) { return b.total - a.total; }).forEach(function (j) {
+    rows.push([j.name, j.code || "", j.critical, j.skill, j.isced || "",
+               (j.sectors || []).map(function (si) { return SECTORS[si]; }).join(" | "),
+               j.total, j.saudi, j.other, +(j.rate * 100).toFixed(1)]);
+  });
+  rows.push([]);
+  rows.push([WF_NOTE]);
+  downloadCsv("العاملون-في-سوق-العمل.csv", rows);
+}
+
+function exportSupply() {
+  var S = sdSummary();
+  var rows = [["التصفية", sdFilterLabel()], ["سنوات التخرج", yearsLabel()], [],
+              ["المهنة", "المؤهل المطلوب", "العاملون", "سعوديون", "الفجوة",
+               "نسبة التوطين", "العرض (خريجون)", "خريج لكل فجوة"]];
+  S.rows.slice().sort(function (a, b) { return b.other - a.other; }).forEach(function (j) {
+    var sp = j.occ ? supplyFor(j.occ) : null;
+    var has = sp && sp.grads > 0;
+    rows.push([j.name, j.isced || "", j.total, j.saudi, j.other,
+               +(j.rate * 100).toFixed(1), has ? sp.grads : "غير مرتبط",
+               has && j.other ? +(sp.grads / j.other).toFixed(2) : ""]);
+  });
+  rows.push([]);
+  rows.push(["العرض بلا تكرار", S.supplyTotal, "تخصصات مميزة", S.union.majors]);
+  rows.push([WF_NOTE]);
+  downloadCsv("العرض-والطلب-" + yearsLabel() + ".csv", rows);
+}
+
 /* Two values per row, drawn beside each other rather than one inside the
    other. barChart nests its pair because its pair is a part and its whole;
    two regions are peers and either may be larger. */
@@ -3336,7 +4117,7 @@ function viewRegions(openIdx, vsIdx) {
     '<div class="browse-head">' +
       '<span class="result-count">اضغط منطقة لعرض بياناتها، ومن داخلها يمكنك مقارنتها بأخرى · ' +
         'الأغمق أكثر خريجين</span>' +
-      '<button class="btn-reset" id="rgExportAll" style="margin-top:0">تصدير كل المناطق (CSV)</button>' +
+      exportBar("rgs", "تصدير كل المناطق (CSV)") +
     '</div>' +
     '<div class="regionmap" id="rgMap" role="group" aria-label="خريطة المناطق">' +
       REGION_MAP.map(tileHtml).join("") +
@@ -3352,7 +4133,7 @@ function viewRegions(openIdx, vsIdx) {
       chartCard("نسبة التوظيف حسب المنطقة", "المتوظفون من الخريجين", "rgRate", "span6", "tall") +
     '</div>';
 
-  document.getElementById("rgExportAll").addEventListener("click", exportAllRegions);
+  wireExports("rgs", exportAllRegions, regionsOverviewSpec);
   document.getElementById("view").addEventListener("click", function (e) {
     var b = e.target.closest("[data-region]");
     if (!b) return;
@@ -3402,12 +4183,11 @@ function openRegionWindow(names, openIdx, vsIdx, stats, nat) {
           '<div class="win-nav">' +
             (b
               ? '<button id="rgUncompare">إلغاء المقارنة</button>' +
-                '<button id="rgPick">تغيير منطقة المقارنة</button>' +
-                '<button id="rgExportCmp">تصدير المقارنة (CSV)</button>'
-              : '<button id="rgPick">قارن مع منطقة أخرى…</button>' +
-                '<button id="rgExportOne">تصدير بيانات ' + esc(a) + ' (CSV)</button>') +
+                '<button id="rgPick">تغيير منطقة المقارنة</button>'
+              : '<button id="rgPick">قارن مع منطقة أخرى…</button>') +
             '<span class="pos">' + esc(a) + '</span>' +
           '</div>' +
+          exportBar("rgOne", b ? "تصدير المقارنة (CSV)" : "تصدير البيانات (CSV)") +
           '<div class="rgpicker" id="rgPicker" hidden>' +
             '<span class="lbl">اختر منطقة للمقارنة مع ' + esc(a) + ':</span>' +
             '<div class="rgpick-grid">' +
@@ -3450,13 +4230,11 @@ function openRegionWindow(names, openIdx, vsIdx, stats, nat) {
     document.getElementById("rgUncompare").addEventListener("click", function () {
       location.hash = "#regions/" + openIdx;
     });
-    document.getElementById("rgExportCmp").addEventListener("click", function () {
-      exportComparison(a, b);
-    });
+    wireExports("rgOne", function () { exportComparison(a, b); },
+                function () { return regionCompareSpec(a, b); });
   } else {
-    document.getElementById("rgExportOne").addEventListener("click", function () {
-      exportRegionDetail(a);
-    });
+    wireExports("rgOne", function () { exportRegionDetail(a); },
+                function () { return regionCardSpec(a); });
   }
   regionKeyHandler = function (e) {
     if (e.key === "Escape") {

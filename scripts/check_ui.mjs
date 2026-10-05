@@ -438,7 +438,7 @@ async function main() {
     try {
       const [dl] = await Promise.all([
         page.waitForEvent('download', { timeout: 10000 }),
-        page.click('#rgExportCmp')
+        page.click('#rgOneCsv')
       ]);
       const text = readFileSync(await dl.path(), 'utf8');
       const lines = text.split('\r\n');
@@ -463,7 +463,7 @@ async function main() {
     try {
       const [dl] = await Promise.all([
         page.waitForEvent('download', { timeout: 10000 }),
-        page.click('#rgExportOne')
+        page.click('#rgOneCsv')
       ]);
       const text = readFileSync(await dl.path(), 'utf8');
       check('a single region exports as a readable CSV',
@@ -504,7 +504,7 @@ async function main() {
     try {
       const [dl] = await Promise.all([
         page.waitForEvent('download', { timeout: 10000 }),
-        page.click('#rgExportAll')
+        page.click('#rgsCsv')
       ]);
       const text = readFileSync(await dl.path(), 'utf8');
       const lines = text.split('\r\n').filter(Boolean);
@@ -518,6 +518,127 @@ async function main() {
     }
 
     check('no console or page errors on the regions page',
+          noise.length === 0, noise.slice(0, 4).join(' | '));
+    await context.close();
+  }
+
+  /* ---------------------------------------------------------------------
+     EXPORT CARDS — every exporting view hands over a real PNG
+     --------------------------------------------------------------------- */
+  console.log('\nEXPORT CARDS');
+  {
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 950 }, acceptDownloads: true });
+    const page = await context.newPage();
+    const noise = [];
+    page.on('pageerror', e => noise.push('pageerror: ' + e.message));
+    page.on('console', m => { if (m.type() === 'error') noise.push('console: ' + m.text()); });
+
+    /* A PNG's size lives in its header, so a card that drew nothing is not
+       told apart from one that drew by file size alone. */
+    const png = buf => ({
+      ok: buf.length > 8 && buf.toString('ascii', 1, 4) === 'PNG',
+      w: buf.readUInt32BE(16), h: buf.readUInt32BE(20)
+    });
+
+    async function grab(name, selector) {
+      try {
+        const [dl] = await Promise.all([
+          page.waitForEvent('download', { timeout: 30000 }),
+          page.click(selector)
+        ]);
+        return readFileSync(await dl.path());
+      } catch (e) {
+        check(name, false, e.message.split('\n')[0]);
+        return null;
+      }
+    }
+
+    /* The occupation card has two shapes of its own: one the workforce sheet
+       covers, and one it does not. Both have to produce a card. */
+    await page.goto(PAGE + '#workforce', { waitUntil: 'load' });
+    await page.waitForSelector('#wfCard', { timeout: 20000 });
+    await page.waitForTimeout(2500);
+    const occHref = await page.evaluate(() =>
+      (document.querySelector('[data-go^="#occ/"]') || {}).dataset.go);
+
+    const views = [
+      ['the regions map', '#regions', 'rgs'],
+      ['one region', '#regions/3', 'rgOne'],
+      ['a comparison', '#regions/3/0', 'rgOne'],
+      ['an occupation', occHref, 'occ'],
+      ['the workforce page', '#workforce', 'wf'],
+      ['supply and demand', '#supply', 'sd']
+    ];
+
+    for (const [what, hash, prefix] of views) {
+      await page.goto(PAGE + hash, { waitUntil: 'load' });
+      await page.waitForSelector(`#${prefix}Card`, { timeout: 20000 });
+      await page.waitForTimeout(2600);
+
+      const portrait = await grab(`${what} exports a portrait card`, `#${prefix}Card`);
+      if (portrait) {
+        const p = png(portrait);
+        /* Drawn at 2x, so 1080 logical is 2160 across. The height is cut to
+           what was used, so it is only asserted to be a card rather than a
+           strip. */
+        check(`${what} exports a portrait card`,
+              p.ok && p.w === 2160 && p.h > 1600 && portrait.length > 60000,
+              `${p.w}x${p.h}, ${(portrait.length / 1024) | 0}KB`);
+      }
+
+      const wide = await grab(`${what} exports a 16:9 card`, `#${prefix}Wide`);
+      if (wide) {
+        const p = png(wide);
+        check(`${what} exports a 16:9 card`,
+              p.ok && p.w === 3840 && p.h === 2160 && wide.length > 60000,
+              `${p.w}x${p.h}, ${(wide.length / 1024) | 0}KB`);
+      }
+
+      const csv = await grab(`${what} still exports its CSV`, `#${prefix}Csv`);
+      if (csv) {
+        const text = csv.toString('utf8');
+        check(`${what} still exports its CSV`,
+              text.charCodeAt(0) === 0xFEFF && text.split('\r\n').length > 3,
+              `${text.split('\r\n').length} lines`);
+      }
+    }
+
+    /* The button says it is working and comes back by itself. A card that
+       left its button disabled would look like a page that had died.
+       Watched rather than sampled: a card can finish inside the round trip
+       it takes to ask, and a check that raced it would be reporting its own
+       timing, not the button's behaviour. */
+    await page.goto(PAGE + '#regions/3', { waitUntil: 'load' });
+    await page.waitForSelector('#rgOneCard', { timeout: 20000 });
+    await page.waitForTimeout(2600);
+    const label = await page.textContent('#rgOneCard');
+    await page.evaluate(() => {
+      const b = document.getElementById('rgOneCard');
+      window.__busy = { disabled: false, said: false };
+      const start = b.textContent;
+      new MutationObserver(() => {
+        if (b.disabled) window.__busy.disabled = true;
+        if (b.textContent !== start) window.__busy.said = true;
+      }).observe(b, { attributes: true, childList: true, characterData: true, subtree: true });
+    });
+    await page.click('#rgOneCard');
+    await page.waitForTimeout(8000);
+    const busy = await page.evaluate(() => ({
+      seen: window.__busy,
+      disabled: document.getElementById('rgOneCard').disabled,
+      text: document.getElementById('rgOneCard').textContent
+    }));
+    check('the card button says it is working, then comes back',
+          busy.seen.disabled && busy.seen.said &&
+          !busy.disabled && busy.text === label,
+          JSON.stringify({ label, ...busy }));
+
+    /* A card renders charts off-screen; if it left them in `live`, the next
+       resize would reach for a disposed instance. */
+    await page.setViewportSize({ width: 1200, height: 900 });
+    await page.waitForTimeout(900);
+    check('drawing a card leaves no chart behind to break the next resize',
           noise.length === 0, noise.slice(0, 4).join(' | '));
     await context.close();
   }
