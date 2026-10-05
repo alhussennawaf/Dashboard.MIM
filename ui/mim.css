@@ -45,6 +45,11 @@
   min-height: clamp(210px, 22vw, 290px);
 }
 .hero:empty { min-height: clamp(210px, 22vw, 290px); }
+/* The reservation above is for the full band and for the moment before the
+   bundle mounts anything at all. The compact band is a single row of figures
+   — about 115px — so holding it to 290 left a third of the screen empty on
+   every page but the overview. */
+.hero:has(.hero-inner.is-compact) { min-height: 0; }
 .hero-inner {
   position: relative;
   padding: clamp(26px, 4.2vw, 54px) clamp(14px, 2.6vw, 36px) clamp(22px, 3.4vw, 40px);

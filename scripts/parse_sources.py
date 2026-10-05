@@ -38,6 +38,7 @@ DATA = ROOT / "data"
 VOCATIONAL_XLSX = DATA / "خريجي التعليم المهني 2020-2025.xlsx"
 UNIVERSITY_XLSX = DATA / "خريجي الجامعات للتخصصات بالمجال 0705 2020-2025.xlsx"
 MASTER_XLSX = DATA / "260218 Final Master Sheet with Occupations in EN.xlsx"
+WORKFORCE_XLSX = DATA / "العاملون في المهن ونسب التوطين.xlsx"
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +154,21 @@ def clean(value):
     text = str(value).replace("​", "").replace("\xa0", " ")
     text = re.sub(r"\s+", " ", text).strip()
     return text or None
+
+
+def to_int(value):
+    """A count from a cell that may be a number, a numeric string, or blank."""
+    if value is None:
+        return 0
+    if isinstance(value, (int, float)):
+        return int(round(value))
+    text = str(value).strip().replace(",", "")
+    if not text:
+        return 0
+    try:
+        return int(round(float(text)))
+    except ValueError:
+        return 0
 
 
 def canon_region(name):
@@ -456,6 +472,123 @@ def parse_master(report):
     return occupations
 
 
+WORKFORCE_BLOCKS = [
+    (0,  "مهن أساسية مهارات عالية"),
+    (5,  "مهن أساسية داعمة مهارات عالية"),
+    (10, "مهن أساسية مهارات متوسطة"),
+    (15, "مهن أساسية داعمة مهارات متوسطة"),
+]
+
+
+def normalise_arabic(text):
+    """Fold the differences that stop two spellings of one name matching.
+
+    The workforce sheet and the master sheet were typed by different people:
+    harakat, tatweel, and the alef/ya/ta-marbuta variants differ between them
+    on 10 of 503 names. Folding those lifts the join from 98% to 100%, and it
+    folds nothing that distinguishes two real occupations.
+    """
+    text = re.sub(r"[\u064B-\u0652\u0640]", "", str(text))
+    for a, b in (("أ", "ا"), ("إ", "ا"), ("آ", "ا"), ("ة", "ه"), ("ى", "ي")):
+        text = text.replace(a, b)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+# Spellings the workforce sheet got wrong, and what the master list calls them.
+# Kept here, named and dated, rather than folded into normalise_arabic: this is
+# a typo in one export, not a difference between two valid spellings, and the
+# next export may well fix it. If it does, the entry stops matching anything
+# and the parser's unmatched count says so.
+#
+#   ميكانيكي معدات الكرتونية  ->  ميكانيكي معدات إلكترونية
+#       "الكترونية" with two letters transposed. Confirmed by the data owner
+#       (Oct 2026) and by the master list, which holds no occupation involving
+#       cardboard and one named إلكترونية at 0.92 string similarity.
+SOURCE_TYPOS = {
+    "ميكانيكي معدات الكرتونية": "ميكانيكي معدات إلكترونية",
+}
+
+
+def parse_workforce(report, occupations):
+    """Current employment and Saudization per occupation.
+
+    The sheet is four tables side by side rather than one: columns A-D, F-I,
+    K-N and P-S, each a (criticality x skill) segment with its own Grand Total
+    on row 3. They are read as one long table with the segment kept as a
+    column, which is what every view here wants.
+
+    Joined to the master list by occupation name, because the sheet carries no
+    occupation code. Names that do not match are kept and reported rather than
+    dropped — an unmatched row is a real occupation whose employment we hold
+    and whose description we do not.
+    """
+    _, body = sheet_rows(WORKFORCE_XLSX, "Sheet1", header_row=2)
+    rows_raw = list(body)
+
+    by_name = {}
+    for occ in occupations:
+        if occ["ar"]:
+            by_name.setdefault(normalise_arabic(occ["ar"]), occ["code"])
+
+    blocks = [name for _, name in WORKFORCE_BLOCKS]
+    facts, stated, unmatched, corrected_names = [], [], [], []
+    for bi, (off, _name) in enumerate(WORKFORCE_BLOCKS):
+        total_row = rows_raw[0] if rows_raw else []
+        stated.append({
+            "block": bi,
+            "saudi": to_int(total_row[off + 1]) if off + 1 < len(total_row) else 0,
+            "total": to_int(total_row[off + 2]) if off + 2 < len(total_row) else 0,
+        })
+        for row in rows_raw[1:]:
+            name = clean(row[off]) if off < len(row) else ""
+            if not name:
+                continue
+            saudi = to_int(row[off + 1]) if off + 1 < len(row) else 0
+            total = to_int(row[off + 2]) if off + 2 < len(row) else 0
+            corrected = SOURCE_TYPOS.get(name, name)
+            code = by_name.get(normalise_arabic(corrected))
+            if code is None:
+                unmatched.append(name)
+            elif corrected != name:
+                corrected_names.append((name, corrected))
+            # The corrected spelling is what ships: the row is the same
+            # occupation either way, and showing the typo on the page would
+            # put a second name on a thing that has one.
+            facts.append([code or "", corrected, bi, saudi, total])
+
+    sum_saudi = sum(f[3] for f in facts)
+    sum_total = sum(f[4] for f in facts)
+    # The sheet's own Grand Totals, kept beside ours. They agree everywhere but
+    # one: segment 3 states 8,149 Saudis where its rows sum to 8,147. Shown on
+    # the page rather than silently reconciled to either number.
+    gaps = []
+    for bi, st in enumerate(stated):
+        rs = sum(f[3] for f in facts if f[2] == bi)
+        rt = sum(f[4] for f in facts if f[2] == bi)
+        if rs != st["saudi"] or rt != st["total"]:
+            gaps.append({"block": bi, "statedSaudi": st["saudi"], "rowsSaudi": rs,
+                         "statedTotal": st["total"], "rowsTotal": rt})
+
+    report["workforce"] = {
+        "source_rows": len(facts),
+        "matched": sum(1 for f in facts if f[0]),
+        "unmatched": sorted(set(unmatched)),
+        "corrected": sorted(set(corrected_names)),
+        "saudi": sum_saudi,
+        "total": sum_total,
+        "gaps": gaps,
+    }
+    return {
+        "source": WORKFORCE_XLSX.name,
+        "corrections": [{"from": a, "to": b} for a, b in sorted(set(corrected_names))],
+        "blocks": blocks,
+        "cols": ["occupationCode", "nameAr", "block", "saudi", "total"],
+        "rows": facts,
+        "stated": stated,
+        "gaps": gaps,
+    }
+
+
 def nest_occupations(occupations):
     """
     Describe the 921 occupation rows as the 548 occupations they actually are.
@@ -566,7 +699,7 @@ def nqf_for_labels(labels):
 
 
 def main():
-    for path in (VOCATIONAL_XLSX, UNIVERSITY_XLSX, MASTER_XLSX):
+    for path in (VOCATIONAL_XLSX, UNIVERSITY_XLSX, MASTER_XLSX, WORKFORCE_XLSX):
         if not path.exists():
             sys.exit(f"missing source file: {path}")
 
@@ -574,6 +707,8 @@ def main():
     voc_dims, voc_facts = parse_vocational(report)
     uni_dims, uni_facts = parse_university(report)
     occupations = parse_master(report)
+    # After parse_master: the join is by occupation name against that list.
+    workforce = parse_workforce(report, occupations)
 
     voc_qual_levels, voc_unresolved = nqf_for_labels(voc_dims["qualification"].labels())
     uni_level_levels, uni_unresolved = nqf_for_labels(uni_dims["level"].labels())
@@ -618,6 +753,7 @@ def main():
                 "vocational": VOCATIONAL_XLSX.name,
                 "university": UNIVERSITY_XLSX.name,
                 "master": MASTER_XLSX.name,
+                "workforce": WORKFORCE_XLSX.name,
                 "nqf": "nationalqualificationsframework.pdf",
             },
             "scope": {
@@ -662,6 +798,7 @@ def main():
         "occupations": occupations,
         "occupationTree": occupation_tree,
         "fieldLinks": field_links,
+        "workforce": workforce,
     }
 
     json_path = DATA / "dashboard-data.json"
@@ -701,6 +838,23 @@ def main():
     print(f"  with specializations      {tr['with_specializations']:,}")
     print(f"  largest occupation        {tr['max_specializations']} specializations")
     print(f"  base text from a child    {tr['base_from_child']}")
+
+    w = report["workforce"]
+    print(f"\nworkforce (employment and Saudization):")
+    print(f"  occupation rows   {w['source_rows']:,}")
+    print(f"  joined to master  {w['matched']:,}   unmatched {len(w['unmatched'])}")
+    for name in w["unmatched"]:
+        print(f"    UNMATCHED  {name}")
+    for a, b in w["corrected"]:
+        print(f"    TYPO FIXED  {a}  ->  {b}")
+    rate = w["saudi"] / w["total"] if w["total"] else 0
+    print(f"  Saudis            {w['saudi']:,}")
+    print(f"  total employment  {w['total']:,}")
+    print(f"  Saudization       {rate:.4f}")
+    for g in w["gaps"]:
+        print(f"  GRAND TOTAL GAP in block {g['block']}: "
+              f"stated saudi {g['statedSaudi']:,} vs rows {g['rowsSaudi']:,}, "
+              f"stated total {g['statedTotal']:,} vs rows {g['rowsTotal']:,}")
 
     lk = report["links"]
     print(f"\noccupation -> graduate bridge:")

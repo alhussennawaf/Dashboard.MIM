@@ -73,6 +73,8 @@ PUBLISHED = [
     "assets/fonts/LICENSE-IBM-Plex.txt",
     "assets/fonts/LICENSE-Noto-Naskh.txt",
 ]
+# The workforce workbook stays out of site/ with the other source files: it is
+# ministry data at occupation level and the deploy list is an allow-list.
 
 # Pages that belong in the sitemap, with their change frequency.
 SITEMAP = [("", "monthly", "1.0"), ("privacy.html", "yearly", "0.3"),
