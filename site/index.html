@@ -916,6 +916,56 @@ var UNI = D.university.rows.map(function (r) {
 var OCC = D.occupations;
 var YEARS = D.meta.years.slice().sort();
 
+/* ------------------------ workforce (the demand side) -------------------
+   Employment and Saudization per occupation, from the ministry's workforce
+   sheet. Two things to hold on to about it:
+
+   It carries no year and no region. It is a snapshot of who is in the job
+   today, not a series — so the year chips at the top of the page do not
+   touch these figures, and every view that shows them says so rather than
+   letting a reader assume the filter applied.
+
+   It carries no sector either. The sector, the qualification level and the
+   skills all come from the master list, reached through the occupation code
+   the parser matched by name. That is what lets the demand side be cut by
+   sector at all. */
+var WF = (D.workforce || { rows: [], blocks: [], stated: [], gaps: [] });
+var WFI = idx(WF);
+var OCC_BY_CODE = {};
+OCC.forEach(function (o) { if (o.code && !OCC_BY_CODE[o.code]) OCC_BY_CODE[o.code] = o; });
+
+var JOBS = WF.rows.map(function (r) {
+  var code = r[WFI.occupationCode];
+  var o = code ? OCC_BY_CODE[code] : null;
+  var saudi = r[WFI.saudi], total = r[WFI.total];
+  return {
+    code: code, name: r[WFI.nameAr], block: r[WFI.block],
+    saudi: saudi, total: total, other: total - saudi,
+    rate: total ? saudi / total : 0,
+    occ: o,
+    sectors: o ? o.sectors : [],
+    isced: o ? o.isced : "",
+    nqf: o ? o.nqfLevel : null,
+    group: o ? o.group : "",
+    /* The sheet's own segment, split back into the two things it encodes. */
+    critical: WF.blocks[r[WFI.block]] && WF.blocks[r[WFI.block]].indexOf("داعمة") === -1
+      ? "أساسية" : "أساسية داعمة",
+    skill: WF.blocks[r[WFI.block]] && WF.blocks[r[WFI.block]].indexOf("عالية") !== -1
+      ? "مهارات عالية" : "مهارات متوسطة"
+  };
+});
+var JOBS_BY_CODE = {};
+JOBS.forEach(function (j) { if (j.code) (JOBS_BY_CODE[j.code] = JOBS_BY_CODE[j.code] || []).push(j); });
+var SECTORS = L.sectors || [];
+
+function jobTotals(list) {
+  return list.reduce(function (a, j) {
+    a.saudi += j.saudi; a.total += j.total; a.other += j.other; return a;
+  }, { saudi: 0, total: 0, other: 0 });
+}
+/* The snapshot caveat, in one place so every view says it the same way. */
+var WF_NOTE = "بيانات العاملين لقطة حالية لا تحمل سنة ولا منطقة، فلا يؤثر فيها فلتر سنة التخرج أعلى الصفحة.";
+
 function genderLabel(g) { return (g === "ذكر" || g === "أنثى") ? g : "غير متوفر"; }
 var GENDERS = ["ذكر", "أنثى", "غير متوفر"];
 
@@ -1007,6 +1057,11 @@ function barChart(id, entries, opts) {
   var plotWidth = Math.max(40, c.getWidth() - (opts.labelRoom || 72) -
                                (opts.labelWidth || 200) - 30);
   var base = opts.legendColor || C.voc;
+  /* The pair of names this chart is drawing. Defaults keep every existing
+     caller reading exactly as it did; the workforce views pass their own. */
+  var NAME_OUT = opts.outerName || "الخريجون";
+  var NAME_IN = opts.innerName || "المتوظفون";
+  var NAME_RATIO = opts.ratioName || "نسبة التوظيف";
 
   function colourAt(e, i) { return opts.colorFn ? opts.colorFn(e, i) : C.voc; }
   var data = entries.map(function (e, i) {
@@ -1015,7 +1070,7 @@ function barChart(id, entries, opts) {
     if (opts.hatchFn && opts.hatchFn(e, i)) style.decal = HATCH;
     return { value: e[1], name: e[0], itemStyle: style };
   });
-  var series = [{ name: "الخريجون", type: "bar", barWidth: opts.barWidth || "62%", data: data,
+  var series = [{ name: NAME_OUT, type: "bar", barWidth: opts.barWidth || "62%", data: data,
     itemStyle: dual ? { color: tint(base, TINT) } : undefined,
     label: { show: true, position: "right", formatter: function (p) { return fmt(p.value); },
              color: C.ink, fontFamily: FONT, fontSize: 11.5, fontWeight: 600 } }];
@@ -1024,7 +1079,7 @@ function barChart(id, entries, opts) {
     /* Same width as the bar underneath, drawn from the same zero: the employed
        read as a filled part of the graduates bar, not a segment stacked onto
        it. A narrower bar would sit against the top edge, not centred. */
-    series.push({ name: "المتوظفون", type: "bar", barWidth: opts.barWidth || "62%",
+    series.push({ name: NAME_IN, type: "bar", barWidth: opts.barWidth || "62%",
       barGap: "-100%", z: 3,
       itemStyle: { color: base },
       data: entries.map(function (e, i) {
@@ -1054,9 +1109,10 @@ function barChart(id, entries, opts) {
       ? tip({ trigger: "axis", axisPointer: { type: "shadow" }, formatter: function (ps) {
           var g = 0, e = 0;
           ps.forEach(function (p) {
-            if (p.seriesName === "المتوظفون") e = p.value; else g = p.value; });
-          return esc(ps[0].name) + "<br>الخريجون <b>" + fmt(g) + "</b><br>المتوظفون <b>" +
-                 fmt(e) + "</b><br>نسبة التوظيف <b>" + pct(e, g) + "</b>"; } })
+            if (p.seriesName === NAME_IN) e = p.value; else g = p.value; });
+          return esc(ps[0].name) + "<br>" + NAME_OUT + " <b>" + fmt(g) + "</b><br>" +
+                 NAME_IN + " <b>" + fmt(e) + "</b><br>" + NAME_RATIO +
+                 " <b>" + pct(e, g) + "</b>"; } })
       : tip({ trigger: "item", formatter: function (p) {
           return esc(p.name) + "<br><b>" + fmt(p.value) + "</b>" +
                  (opts.unit ? " " + opts.unit : ""); } }),
@@ -1542,6 +1598,64 @@ function specOf(t, i) { return OCC[t.children[i]]; }
 
 /* Skills, tasks, sectors and fields belong to whichever record is on screen —
    the occupation's own base row, or one specialization. */
+/* The occupation's own employment row, and how it sits against the sectors it
+   serves. Returns null for an occupation the workforce sheet does not carry —
+   which is most of them: it covers 503 of 548. */
+function workforceOf(rec) {
+  var list = rec.code ? (JOBS_BY_CODE[rec.code] || []) : [];
+  if (!list.length) return null;
+  var t = jobTotals(list);
+  var peers = [];
+  (rec.sectors || []).forEach(function (si) {
+    JOBS.forEach(function (j) {
+      if ((j.sectors || []).indexOf(si) !== -1 && peers.indexOf(j) === -1) peers.push(j);
+    });
+  });
+  var pt = peers.length ? jobTotals(peers) : null;
+  return {
+    job: list[0], saudi: t.saudi, total: t.total, other: t.other,
+    rate: t.total ? t.saudi / t.total : 0,
+    sectorRate: pt && pt.total ? pt.saudi / pt.total : null,
+    sectorJobs: peers.length,
+    allRate: 172229 ? jobTotals(JOBS).saudi / jobTotals(JOBS).total : 0
+  };
+}
+
+/* describe() returns markup only; this draws the two canvases it leaves. */
+function drawWorkforceCharts(rec) {
+  var w = workforceOf(rec);
+  if (!w || !document.getElementById("occWf")) return;
+  /* Rates, not headcounts. One occupation against its whole market is a
+     comparison of 5,484 with 172,229, which draws the occupation as a sliver
+     and says nothing. What the comparison is actually for is whether this
+     occupation is more or less localised than its surroundings, and that is
+     a percentage. */
+  var all = jobTotals(JOBS);
+  var cmp = [[ "جميع المهن", +(all.saudi / all.total * 100).toFixed(1) ]];
+  if (w.sectorRate !== null) {
+    var peers = [];
+    (rec.sectors || []).forEach(function (si) {
+      JOBS.forEach(function (j) {
+        if ((j.sectors || []).indexOf(si) !== -1 && peers.indexOf(j) === -1) peers.push(j);
+      });
+    });
+    var pt = jobTotals(peers);
+    cmp.push(["قطاعات هذه المهنة  (" + fmt(peers.length) + " مهنة)",
+              +(pt.saudi / pt.total * 100).toFixed(1)]);
+  }
+  cmp.push([rec.ar, +(w.rate * 100).toFixed(1)]);
+  barChart("occWf", cmp, { labelWidth: 215, labelRoom: 64, unit: "٪ توطين",
+    colorFn: function (e) { return e[0] === rec.ar ? C.uni : C.neutral; } });
+
+  var top = JOBS.slice().sort(function (a, b) { return b.other - a.other; }).slice(0, 10);
+  var here = JOBS.filter(function (j) { return j.code === rec.code; })[0];
+  if (here && top.indexOf(here) === -1) top.push(here);
+  barChart("occWfRank", top.sort(function (a, b) { return a.other - b.other; })
+    .map(function (j) { return [j.name, j.other]; }),
+    { labelWidth: 195, labelRoom: 80, unit: "وظيفة يشغلها غير سعودي",
+      colorFn: function (e) { return e[0] === rec.ar ? C.uni : C.neutral; } });
+}
+
 function describe(rec, tree, specIdx, skipKpis) {
   var fieldNames = rec.fields.map(function (f) { return L.fields[f]; });
   var linked = uniRows().filter(function (r) { return fieldNames.indexOf(r.d) !== -1; });
@@ -1572,6 +1686,35 @@ function describe(rec, tree, specIdx, skipKpis) {
         sub: linked.length ? "نسبة التوظيف " + pct(lt.emp, lt.grads)
                            : "لا يوجد مجال مطابق في بيانات الخريجين" }
     ])) +
+
+    (skipKpis ? "" : (function () {
+      var w = workforceOf(rec);
+      if (!w) {
+        return '<p class="scope-note"><strong>العاملون:</strong> ' +
+          'لا تَرِد هذه المهنة في جدول العاملين، فلا تتوفر لها أعداد عمالة أو نسبة توطين.</p>';
+      }
+      var vs = w.sectorRate === null ? "" :
+        (w.rate >= w.sectorRate ? "أعلى من" : "أدنى من") + " متوسط قطاعاتها (" +
+        pct(w.sectorRate * 1000, 1000) + ")";
+      return '<p class="scope-note"><strong>العاملون:</strong> ' + esc(WF_NOTE) + '</p>' +
+        kpiHtml([
+          { label: "مجموع العاملين", value: w.total,
+            sub: "Total workforce · " + esc(w.job.critical + " · " + w.job.skill) },
+          { cls: "is-voc", label: "العاملون السعوديون", value: w.saudi,
+            sub: "Saudi · نسبة التوطين " + pct(w.saudi, w.total) },
+          { label: "فجوة التوطين", value: w.other,
+            sub: "وظائف يشغلها غير سعوديون" },
+          { cls: "is-uni", label: "نسبة التوطين", raw: pct(w.saudi, w.total),
+            sub: vs || ("متوسط المهن جميعًا " + pct(jobTotals(JOBS).saudi, jobTotals(JOBS).total)) }
+        ]) +
+        '<div class="grid">' +
+          chartCard("نسبة التوطين مقارنةً بمحيطها",
+            "المهنة مقابل متوسط قطاعاتها ومقابل جميع المهن · بالنسبة لا بالعدد",
+            "occWf", "span6") +
+          chartCard("ترتيب المهنة بين أكبر فجوات التوطين",
+            "أعلى عشر فجوات، والمهنة الحالية مُبرزة", "occWfRank", "span6") +
+        '</div>';
+    })()) +
 
     '<div class="grid">' +
       card("ملخص المهنة", tree && tree.baseFromChild && specIdx === undefined
@@ -1795,6 +1938,8 @@ function viewOccDetail(code) {
       : "") +
 
     describe(o, t, undefined);
+
+  drawWorkforceCharts(o);
 }
 
 /* A specialization opens over its occupation rather than replacing it, so the
@@ -1937,6 +2082,425 @@ function viewOccSpec(code, idx) {
 }
 
 /* ========================================================================= */
+/*  VIEW: workforce — the demand side                                        */
+/* ========================================================================= */
+/* Bands for "how localised is this occupation". Fixed edges rather than
+   quantiles, so a band means the same thing every time the page is opened,
+   and between one sector's view and another's. */
+var RATE_BANDS = [
+  { lo: 0,     hi: 0.001, label: "بلا سعوديين" },
+  { lo: 0.001, hi: 0.10,  label: "أقل من ١٠٪" },
+  { lo: 0.10,  hi: 0.25,  label: "١٠٪ – ٢٥٪" },
+  { lo: 0.25,  hi: 0.50,  label: "٢٥٪ – ٥٠٪" },
+  { lo: 0.50,  hi: 0.75,  label: "٥٠٪ – ٧٥٪" },
+  { lo: 0.75,  hi: 1.01,  label: "٧٥٪ فأعلى" }
+];
+function bandOf(rate) {
+  for (var i = 0; i < RATE_BANDS.length; i++) {
+    if (rate >= RATE_BANDS[i].lo && rate < RATE_BANDS[i].hi) return i;
+  }
+  return RATE_BANDS.length - 1;
+}
+var WF_NAMES = { outerName: "مجموع العمالة", innerName: "سعوديون",
+                 ratioName: "نسبة التوطين" };
+
+function viewWorkforce() {
+  var t = jobTotals(JOBS);
+  var zero = JOBS.filter(function (j) { return j.saudi === 0; });
+  var full = JOBS.filter(function (j) { return j.total > 0 && j.saudi === j.total; });
+  var gapNote = (WF.gaps || []).map(function (g) {
+    return WF.blocks[g.block] + ": المجموع المعلن " + fmt(g.statedSaudi) +
+           " سعوديًا مقابل " + fmt(g.rowsSaudi) + " بجمع صفوفه";
+  }).join(" · ");
+  var unmatched = JOBS.filter(function (j) { return !j.code; })
+                      .map(function (j) { return j.name; });
+
+  var html =
+    '<p class="scope-note"><strong>نطاق البيانات:</strong> ' + esc(WF_NOTE) + '</p>' +
+    (gapNote
+      ? '<p class="scope-note warn-note"><strong>فرق في مجموع المصدر.</strong> ' +
+        esc(gapNote) + '. تُعرض الأرقام بجمع الصفوف، والمعلن مذكور كما ورد دون ترجيح.</p>'
+      : "") +
+    (unmatched.length
+      ? '<p class="scope-note warn-note"><strong>' + fmt(unmatched.length) +
+        ' مهنة بلا مطابقة</strong> في قائمة المهن المعتمدة، فتظهر أعداد عامليها دون وصف ' +
+        'أو قطاع أو مستوى مؤهل: ' + esc(unmatched.join(" · ")) + '.</p>'
+      : "") +
+    kpiHtml([
+      { label: "إجمالي العاملين", value: t.total,
+        sub: "Total workforce · " + fmt(JOBS.length) + " مهنة" },
+      { cls: "is-voc", label: "العاملون السعوديون", value: t.saudi,
+        sub: "Saudi · نسبة التوطين " + pct(t.saudi, t.total) },
+      { label: "وظائف يشغلها غير سعوديين", value: t.other,
+        sub: "Non-Saudi · حجم فرصة التوطين" },
+      { label: "مهن بلا سعوديين", value: zero.length,
+        sub: fmt(jobTotals(zero).total) + " وظيفة بنسبة توطين صفر" },
+      { label: "مهن توطينها كامل", value: full.length,
+        sub: fmt(jobTotals(full).total) + " وظيفة بنسبة ١٠٠٪" },
+      { cls: "is-uni", label: "متوسط التوطين للمهنة",
+        raw: pct(JOBS.reduce(function (a, j) { return a + j.rate; }, 0), JOBS.length),
+        sub: "متوسط المهن لا الوظائف — غير مرجّح بالحجم" }
+    ]) +
+    '<div class="grid">' +
+      chartCard("التوطين حسب فئة المهنة",
+        "الفئات الأربع كما وردت في المصدر · الشريط كامله مجموع العمالة والمملوء منه السعوديون",
+        "wBlock", "span6") +
+      chartCard("تقاطع الأهمية مع المهارة", "الفئات نفسها مفكوكة إلى بعديها",
+        "wCross", "span6") +
+      chartCard("توزيع المهن حسب نسبة التوطين",
+        "طول الشريط عدد الوظائف في الشريحة، وبين القوسين عدد المهن", "wBand", "span6") +
+      chartCard("التوطين حسب القطاع الصناعي",
+        "المهنة الواحدة قد تخدم أكثر من قطاع فتُحتسب في كلٍّ منها", "wSector", "span6", "tall") +
+      chartCard("أكبر المهن توظيفًا", "بترتيب مجموع العمالة", "wTop", "span6", "tall") +
+      chartCard("أكبر فجوات التوطين",
+        "بترتيب عدد الوظائف التي يشغلها غير سعوديين", "wGap", "span6", "tall") +
+      chartCard("التوطين حسب مستوى المؤهل المطلوب",
+        "المستوى بحسب التصنيف السعودي للمهن، من قائمة المهن المعتمدة", "wIsced", "span6") +
+      chartCard("التوطين حسب المجموعة الرئيسية", "تصنيف المهن الرئيسي",
+        "wGroup", "span6", "tall") +
+      card("جدول العاملين",
+        "كل المهن مرتبة تنازليًا حسب مجموع العمالة · اضغط صفًا لفتح صفحة المهنة",
+        '<div class="table-wrap"><table><thead><tr>' +
+          '<th>المهنة</th><th>الفئة</th><th>القطاعات</th>' +
+          '<th class="num">مجموع العمالة</th><th class="num">سعوديون</th>' +
+          '<th class="num">غير سعوديين</th><th class="num">نسبة التوطين</th>' +
+        '</tr></thead><tbody>' +
+        JOBS.slice().sort(function (a, b) { return b.total - a.total; })
+          .map(function (j) {
+            return '<tr' + (j.code ? ' class="clickable" data-go="#occ/' + esc(j.code) + '"' : "") + '>' +
+              '<td>' + esc(j.name) + '</td>' +
+              '<td>' + esc(j.critical + " · " + j.skill) + '</td>' +
+              '<td>' + esc((j.sectors || []).map(function (i) { return SECTORS[i]; })
+                            .join("، ") || "غير متوفر") + '</td>' +
+              '<td class="num">' + fmt(j.total) + '</td>' +
+              '<td class="num">' + fmt(j.saudi) + '</td>' +
+              '<td class="num">' + fmt(j.other) + '</td>' +
+              '<td class="num">' + pct(j.saudi, j.total) + '</td></tr>';
+          }).join("") + '</tbody></table></div>') +
+    '</div>';
+  document.getElementById("view").innerHTML = html;
+
+  barChart("wBlock", WF.blocks.map(function (b, i) {
+    var x = jobTotals(JOBS.filter(function (j) { return j.block === i; }));
+    return [b, x.total, x.saudi];
+  }), Object.assign({ labelWidth: 205, legendColor: C.voc }, WF_NAMES));
+
+  var cross = [];
+  ["مهارات عالية", "مهارات متوسطة"].forEach(function (sk) {
+    ["أساسية", "أساسية داعمة"].forEach(function (cr) {
+      var g = JOBS.filter(function (j) { return j.skill === sk && j.critical === cr; });
+      if (g.length) {
+        var x = jobTotals(g);
+        cross.push([cr + " · " + sk, x.total, x.saudi]);
+      }
+    });
+  });
+  barChart("wCross", cross, Object.assign({ labelWidth: 215,
+    colorFn: function (e) { return e[0].indexOf("عالية") !== -1 ? C.uni : C.voc; },
+    legendColor: C.voc }, WF_NAMES));
+
+  barChart("wBand", RATE_BANDS.map(function (b, i) {
+    var g = JOBS.filter(function (j) { return bandOf(j.rate) === i; });
+    return [b.label + "  (" + fmt(g.length) + " مهنة)", jobTotals(g).total, i];
+  }).reverse().map(function (e) { return [e[0], e[1]]; }),
+    { labelWidth: 215, labelRoom: 80, unit: "وظيفة",
+      colorFn: function (e, i) {
+        return NQF_RAMP[Math.min(NQF_RAMP.length - 1, i + 2)] || C.voc; } });
+
+  var bySector = SECTORS.map(function (name, si) {
+    var g = JOBS.filter(function (j) { return (j.sectors || []).indexOf(si) !== -1; });
+    var x = jobTotals(g);
+    return [name + "  (" + fmt(g.length) + " مهنة)", x.total, x.saudi];
+  }).filter(function (e) { return e[1] > 0; })
+    .sort(function (a, b) { return a[1] - b[1]; });
+  barChart("wSector", bySector, Object.assign({ labelWidth: 195, legendColor: C.voc }, WF_NAMES));
+
+  barChart("wTop", JOBS.slice().sort(function (a, b) { return b.total - a.total; })
+    .slice(0, 15).reverse().map(function (j) { return [j.name, j.total, j.saudi]; }),
+    Object.assign({ labelWidth: 195, legendColor: C.voc }, WF_NAMES));
+
+  barChart("wGap", JOBS.slice().sort(function (a, b) { return b.other - a.other; })
+    .slice(0, 15).reverse().map(function (j) {
+      return [j.name + "  (" + pct(j.saudi, j.total) + ")", j.other];
+    }), { labelWidth: 235, labelRoom: 84, unit: "وظيفة يشغلها غير سعودي",
+          colorFn: function () { return C.neutral; } });
+
+  var iscedOrder = ["تعليم أقل من الابتدائية", "المرحلة الابتدائية", "المرحلة المتوسطة",
+                    "دبلوم", "بكالوريوس"];
+  var byIsced = [];
+  iscedOrder.forEach(function (lv) {
+    var g = JOBS.filter(function (j) { return j.isced === lv; });
+    if (g.length) {
+      var x = jobTotals(g);
+      byIsced.push([lv + "  (" + fmt(g.length) + " مهنة)", x.total, x.saudi, false]);
+    }
+  });
+  var noIsced = JOBS.filter(function (j) { return !j.isced; });
+  if (noIsced.length) {
+    var ni = jobTotals(noIsced);
+    byIsced.push([UNCLASSIFIED + "  (" + fmt(noIsced.length) + " مهنة)", ni.total, ni.saudi, true]);
+  }
+  barChart("wIsced", byIsced.reverse().map(function (e) { return [e[0], e[1], e[2]]; }),
+    Object.assign({ labelWidth: 235, labelRoom: 80, legendColor: C.voc,
+      hatchFn: function (e) { return e[0].indexOf(UNCLASSIFIED) === 0; } }, WF_NAMES));
+
+  var byGroup = {};
+  JOBS.forEach(function (j) {
+    var k = j.group || UNCLASSIFIED;
+    (byGroup[k] = byGroup[k] || []).push(j);
+  });
+  barChart("wGroup", Object.keys(byGroup).map(function (k) {
+    var x = jobTotals(byGroup[k]);
+    return [k, x.total, x.saudi];
+  }).sort(function (a, b) { return a[1] - b[1]; }),
+    Object.assign({ labelWidth: 210, legendColor: C.voc,
+      hatchFn: function (e) { return e[0] === UNCLASSIFIED; } }, WF_NAMES));
+}
+
+/* ========================================================================= */
+/*  VIEW: supply and demand                                                  */
+/* ========================================================================= */
+/* Two sides that were collected for different purposes and do not share a
+   grain, so the page is built to say so rather than to hide it:
+
+     demand  — current employment per occupation. No year, no region.
+     supply  — graduates per year, per region, per major.
+
+   They meet only through the occupation's education field, and only where a
+   field name also exists as a university major. That bridge covers the
+   bachelor-level occupations well and the diploma and intermediate ones not
+   at all, because the master list names ISCED fields while the vocational
+   sheet names training programmes. Every figure below reports its own
+   coverage; nothing is imputed to fill the gap. */
+var sdFilter = { sector: "", region: "", q: "", skill: "", isced: "" };
+
+function supplyFor(occ) {
+  /* Graduates of the majors this occupation's education fields point at.
+     Region filter applies here and only here — the demand side carries none. */
+  if (!occ || !occ.fields || !occ.fields.length) return null;
+  var names = occ.fields.map(function (f) { return L.fields[f]; })
+                        .filter(function (n) { return D.fieldLinks[n]; });
+  if (!names.length) return null;
+  var rows = uniRows().filter(function (r) {
+    if (names.indexOf(r.d) === -1) return false;
+    if (sdFilter.region && (r.regionKey || r.region) !== sdFilter.region) return false;
+    return true;
+  });
+  if (!rows.length) return { grads: 0, emp: 0, majors: names, rows: 0 };
+  var t = total(rows);
+  return { grads: t.grads, emp: t.emp, majors: names, rows: rows.length };
+}
+
+/* The supply of a SET of occupations is not the sum of their supplies.
+   Occupations share education fields — 248 linked occupations draw on about
+   eighteen distinct majors — so adding each occupation's pool counts the same
+   graduates once per occupation that points at them. Summing this page's own
+   per-occupation figures gave 2,145,783 graduates against a university file
+   holding roughly 185,000: a number that is not large, it is wrong.
+
+   The set's supply is therefore the union of the majors its occupations point
+   at, with each major's graduates counted once. */
+function supplyUnion(jobs) {
+  var names = {};
+  jobs.forEach(function (j) {
+    if (!j.occ || !j.occ.fields) return;
+    j.occ.fields.forEach(function (f) {
+      var n = L.fields[f];
+      if (D.fieldLinks[n]) names[n] = 1;
+    });
+  });
+  var keys = Object.keys(names);
+  if (!keys.length) return { grads: 0, emp: 0, majors: 0 };
+  var rows = uniRows().filter(function (r) {
+    if (!names[r.d]) return false;
+    if (sdFilter.region && (r.regionKey || r.region) !== sdFilter.region) return false;
+    return true;
+  });
+  var t = total(rows);
+  return { grads: t.grads, emp: t.emp, majors: keys.length };
+}
+
+function sdRows() {
+  return JOBS.filter(function (j) {
+    if (sdFilter.sector && (j.sectors || []).indexOf(Number(sdFilter.sector)) === -1) return false;
+    if (sdFilter.skill && j.skill !== sdFilter.skill) return false;
+    if (sdFilter.isced && j.isced !== sdFilter.isced) return false;
+    if (sdFilter.q && j.name.indexOf(sdFilter.q) === -1) return false;
+    return true;
+  });
+}
+
+function viewSupplyDemand() {
+  var regions = [];
+  uniRows().forEach(function (r) {
+    var k = r.regionKey || r.region;
+    if (k && regions.indexOf(k) === -1) regions.push(k);
+  });
+  regions.sort();
+  var iscedList = [];
+  JOBS.forEach(function (j) { if (j.isced && iscedList.indexOf(j.isced) === -1) iscedList.push(j.isced); });
+
+  var html =
+    '<p class="scope-note"><strong>كيف تُقرأ هذه الصفحة:</strong> ' +
+      '«الطلب» عدد العاملين اليوم في المهنة، و«العرض» خريجو التخصصات التي يشير إليها ' +
+      'مجالها التعليمي. الجانبان من مصدرين مختلفين: الطلب لقطة بلا سنة ولا منطقة، ' +
+      'والعرض سلسلة سنوية بمناطق. لذلك يصف كل رقم أدناه تغطيته، ولا يُقدَّر أي رقم ناقص.</p>' +
+    '<div class="browse-head">' +
+      '<input type="search" id="sdQ" placeholder="بحث في المهن…" autocomplete="off" value="' + esc(sdFilter.q) + '">' +
+      '<select id="sdSector"><option value="">كل القطاعات الصناعية</option>' +
+        SECTORS.map(function (n, i) {
+          return '<option value="' + i + '"' + (sdFilter.sector === String(i) ? ' selected' : '') +
+                 '>' + esc(n) + '</option>'; }).join("") + '</select>' +
+      '<select id="sdSkill"><option value="">كل مستويات المهارة</option>' +
+        ["مهارات عالية", "مهارات متوسطة"].map(function (n) {
+          return '<option value="' + esc(n) + '"' + (sdFilter.skill === n ? ' selected' : '') +
+                 '>' + esc(n) + '</option>'; }).join("") + '</select>' +
+      '<select id="sdIsced"><option value="">كل مستويات المؤهل</option>' +
+        iscedList.map(function (n) {
+          return '<option value="' + esc(n) + '"' + (sdFilter.isced === n ? ' selected' : '') +
+                 '>' + esc(n) + '</option>'; }).join("") + '</select>' +
+      '<select id="sdRegion"><option value="">كل المناطق (العرض فقط)</option>' +
+        regions.map(function (n) {
+          return '<option value="' + esc(n) + '"' + (sdFilter.region === n ? ' selected' : '') +
+                 '>' + esc(n) + '</option>'; }).join("") + '</select>' +
+      '<span class="result-count" id="sdCount"></span>' +
+      '<button class="btn-reset" id="sdReset" style="margin-top:0">إعادة تعيين</button>' +
+    '</div>' +
+    '<div id="sdBody"></div>';
+  document.getElementById("view").innerHTML = html;
+
+  function paint() {
+    var rows = sdRows();
+    var t = jobTotals(rows);
+    var withSupply = [], noSupply = [];
+    rows.forEach(function (j) {
+      var sp = j.occ ? supplyFor(j.occ) : null;
+      if (sp && sp.grads > 0) withSupply.push({ j: j, sp: sp });
+      else noSupply.push(j);
+    });
+    /* Deduplicated: see supplyUnion. The per-occupation figures in the table
+       below are pools and may legitimately overlap; this one may not. */
+    var union = supplyUnion(withSupply.map(function (x) { return x.j; }));
+    var supplyTotal = union.grads;
+    var demandCovered = withSupply.reduce(function (a, x) { return a + x.j.total; }, 0);
+    var gapCovered = withSupply.reduce(function (a, x) { return a + x.j.other; }, 0);
+
+    document.getElementById("sdCount").textContent =
+      fmt(rows.length) + " مهنة · " + fmt(withSupply.length) + " منها لها عرض مرتبط";
+
+    var regionNote = sdFilter.region
+      ? '<p class="scope-note warn-note"><strong>تنبيه المنطقة.</strong> ' +
+        'بيانات العاملين لا تحمل منطقة، فاختيار «' + esc(sdFilter.region) + '» يصفّي ' +
+        'العرض وحده بينما يبقى الطلب على مستوى المملكة. النسبة بينهما غير قابلة للمقارنة ' +
+        'في هذه الحالة، وتُعرض للاستئناس بالعرض الإقليمي لا كمؤشر تغطية.</p>'
+      : "";
+
+    document.getElementById("sdBody").innerHTML =
+      regionNote +
+      kpiHtml([
+        { label: "الطلب — إجمالي العاملين", value: t.total,
+          sub: fmt(rows.length) + " مهنة ضمن التصفية" },
+        { label: "فجوة التوطين", value: t.other,
+          sub: "وظائف يشغلها غير سعوديين · " + pct(t.saudi, t.total) + " نسبة التوطين" },
+        { cls: "is-uni", label: "العرض — الخريجون المرتبطون", value: supplyTotal,
+          sub: fmt(union.majors) + " تخصصًا مميزًا · محسوب مرة واحدة دون تكرار" },
+        { label: "تغطية الربط", raw: pct(withSupply.length, rows.length),
+          sub: fmt(noSupply.length) + " مهنة بلا تخصص مرتبط" },
+        { cls: "is-voc", label: "خريجون لكل وظيفة غير مشغولة بسعودي",
+          raw: gapCovered ? (supplyTotal / gapCovered).toFixed(2) : "غير متوفر",
+          sub: "عرض بلا تكرار ÷ فجوة المهن المرتبطة" },
+        { label: "الطلب المغطّى بالربط", value: demandCovered,
+          sub: pct(demandCovered, t.total) + " من وظائف التصفية" }
+      ]) +
+      '<div class="grid">' +
+        chartCard("العرض مقابل الطلب في أكبر المهن",
+          "الشريط الكامل مجموع العمالة والمملوء منه السعوديون · الرقم المقابل خريجو التخصصات المرتبطة",
+          "sdcTop", "span12", "tall") +
+        chartCard("فجوة التوطين مقابل العرض السنوي", "المهن المرتبطة فقط", "sdcGap", "span6", "tall") +
+        chartCard("العرض والطلب حسب القطاع", "مجموع كل قطاع ضمن التصفية", "sdcSector", "span6", "tall") +
+        card("جدول العرض والطلب",
+          "مرتب تنازليًا حسب فجوة التوطين · «غير مرتبط» تعني أن مجال المهنة التعليمي " +
+          "لا يقابله تخصص جامعي بالاسم نفسه · عمود العرض هو حوض الخريجين الذي تسحب منه " +
+          "المهنة، وقد تتشارك فيه عدة مهن فلا يصح جمعه عموديًا",
+          '<div class="table-wrap"><table><thead><tr>' +
+            '<th>المهنة</th><th>المؤهل المطلوب</th>' +
+            '<th class="num">العاملون</th><th class="num">سعوديون</th>' +
+            '<th class="num">الفجوة</th><th class="num">نسبة التوطين</th>' +
+            '<th class="num">العرض (خريجون)</th><th class="num">خريج لكل فجوة</th>' +
+          '</tr></thead><tbody>' +
+          rows.slice().sort(function (a, b) { return b.other - a.other; }).map(function (j) {
+            var sp = j.occ ? supplyFor(j.occ) : null;
+            var has = sp && sp.grads > 0;
+            return '<tr' + (j.code ? ' class="clickable" data-go="#occ/' + esc(j.code) + '"' : "") + '>' +
+              '<td>' + esc(j.name) + '</td>' +
+              '<td>' + esc(j.isced || "غير متوفر") + '</td>' +
+              '<td class="num">' + fmt(j.total) + '</td>' +
+              '<td class="num">' + fmt(j.saudi) + '</td>' +
+              '<td class="num">' + fmt(j.other) + '</td>' +
+              '<td class="num">' + pct(j.saudi, j.total) + '</td>' +
+              '<td class="num">' + (has ? fmt(sp.grads) : '<span style="color:#999">غير مرتبط</span>') + '</td>' +
+              '<td class="num">' + (has && j.other ? (sp.grads / j.other).toFixed(2) : "—") + '</td>' +
+            '</tr>';
+          }).join("") + '</tbody></table></div>') +
+      '</div>';
+
+    disposeCharts();
+    var top = withSupply.slice().sort(function (a, b) { return b.j.total - a.j.total; }).slice(0, 14);
+    if (top.length) {
+      barChart("sdcTop", top.slice().reverse().map(function (x) {
+        return [x.j.name + "  (عرض " + fmt(x.sp.grads) + ")", x.j.total, x.j.saudi];
+      }), Object.assign({ labelWidth: 290, labelRoom: 80, legendColor: C.voc }, WF_NAMES));
+
+      barChart("sdcGap", top.slice().sort(function (a, b) { return a.j.other - b.j.other; })
+        .map(function (x) {
+          return [x.j.name, x.sp.grads, x.j.other];
+        }), { labelWidth: 210, labelRoom: 80, legendColor: C.uni,
+              colorFn: function () { return C.uni; },
+              outerName: "الخريجون المرتبطون", innerName: "فجوة التوطين",
+              ratioName: "الفجوة كنسبة من العرض" });
+    } else {
+      ["sdcTop", "sdcGap"].forEach(function (id) {
+        var n = document.getElementById(id);
+        if (n) n.innerHTML = '<p class="empty" style="text-align:center;padding-top:40px">' +
+          'لا توجد مهنة لها تخصص مرتبط ضمن هذه التصفية.</p>';
+      });
+    }
+
+    var sec = SECTORS.map(function (name, si) {
+      var g = rows.filter(function (j) { return (j.sectors || []).indexOf(si) !== -1; });
+      if (!g.length) return null;
+      /* Deduplicated within the sector, for the same reason as the KPI. */
+      return [name, jobTotals(g).other, supplyUnion(g).grads];
+    }).filter(Boolean).sort(function (a, b) { return a[1] - b[1]; });
+    if (sec.length) {
+      barChart("sdcSector", sec, { labelWidth: 175, labelRoom: 80, legendColor: C.uni,
+        colorFn: function () { return C.uni; },
+        outerName: "فجوة التوطين", innerName: "الخريجون المرتبطون",
+        ratioName: "تغطية العرض للفجوة" });
+    }
+    if (ui()) ui().hydrate(document.getElementById("view"));
+  }
+
+  var tq;
+  document.getElementById("sdQ").addEventListener("input", function (e) {
+    clearTimeout(tq);
+    var v = e.target.value.trim();
+    tq = setTimeout(function () { sdFilter.q = v; paint(); }, 160);
+  });
+  ["Sector", "Skill", "Isced", "Region"].forEach(function (k) {
+    document.getElementById("sd" + k).addEventListener("change", function (e) {
+      sdFilter[k.toLowerCase()] = e.target.value;
+      paint();
+    });
+  });
+  document.getElementById("sdReset").addEventListener("click", function () {
+    sdFilter = { sector: "", region: "", q: "", skill: "", isced: "" };
+    viewSupplyDemand();
+  });
+  paint();
+}
+
+/* ========================================================================= */
 /*  VIEW: NQF reference                                                      */
 /* ========================================================================= */
 function viewNqf() {
@@ -2059,6 +2623,8 @@ var TABS = [
   { id: "voc", label: "التخصصات المهنية", count: VD.major.length },
   { id: "uni", label: "التخصصات الجامعية", count: UD.major.length },
   { id: "occ", label: "المهن", count: D.occupationTree.length },
+  { id: "workforce", label: "العاملون في سوق العمل", count: JOBS.length },
+  { id: "supply", label: "العرض والطلب" },
   { id: "nqf", label: "الإطار الوطني للمؤهلات" },
   { id: "data", label: "البيانات" }
 ];
@@ -2149,7 +2715,9 @@ function route() {
     if (p[1] && p[2] !== undefined && p[2] !== "") viewOccSpec(p[1], Number(p[2]));
     else if (p[1]) viewOccDetail(p[1]);
     else viewOccBrowse();
-  } else if (tab === "nqf") { viewNqf(); }
+  } else if (tab === "workforce") { viewWorkforce(); }
+  else if (tab === "supply") { viewSupplyDemand(); }
+  else if (tab === "nqf") { viewNqf(); }
   else if (tab === "data") { viewData(); }
   else { markTab("overview"); viewOverview(); }
 

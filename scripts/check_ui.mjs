@@ -64,6 +64,10 @@ const PAGE = `http://127.0.0.1:${server.address().port}/index.html`;
 const launchOptions = { args: ['--no-sandbox', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'] };
 if (process.env.CHROMIUM_PATH) launchOptions.executablePath = process.env.CHROMIUM_PATH;
 
+/* Sections the dashboard declares. An exact number, not a floor: this check
+   exists to notice one disappearing, which a floor would not. */
+const SECTION_COUNT = 8;
+
 const results = [];
 function check(name, ok, detail) {
   results.push(ok);
@@ -174,7 +178,8 @@ async function main() {
 
     const links = page.locator('.gooey-nav-container nav ul li a');
     const count = await links.count();
-    check('navigation renders every section', count === 6, `found ${count}, expected 6`);
+    check('navigation renders every section', count === SECTION_COUNT,
+          `found ${count}, expected ${SECTION_COUNT}`);
 
     for (let i = 0; i < count; i++) {
       await links.nth(i).click();
@@ -458,7 +463,7 @@ async function main() {
       charts: document.querySelectorAll('#view canvas').length,
       title: (document.querySelector('.masthead h1') || {}).innerText || ''
     }));
-    check('every section is still reachable', s.nav === 6, `${s.nav} links`);
+    check('every section is still reachable', s.nav === SECTION_COUNT, `${s.nav} links`);
     check('the tiles still carry their figures', s.figures > 0, `${s.figures} filled`);
     check('the charts still draw', s.charts > 0, `${s.charts} canvases`);
     check('the masthead title survives without the bundle', s.title.length > 20);
