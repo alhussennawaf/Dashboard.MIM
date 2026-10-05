@@ -22,7 +22,7 @@
 
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
-import { createReadStream, statSync } from 'node:fs';
+import { createReadStream, statSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, extname, normalize } from 'node:path';
 
@@ -66,7 +66,7 @@ if (process.env.CHROMIUM_PATH) launchOptions.executablePath = process.env.CHROMI
 
 /* Sections the dashboard declares. An exact number, not a floor: this check
    exists to notice one disappearing, which a floor would not. */
-const SECTION_COUNT = 8;
+const SECTION_COUNT = 9;
 
 const results = [];
 function check(name, ok, detail) {
@@ -320,6 +320,103 @@ async function main() {
     check('no console or page errors across the states',
           page.noise.length === 0, page.noise.slice(0, 4).join(' | '));
     await page.context().close();
+  }
+
+  /* ---------------------------------------------------------------------
+     REGIONS — pick one, pick two, and get the file out
+     --------------------------------------------------------------------- */
+  console.log('\nREGIONS');
+  {
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 950 }, acceptDownloads: true });
+    const page = await context.newPage();
+    const noise = [];
+    page.on('pageerror', e => noise.push('pageerror: ' + e.message));
+    page.on('console', m => { if (m.type() === 'error') noise.push('console: ' + m.text()); });
+    await page.goto(PAGE + '#regions', { waitUntil: 'load' });
+    await page.waitForSelector('.regioncard', { timeout: 15000 });
+    await page.waitForTimeout(2500);
+
+    const cards = await page.locator('.regioncard').count();
+    check('every region is on the grid', cards === 13, `${cards} cards`);
+
+    await clickOrFail('picking a region shows it', page.locator('.regioncard').first());
+    await page.waitForTimeout(1400);
+    const one = await page.evaluate(() => ({
+      sel: document.querySelectorAll('.regioncard.is-sel').length,
+      kpis: document.querySelectorAll('#rgBody .kpi').length,
+      charts: document.querySelectorAll('#rgBody canvas').length,
+      flat: [...document.querySelectorAll('#rgBody .chart')]
+              .filter(e => e.getBoundingClientRect().width < 100).length
+    }));
+    check('one region draws its own figures',
+          one.sel === 1 && one.kpis >= 6 && one.charts >= 5 && one.flat === 0,
+          JSON.stringify(one));
+
+    await clickOrFail('picking a second compares them', page.locator('.regioncard').nth(1));
+    await page.waitForTimeout(1600);
+    const two = await page.evaluate(() => ({
+      sel: document.querySelectorAll('.regioncard.is-sel').length,
+      a: document.querySelectorAll('.regioncard.is-a').length,
+      b: document.querySelectorAll('.regioncard.is-b').length,
+      rows: document.querySelectorAll('#rgBody tbody tr').length,
+      deltas: document.querySelectorAll('#rgBody .delta').length,
+      charts: document.querySelectorAll('#rgBody canvas').length
+    }));
+    check('two regions compare side by side',
+          two.sel === 2 && two.a === 1 && two.b === 1 && two.rows === 8 &&
+          two.deltas === 8 && two.charts >= 3, JSON.stringify(two));
+
+    /* A third pick swaps the older one out rather than being ignored — the
+       common move is keeping one region and changing what it is read against. */
+    const before = await page.evaluate(() =>
+      [...document.querySelectorAll('.regioncard.is-sel')].map(c => c.dataset.region));
+    await clickOrFail('a third pick replaces the older', page.locator('.regioncard').nth(2));
+    await page.waitForTimeout(1200);
+    const after = await page.evaluate(() =>
+      [...document.querySelectorAll('.regioncard.is-sel')].map(c => c.dataset.region));
+    check('a third pick replaces the older, keeping two',
+          after.length === 2 && after[0] === before[1] && !after.includes(before[0]),
+          `${before.join('/')} -> ${after.join('/')}`);
+
+    /* The export is the deliverable people actually take to a meeting, so it
+       is checked as a real download with real content, not as a live button. */
+    try {
+      const [dl] = await Promise.all([
+        page.waitForEvent('download', { timeout: 10000 }),
+        page.click('#rgExportCmp')
+      ]);
+      const text = readFileSync(await dl.path(), 'utf8');
+      const lines = text.split('\r\n');
+      check('the comparison exports as a readable CSV',
+            text.charCodeAt(0) === 0xFEFF && lines.length > 10 &&
+            lines.some(l => l.indexOf('إجمالي الخريجين') === 0),
+            `${text.length} bytes, ${lines.length} lines, BOM ${text.charCodeAt(0) === 0xFEFF}`);
+    } catch (e) {
+      check('the comparison exports as a readable CSV', false, e.message.split('\n')[0]);
+    }
+
+    await page.click('#rgClear');
+    await page.waitForTimeout(1000);
+    try {
+      const [dl] = await Promise.all([
+        page.waitForEvent('download', { timeout: 10000 }),
+        page.click('#rgExportAll')
+      ]);
+      const text = readFileSync(await dl.path(), 'utf8');
+      const lines = text.split('\r\n').filter(Boolean);
+      /* 13 regions, one header, and the provenance footer. A file that lost
+         rows would still open cleanly, so the count is what is asserted. */
+      check('all regions export with a row each',
+            lines.length >= 15 && text.indexOf('سنوات التخرج') !== -1,
+            `${lines.length} lines`);
+    } catch (e) {
+      check('all regions export with a row each', false, e.message.split('\n')[0]);
+    }
+
+    check('no console or page errors on the regions page',
+          noise.length === 0, noise.slice(0, 4).join(' | '));
+    await context.close();
   }
 
   /* ---------------------------------------------------------------------

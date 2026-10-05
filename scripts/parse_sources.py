@@ -494,6 +494,21 @@ def normalise_arabic(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
+# Spellings the workforce sheet got wrong, and what the master list calls them.
+# Kept here, named and dated, rather than folded into normalise_arabic: this is
+# a typo in one export, not a difference between two valid spellings, and the
+# next export may well fix it. If it does, the entry stops matching anything
+# and the parser's unmatched count says so.
+#
+#   ميكانيكي معدات الكرتونية  ->  ميكانيكي معدات إلكترونية
+#       "الكترونية" with two letters transposed. Confirmed by the data owner
+#       (Oct 2026) and by the master list, which holds no occupation involving
+#       cardboard and one named إلكترونية at 0.92 string similarity.
+SOURCE_TYPOS = {
+    "ميكانيكي معدات الكرتونية": "ميكانيكي معدات إلكترونية",
+}
+
+
 def parse_workforce(report, occupations):
     """Current employment and Saudization per occupation.
 
@@ -516,7 +531,7 @@ def parse_workforce(report, occupations):
             by_name.setdefault(normalise_arabic(occ["ar"]), occ["code"])
 
     blocks = [name for _, name in WORKFORCE_BLOCKS]
-    facts, stated, unmatched = [], [], []
+    facts, stated, unmatched, corrected_names = [], [], [], []
     for bi, (off, _name) in enumerate(WORKFORCE_BLOCKS):
         total_row = rows_raw[0] if rows_raw else []
         stated.append({
@@ -530,10 +545,16 @@ def parse_workforce(report, occupations):
                 continue
             saudi = to_int(row[off + 1]) if off + 1 < len(row) else 0
             total = to_int(row[off + 2]) if off + 2 < len(row) else 0
-            code = by_name.get(normalise_arabic(name))
+            corrected = SOURCE_TYPOS.get(name, name)
+            code = by_name.get(normalise_arabic(corrected))
             if code is None:
                 unmatched.append(name)
-            facts.append([code or "", name, bi, saudi, total])
+            elif corrected != name:
+                corrected_names.append((name, corrected))
+            # The corrected spelling is what ships: the row is the same
+            # occupation either way, and showing the typo on the page would
+            # put a second name on a thing that has one.
+            facts.append([code or "", corrected, bi, saudi, total])
 
     sum_saudi = sum(f[3] for f in facts)
     sum_total = sum(f[4] for f in facts)
@@ -552,12 +573,14 @@ def parse_workforce(report, occupations):
         "source_rows": len(facts),
         "matched": sum(1 for f in facts if f[0]),
         "unmatched": sorted(set(unmatched)),
+        "corrected": sorted(set(corrected_names)),
         "saudi": sum_saudi,
         "total": sum_total,
         "gaps": gaps,
     }
     return {
         "source": WORKFORCE_XLSX.name,
+        "corrections": [{"from": a, "to": b} for a, b in sorted(set(corrected_names))],
         "blocks": blocks,
         "cols": ["occupationCode", "nameAr", "block", "saudi", "total"],
         "rows": facts,
@@ -822,6 +845,8 @@ def main():
     print(f"  joined to master  {w['matched']:,}   unmatched {len(w['unmatched'])}")
     for name in w["unmatched"]:
         print(f"    UNMATCHED  {name}")
+    for a, b in w["corrected"]:
+        print(f"    TYPO FIXED  {a}  ->  {b}")
     rate = w["saudi"] / w["total"] if w["total"] else 0
     print(f"  Saudis            {w['saudi']:,}")
     print(f"  total employment  {w['total']:,}")
