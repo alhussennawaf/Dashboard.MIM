@@ -438,7 +438,7 @@ async function main() {
     try {
       const [dl] = await Promise.all([
         page.waitForEvent('download', { timeout: 10000 }),
-        page.click('#rgExportCmp')
+        page.click('#rgOneCsv')
       ]);
       const text = readFileSync(await dl.path(), 'utf8');
       const lines = text.split('\r\n');
@@ -463,7 +463,7 @@ async function main() {
     try {
       const [dl] = await Promise.all([
         page.waitForEvent('download', { timeout: 10000 }),
-        page.click('#rgExportOne')
+        page.click('#rgOneCsv')
       ]);
       const text = readFileSync(await dl.path(), 'utf8');
       check('a single region exports as a readable CSV',
@@ -504,7 +504,7 @@ async function main() {
     try {
       const [dl] = await Promise.all([
         page.waitForEvent('download', { timeout: 10000 }),
-        page.click('#rgExportAll')
+        page.click('#rgsCsv')
       ]);
       const text = readFileSync(await dl.path(), 'utf8');
       const lines = text.split('\r\n').filter(Boolean);
@@ -605,25 +605,34 @@ async function main() {
     }
 
     /* The button says it is working and comes back by itself. A card that
-       left its button disabled would look like a page that had died. */
+       left its button disabled would look like a page that had died.
+       Watched rather than sampled: a card can finish inside the round trip
+       it takes to ask, and a check that raced it would be reporting its own
+       timing, not the button's behaviour. */
     await page.goto(PAGE + '#regions/3', { waitUntil: 'load' });
     await page.waitForSelector('#rgOneCard', { timeout: 20000 });
     await page.waitForTimeout(2600);
     const label = await page.textContent('#rgOneCard');
+    await page.evaluate(() => {
+      const b = document.getElementById('rgOneCard');
+      window.__busy = { disabled: false, said: false };
+      const start = b.textContent;
+      new MutationObserver(() => {
+        if (b.disabled) window.__busy.disabled = true;
+        if (b.textContent !== start) window.__busy.said = true;
+      }).observe(b, { attributes: true, childList: true, characterData: true, subtree: true });
+    });
     await page.click('#rgOneCard');
-    const busy = await page.evaluate(() => {
-      const b = document.getElementById('rgOneCard');
-      return { disabled: b.disabled, text: b.textContent };
-    });
-    await page.waitForTimeout(6000);
-    const after = await page.evaluate(() => {
-      const b = document.getElementById('rgOneCard');
-      return { disabled: b.disabled, text: b.textContent };
-    });
+    await page.waitForTimeout(8000);
+    const busy = await page.evaluate(() => ({
+      seen: window.__busy,
+      disabled: document.getElementById('rgOneCard').disabled,
+      text: document.getElementById('rgOneCard').textContent
+    }));
     check('the card button says it is working, then comes back',
-          busy.disabled && busy.text !== label &&
-          !after.disabled && after.text === label,
-          JSON.stringify({ label, busy, after }));
+          busy.seen.disabled && busy.seen.said &&
+          !busy.disabled && busy.text === label,
+          JSON.stringify({ label, ...busy }));
 
     /* A card renders charts off-screen; if it left them in `live`, the next
        resize would reach for a disposed instance. */
