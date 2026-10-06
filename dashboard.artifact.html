@@ -4722,3 +4722,44 @@ window.addEventListener("resize", function () {
 
 })();
 </script>
+<script>
+(function () {
+  if (!window.claude || typeof window.claude.use !== "function") return;
+  var ready = window.claude.use("downloads").then(function (d) { return d; },
+                                                  function () { return null; });
+  var nativeClick = HTMLAnchorElement.prototype.click;
+
+  function say(msg) {
+    var el = document.createElement("div");
+    el.setAttribute("role", "status");
+    el.style.cssText = "position:fixed;inset-inline-start:50%;bottom:22px;" +
+      "transform:translateX(-50%);z-index:9999;background:#1A1A1A;color:#fff;" +
+      "padding:11px 18px;border-radius:3px;font-size:13px;max-width:86vw;" +
+      "box-shadow:0 10px 30px rgba(0,0,0,.3)";
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 4200);
+  }
+
+  HTMLAnchorElement.prototype.click = function () {
+    var a = this;
+    var filename = a.getAttribute("download");
+    var href = a.getAttribute("href") || "";
+    if (!filename || (href.indexOf("blob:") !== 0 && href.indexOf("data:") !== 0)) {
+      return nativeClick.call(a);
+    }
+    /* The page revokes its blob URL a second after the click, so it is read
+       now and the bytes are what travel. */
+    fetch(href).then(function (r) { return r.blob(); }).then(function (blob) {
+      return ready.then(function (dl) {
+        if (!dl) { say("حفظ الملفات غير متاح في هذا العرض."); return null; }
+        return dl.save({ filename: filename, data: blob });
+      });
+    }).then(null, function (e) {
+      /* Declining is an answer, not a failure, and needs no notice. */
+      if (e && e.code === "declined") return;
+      say("تعذّر حفظ الملف: " + ((e && (e.message || e.code)) || "خطأ غير معروف"));
+    });
+  };
+})();
+</script>

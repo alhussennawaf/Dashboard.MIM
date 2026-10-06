@@ -12,6 +12,14 @@ blocks, and re-applies the RTL direction that used to live on <html>.
 
 Nothing about the design changes: the brand palette, layout and copy are the
 reviewed dashboard exactly as it ships in index.html.
+
+One behaviour is added, and only here: the exports. The dashboard hands a file
+over the way the web does — an <a download> pointing at a blob — and the
+Artifact viewer never grants a framed page that permission, so in a published
+artifact every export button would silently do nothing. The bridge below
+routes those same clicks through the viewer's own save, which asks the person
+and then writes the file. It is appended to this build alone; index.html stays
+a plain page that works from a web server and from a file:// copy.
 """
 
 import re
@@ -32,6 +40,56 @@ RTL_BOOTSTRAP = """<script>
    window mounts on document.body, outside any wrapper this file could add. */
 document.documentElement.setAttribute("dir", "rtl");
 document.documentElement.setAttribute("lang", "ar");
+</script>
+"""
+
+
+# The viewer exposes `window.claude`; a page opened any other way does not
+# have it, and there the browser's own download is already correct. The
+# dashboard's downloadCsv() and downloadPng() both end in a click on an
+# anchor carrying a `download` attribute and a blob: href, so one patch on
+# HTMLAnchorElement covers every export without the dashboard knowing it is
+# inside an artifact.
+DOWNLOAD_BRIDGE = """<script>
+(function () {
+  if (!window.claude || typeof window.claude.use !== "function") return;
+  var ready = window.claude.use("downloads").then(function (d) { return d; },
+                                                  function () { return null; });
+  var nativeClick = HTMLAnchorElement.prototype.click;
+
+  function say(msg) {
+    var el = document.createElement("div");
+    el.setAttribute("role", "status");
+    el.style.cssText = "position:fixed;inset-inline-start:50%;bottom:22px;" +
+      "transform:translateX(-50%);z-index:9999;background:#1A1A1A;color:#fff;" +
+      "padding:11px 18px;border-radius:3px;font-size:13px;max-width:86vw;" +
+      "box-shadow:0 10px 30px rgba(0,0,0,.3)";
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 4200);
+  }
+
+  HTMLAnchorElement.prototype.click = function () {
+    var a = this;
+    var filename = a.getAttribute("download");
+    var href = a.getAttribute("href") || "";
+    if (!filename || (href.indexOf("blob:") !== 0 && href.indexOf("data:") !== 0)) {
+      return nativeClick.call(a);
+    }
+    /* The page revokes its blob URL a second after the click, so it is read
+       now and the bytes are what travel. */
+    fetch(href).then(function (r) { return r.blob(); }).then(function (blob) {
+      return ready.then(function (dl) {
+        if (!dl) { say("حفظ الملفات غير متاح في هذا العرض."); return null; }
+        return dl.save({ filename: filename, data: blob });
+      });
+    }).then(null, function (e) {
+      /* Declining is an answer, not a failure, and needs no notice. */
+      if (e && e.code === "declined") return;
+      say("تعذّر حفظ الملف: " + ((e && (e.message || e.code)) || "خطأ غير معروف"));
+    });
+  };
+})();
 </script>
 """
 
@@ -63,7 +121,8 @@ def main():
     kept = re.sub(r"<title>.*?</title>", "<title>" + ARTIFACT_TITLE + "</title>",
                   kept, count=1, flags=re.S)
 
-    out = RTL_BOOTSTRAP + kept.strip() + "\n" + html[body_open:body_close].strip() + "\n"
+    out = (RTL_BOOTSTRAP + kept.strip() + "\n" +
+           html[body_open:body_close].strip() + "\n" + DOWNLOAD_BRIDGE)
 
     # Check for a surviving wrapper outside script and style bodies only. The
     # inlined ECharts source contains the literal "</body>" as JS string data,
