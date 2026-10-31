@@ -2370,6 +2370,16 @@ function describe(rec, tree, specIdx, skipKpis) {
     });
   });
   var estimated = rec.matchStatus && rec.matchStatus.indexOf("تقديري") !== -1;
+  /* Who taught the linked specializations, by the graduates they produced. */
+  var teachers = ranked(agg(linked, function (r) { return r.uni; }), "grads")
+                   .map(function (e) { return [e[0], e[1].grads]; });
+  /* When every row of the table below carries the same field name, the
+     column is repeating one fact 30 times. It is said once in the subtitle
+     instead. These names are the source's own ISCED buckets, and one of
+     them is a catch-all that most engineering programmes fall into. */
+  var fieldsSeen = {};
+  linked.forEach(function (r) { fieldsSeen[r.d] = 1; });
+  var oneField = Object.keys(fieldsSeen).length === 1 ? Object.keys(fieldsSeen)[0] : "";
   var nSkills = ["technical", "basic", "general", "leadership"]
     .reduce(function (a, k) { return a + rec.skills[k].length; }, 0);
   /* The occupation page is still in the document behind the specialization
@@ -2470,31 +2480,53 @@ function describe(rec, tree, specIdx, skipKpis) {
           skillBlock("المهارات القيادية", rec.skills.leadership)) ||
           '<p class="empty">غير متوفرة.</p>') + '</div>') +
 
-      card("الجامعات والكليات المطابقة",
-        progInst.length ? "من جدول «قطاع التعدين» في ملف المهن" : "",
-        progInst.length
-          ? '<ul class="instlist">' + progInst.map(function (x) {
+      /* Bodies that actually taught it. The ministry's own matching table
+         covers 127 of the 921 records, and where it is silent the page used
+         to say so and stop. The graduates files answer the same question
+         from the other end: which universities produced graduates in the
+         specializations this occupation's education fields point at. That
+         is what "teaches it" means, and it is evidenced rather than
+         asserted. */
+      card("الجامعات والكليات التي تُدرّس التخصصات المرتبطة",
+        teachers.length
+          ? "من بيانات الخريجين · بين القوسين خريجو هذه المجالات في كل جهة"
+          : "",
+        (teachers.length
+          ? '<ul class="instlist">' + teachers.map(function (x) {
+              return '<li>' + esc(x[0]) +
+                ' <span class="rg">· ' + fmt(x[1]) + ' خريج</span></li>';
+            }).join("") + '</ul>'
+          : '<p class="empty">لا يقابل أي مجال من مجالات هذه المهنة تخصصًا في ' +
+            'بيانات الخريجين، فلا يمكن إثبات جهة تُدرّسه.</p>') +
+        (progInst.length
+          ? '<h4 class="subhead" style="margin-top:14px">وفي جدول المطابقة بملف المهن</h4>' +
+            '<ul class="instlist">' + progInst.map(function (x) {
               return '<li>' + esc(x.name) +
                 (x.region ? ' <span class="rg">· ' + esc(x.region) + '</span>' : "") + '</li>';
             }).join("") + '</ul>'
-          : '<p class="empty">لم يُسجَّل برنامج مطابق في المصدر. جداول المطابقة تغطي مهن قطاع التعدين فقط.</p>',
+          : ""),
         "span6") +
 
       card("خريجو المجالات التعليمية المرتبطة",
-        linked.length ? "أعلى التخصصات الجامعية ضمن المجالات المطابقة" : "",
         linked.length
-          ? '<div class="table-wrap"><table><thead><tr><th>التخصص</th><th>المجال</th>' +
+          ? "أعلى التخصصات الجامعية ضمن المجالات المطابقة" +
+            (oneField ? " · المجال: " + oneField : "")
+          : "",
+        linked.length
+          ? '<div class="table-wrap"><table><thead><tr><th>التخصص</th>' +
+            (oneField ? "" : '<th>المجال</th>') +
             '<th>الخريجون</th><th>المتوظفون</th><th>النسبة</th></tr></thead><tbody>' +
             linkedMajors.slice(0, 30).map(function (e) {
               var r0 = linked.filter(function (x) { return x.mi === e[0]; })[0];
               return '<tr class="clickable" data-go="#uni/detail/' + e[0] + '">' +
-                '<td>' + esc(UD.major[e[0]]) + '</td><td>' + esc(r0 ? r0.d : "") + '</td>' +
+                '<td>' + esc(UD.major[e[0]]) + '</td>' +
+                (oneField ? "" : '<td>' + esc(r0 ? r0.d : "") + '</td>') +
                 '<td class="num">' + fmt(e[1].grads) + '</td>' +
                 '<td class="num">' + fmt(e[1].emp) + '</td>' +
                 '<td class="num">' + pct(e[1].emp, e[1].grads) + '</td></tr>';
             }).join("") + '</tbody></table></div>'
-          : '<p class="empty">لا يطابق أي مجال تعليمي هنا تخصصًا في بيانات خريجي الجامعات مطابقة حرفية. ' +
-            'لم تُستخدم مطابقة تقريبية حتى لا يُعرض رقم غير مؤكد.</p>', "span6") +
+          : '<p class="empty">لا يطابق أي مجال تعليمي هنا تخصصًا في بيانات خريجي ' +
+            'الجامعات، ولم تُستخدم مطابقة تقريبية حتى لا يُعرض رقم غير مؤكد.</p>', "span6") +
     '</div>';
 }
 
