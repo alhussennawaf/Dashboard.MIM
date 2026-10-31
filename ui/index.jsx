@@ -82,6 +82,13 @@ const reducedMotion =
    CountUp.jsx). A counter is a flourish on the way to a number somebody came
    to read, so it is kept short: 1.4s, and the band's four figures are offset
    by a tenth of a second each, which lands the last of them before 1.8. */
+/* A figure at rest. Counting is a flourish for the first screen; on every
+   other page the number is the thing someone navigated to, and watching it
+   assemble is a tax on reading it. */
+function figure(value) {
+  return (value || 0).toLocaleString('en-US');
+}
+
 function counting(value, delay) {
   return reducedMotion
     ? { to: value, from: value, startWhen: false, separator: ',' }
@@ -179,25 +186,29 @@ function Hero({ eyebrow, headline, total, employed, years, occupations, majors, 
         h(
           'div',
           { className: 'hero-figure is-lead' },
-          h('div', { className: 'hero-figure-value' }, h(CountUp, counting(total))),
+          h('div', { className: 'hero-figure-value' },
+            compact ? figure(total) : h(CountUp, counting(total))),
           h('div', { className: 'hero-figure-label' }, labels.total)
         ),
         h(
           'div',
           { className: 'hero-figure' },
-          h('div', { className: 'hero-figure-value' }, h(CountUp, counting(employed, 0.1))),
+          h('div', { className: 'hero-figure-value' },
+            compact ? figure(employed) : h(CountUp, counting(employed, 0.1))),
           h('div', { className: 'hero-figure-label' }, labels.employed)
         ),
         h(
           'div',
           { className: 'hero-figure' },
-          h('div', { className: 'hero-figure-value' }, h(CountUp, counting(occupations, 0.2))),
+          h('div', { className: 'hero-figure-value' },
+            compact ? figure(occupations) : h(CountUp, counting(occupations, 0.2))),
           h('div', { className: 'hero-figure-label' }, labels.occupations)
         ),
         h(
           'div',
           { className: 'hero-figure' },
-          h('div', { className: 'hero-figure-value' }, h(CountUp, counting(majors, 0.3))),
+          h('div', { className: 'hero-figure-value' },
+            compact ? figure(majors) : h(CountUp, counting(majors, 0.3))),
           h('div', { className: 'hero-figure-label' }, labels.majors)
         ),
         h(
@@ -261,7 +272,7 @@ function Nav({ items, activeIndex }) {
 
 /* A KPI tile: the spotlight follows the pointer in brand purple, the figure
    counts up once when it scrolls into view. */
-function Kpi({ label, value, raw, sub, tone }) {
+function Kpi({ label, value, raw, sub, tone, animate }) {
   const b = readBrand();
   const spotlight =
     tone === 'uni' ? 'rgba(26, 217, 199, .20)'
@@ -276,7 +287,9 @@ function Kpi({ label, value, raw, sub, tone }) {
       { className: 'value' },
       raw !== undefined && raw !== null
         ? raw
-        : h(CountUp, Object.assign(counting(value), reducedMotion ? {} : { duration: 1 }))
+        : animate
+          ? h(CountUp, Object.assign(counting(value), reducedMotion ? {} : { duration: 1 }))
+          : figure(value)
     ),
     h('div', { className: 'sub' }, sub || '')
   );

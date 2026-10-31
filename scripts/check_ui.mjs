@@ -781,9 +781,9 @@ async function main() {
           detail.head.length > 0 && detail.gradient && headInk > 0.06,
           `head=${JSON.stringify(detail.head.slice(0, 30))} ink=${(headInk * 100).toFixed(1)}%`);
 
-    /* The skills chart. Its whole point is the comparison with the average,
-       so a chart drawn with one series would pass a "did it mount" check and
-       still be the wrong chart. */
+    /* The skills chart: one series over the five levels, no comparison and
+       no hover. The review asked for both to go, and a chart that quietly
+       grew a second series again would still pass a "did it mount" check. */
     const skills = await page.evaluate(() => {
       const el = document.getElementById('occSkillLv');
       if (!el) return { missing: true };
@@ -795,13 +795,41 @@ async function main() {
         canvas: !!el.querySelector('canvas'),
         series: opt ? opt.series.length : 0,
         bars: opt ? opt.series[0].data.length : 0,
-        categories: opt ? opt.xAxis[0].data.length : 0
+        categories: opt ? opt.xAxis[0].data.length : 0,
+        /* ECharts keeps a tooltip entry whether or not one was asked for,
+           so what is asserted is that it was never switched on. */
+        tooltip: opt && opt.tooltip ? opt.tooltip.some(t => t && t.show !== false &&
+                 (t.trigger === 'axis' || t.trigger === 'item')) : false
       };
     });
-    check('the occupation page draws its skill levels against the average',
+    check('the occupation page draws its skill levels, alone and without hover',
           !skills.missing && skills.canvas && skills.w > 200 && skills.h > 100 &&
-          skills.series === 2 && skills.bars === 5 && skills.categories === 5,
+          skills.series === 1 && skills.bars === 5 && skills.categories === 5 &&
+          !skills.tooltip,
           JSON.stringify(skills));
+
+    /* The shape. Its axes are not fixed: an occupation the workforce sheet
+       does not carry drops the two axes it has no data for rather than
+       drawing them at zero, so the count is 6 or 4 and never anything else. */
+    const shape = await page.evaluate(() => {
+      const el = document.getElementById('occShape');
+      if (!el) return { missing: true };
+      const inst = window.echarts && echarts.getInstanceByDom(el);
+      const opt = inst && inst.getOption();
+      return {
+        canvas: !!el.querySelector('canvas'),
+        w: Math.round(el.getBoundingClientRect().width),
+        axes: opt ? opt.radar[0].indicator.length : 0,
+        series: opt ? opt.series[0].data.length : 0,
+        /* Every vertex carries its raw value, because the shape alone is
+           not a reading. */
+        labelled: opt ? opt.radar[0].indicator.every(i => /\n/.test(i.name)) : false
+      };
+    });
+    check('the occupation page draws its shape against the median',
+          !shape.missing && shape.canvas && shape.w > 200 &&
+          (shape.axes === 6 || shape.axes === 4) && shape.series === 2 && shape.labelled,
+          JSON.stringify(shape));
 
     const spec = page.locator('.specitem').first();
     if (await spec.count()) {
