@@ -323,6 +323,66 @@ async function main() {
   }
 
   /* ---------------------------------------------------------------------
+     COUNTERS: they have to arrive, and soon
+     --------------------------------------------------------------------- */
+  console.log('\nCOUNTERS');
+  {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 950 } });
+    /* Recorded from document_start: the bundle mounts the band during load,
+       so a loop that begins afterwards has nothing left to watch. */
+    await context.addInitScript(() => {
+      window.__trace = [];
+      const t0 = performance.now();
+      let last = null;
+      const tick = () => {
+        const el = document.querySelector('.hero-figure.is-lead .hero-figure-value');
+        const t = el ? el.textContent.trim() : null;
+        if (t && t !== last) {
+          last = t;
+          window.__trace.push([Math.round(performance.now() - t0), t]);
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    const page = await context.newPage();
+    const noise = [];
+    page.on('pageerror', e => noise.push('pageerror: ' + e.message));
+    page.on('console', m => { if (m.type() === 'error') noise.push('console: ' + m.text()); });
+    await page.goto(PAGE, { waitUntil: 'load' });
+    await page.waitForTimeout(9000);
+
+    const trace = await page.evaluate(() => window.__trace);
+    const first = trace[0], last = trace[trace.length - 1];
+    const countMs = first && last ? last[0] - first[0] : Infinity;
+
+    /* CountUp's `duration` prop was once not a duration at all: upstream
+       derived an overdamped spring from it, and the lead figure spent about
+       eleven seconds crawling its last few thousand. The ceiling here is what
+       that bug would fail, and it is deliberately well above the ~1.6s the
+       counter actually takes, so ordinary slowness on a loaded machine does
+       not turn this red. */
+    check('the band figure finishes counting in seconds, not a minute',
+          countMs < 3500, `${countMs}ms over ${trace.length} steps`);
+
+    /* A spring that snapped straight to the answer would also be fast. */
+    check('the band figure counts rather than snapping',
+          trace.length >= 8, `${trace.length} steps`);
+
+    /* Whatever the animation does, the number on screen at the end must be
+       the real one. */
+    const settled = await page.evaluate(() =>
+      (document.querySelector('.hero-figure.is-lead .hero-figure-value') || {}).textContent);
+    check('the band figure lands on its true total',
+          last && settled && settled.trim() === last[1] && /^[\d,]{4,}$/.test(settled.trim()),
+          JSON.stringify({ settled, last }));
+
+    check('no console or page errors while the counters run',
+          noise.length === 0, noise.slice(0, 4).join(' | '));
+    await context.close();
+  }
+
+  /* ---------------------------------------------------------------------
      REGIONS: read the map, open one, compare from inside it
      --------------------------------------------------------------------- */
   console.log('\nREGIONS');

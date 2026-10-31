@@ -76,11 +76,16 @@ const reducedMotion =
 
 /* CountUp's props for one figure. At reduced motion the count does not run,
    and a counter that never runs shows the number it started from, so the
-   start is moved to the finish and the reader gets the figure, not a zero. */
+   start is moved to the finish and the reader gets the figure, not a zero.
+
+   `duration` is in seconds and is now honoured (see the local change in
+   CountUp.jsx). A counter is a flourish on the way to a number somebody came
+   to read, so it is kept short: 1.4s, and the band's four figures are offset
+   by a tenth of a second each, which lands the last of them before 1.8. */
 function counting(value, delay) {
   return reducedMotion
     ? { to: value, from: value, startWhen: false, separator: ',' }
-    : { to: value, from: 0, delay: delay || 0, duration: 2.2, separator: ',' };
+    : { to: value, from: 0, delay: delay || 0, duration: 1.4, separator: ',' };
 }
 
 /* ---------------------------------------------------------------------------
@@ -180,19 +185,19 @@ function Hero({ eyebrow, headline, total, employed, years, occupations, majors, 
         h(
           'div',
           { className: 'hero-figure' },
-          h('div', { className: 'hero-figure-value' }, h(CountUp, counting(employed, 0.15))),
+          h('div', { className: 'hero-figure-value' }, h(CountUp, counting(employed, 0.1))),
           h('div', { className: 'hero-figure-label' }, labels.employed)
         ),
         h(
           'div',
           { className: 'hero-figure' },
-          h('div', { className: 'hero-figure-value' }, h(CountUp, counting(occupations, 0.3))),
+          h('div', { className: 'hero-figure-value' }, h(CountUp, counting(occupations, 0.2))),
           h('div', { className: 'hero-figure-label' }, labels.occupations)
         ),
         h(
           'div',
           { className: 'hero-figure' },
-          h('div', { className: 'hero-figure-value' }, h(CountUp, counting(majors, 0.45))),
+          h('div', { className: 'hero-figure-value' }, h(CountUp, counting(majors, 0.3))),
           h('div', { className: 'hero-figure-label' }, labels.majors)
         ),
         h(
@@ -271,7 +276,7 @@ function Kpi({ label, value, raw, sub, tone }) {
       { className: 'value' },
       raw !== undefined && raw !== null
         ? raw
-        : h(CountUp, Object.assign(counting(value), reducedMotion ? {} : { duration: 1.6 }))
+        : h(CountUp, Object.assign(counting(value), reducedMotion ? {} : { duration: 1 }))
     ),
     h('div', { className: 'sub' }, sub || '')
   );

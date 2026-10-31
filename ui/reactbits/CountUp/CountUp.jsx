@@ -16,13 +16,22 @@ export default function CountUp({
   const ref = useRef(null);
   const motionValue = useMotionValue(direction === 'down' ? to : from);
 
-  const damping = 20 + 40 * (1 / duration);
-  const stiffness = 100 * (1 / duration);
+  /* LOCAL CHANGE (Dashboard.MIM): `duration` is not a duration upstream. It
+     is turned into damping = 20 + 40/d and stiffness = 100/d, and that pair
+     is heavily overdamped at every value of d: the damping ratio never drops
+     below about 2.8, so the figure approaches its target asymptotically and
+     the last digits crawl. At d = 2.2 the overview's lead figure took about
+     eleven seconds to arrive, eight of them spent on its final few thousand.
+     Lowering d does not fix it, because both terms scale together.
 
-  const springValue = useSpring(motionValue, {
-    damping,
-    stiffness
-  });
+     Motion takes a duration-and-bounce spring directly and solves for the
+     coefficients itself, so the count lands in the time it is given. Its
+     `duration` is in milliseconds (findSpring runs millisecondsToSeconds on
+     it) while this component's prop is in seconds, so it is converted here
+     rather than at every call site. Bounce is zero on purpose: a figure that
+     overshoots and comes back has, for a moment, displayed a number that is
+     not true. */
+  const springValue = useSpring(motionValue, { duration: duration * 1000, bounce: 0 });
 
   const isInView = useInView(ref, { once: true, margin: '0px' });
 
