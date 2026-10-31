@@ -6,9 +6,11 @@
   X-Frame-Options: SAMEORIGIN
   Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()
 
-# Vendored libraries and artwork: change rarely, and a stale copy is only ever
-# a revalidation away. This is the repeat-visit win: ECharts and the React
-# Bits bundle are the two large ones, and neither moves between deploys.
+# Vendored libraries and artwork. A week is safe because every script and
+# stylesheet is requested with a ?v= of its own contents, so a rebuilt file
+# is a different URL and a cached copy is never the wrong copy. Without that
+# stamp this header is a trap: max-age alone does not revalidate, so a
+# visitor keeps the old bundle until it expires.
 /assets/*
   Cache-Control: public, max-age=604800
 
