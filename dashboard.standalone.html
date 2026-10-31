@@ -26,7 +26,7 @@
    ========================================================================== */
 
 :root {
-  /* --- Core greys — "الألوان الأساسية" (primary), guidelines p.30 ----------
+  /* --- Core greys: "الألوان الأساسية" (primary), guidelines p.30 ----------
      The brand's primary palette is greyscale, drawn from the tones of worked
      metal. These carry ~75% of any layout (usage ratio, p.34).              */
   --mim-grey-light:    #E6E6E6; /* MIM Light Grey    rgb(230,230,230) hsl(0,0%,90%) */
@@ -34,17 +34,17 @@
   --mim-grey-dark:     #666666; /* MIM Dark Grey     rgb(102,102,102) hsl(0,0%,40%) */
   --mim-grey-darkest:  #1A1A1A; /* MIM Darkest Grey  rgb(26,26,26)    hsl(0,0%,10%) */
 
-  /* --- Highlight colours — "الألوان المميزة", guidelines p.30 -------------
+  /* --- Highlight colours: "الألوان المميزة", guidelines p.30 -------------
      Purple + phosphor blue. Per p.34 these are accent only: 10% / 10% / 5%
      of a layout. They must never become the dominant field.                */
   --mim-purple:        #413258; /* MIM Highlight Purple rgb(65,50,88)   hsl(264,43%,27%) */
   --mim-blue:          #1AD9C7; /* MIM Highlight Blue   rgb(26,217,199) hsl(174,88%,48%) */
 
-  /* --- Secondary — "الألوان الثانوية", guidelines p.30 --------------------
+  /* --- Secondary: "الألوان الثانوية", guidelines p.30 --------------------
      Pink, a nod to the human hands behind industry.                        */
   --mim-pink:          #BFA19F; /* MIM Highlight Pink rgb(191,161,159) hsl(4,17%,69%) */
 
-  /* --- Digital gradients — "الألوان المستخدمة للتطبيقات الرقمية", p.32 ---
+  /* --- Digital gradients: "الألوان المستخدمة للتطبيقات الرقمية", p.32 ---
      Screen-only gradient pairs. Note these differ from the print values.   */
   --mim-gradient-purple: linear-gradient(135deg, #825DEC 0%, #3F3355 100%);
   --mim-gradient-pink:   linear-gradient(135deg, #BFA19F 0%, #EFCAC7 100%);
@@ -79,9 +79,9 @@
   --mim-black-600: #161313;  --mim-black-700: #120D0E;
   --mim-black-800: #0F080A;  --mim-black-900: #0C0407;
 
-  /* --- Typography — "خطنا", guidelines pp.26-34 ---------------------------
-     Primary (AR + EN):   Lyon Arabic Regular  — headings and body
-     Secondary (AR + EN): Diodrum Arabic Regular — subheadings
+  /* --- Typography: "خطنا", guidelines pp.26-34 ---------------------------
+     Primary (AR + EN):   Lyon Arabic Regular  (headings and body)
+     Secondary (AR + EN): Diodrum Arabic Regular (subheadings)
      Both are licensed commercial faces and are NOT redistributed here, so
      the stacks below name them first and fall back to metrically comparable
      faces already present on most systems. See data/README.md.
@@ -108,13 +108,13 @@
 <style>
 /* inlined from assets/design.css */
 /* ============================================================================
-   Design system — everything that is a decision but not a brand value.
+   Design system: everything that is a decision but not a brand value.
    ----------------------------------------------------------------------------
    assets/brand.css holds what the MIM guidelines set: the palette, and which
    typefaces the identity names. It stays the source of truth for those and
    nothing here overrides it.
 
-   This file holds the rest of the system — the faces that make the named
+   This file holds the rest of the system: the faces that make the named
    fallbacks real, and the scales for motion, radius, elevation and layering
    that were previously ad-hoc values retyped at each call site.
    ========================================================================== */
@@ -125,15 +125,15 @@
    The brand names Lyon Arabic and Diodrum Arabic. Both are licensed commercial
    faces that are not redistributed with this repository, so in practice almost
    every visitor fell through to the end of the stack and read the dashboard in
-   Times New Roman and Tahoma — which is not a typographic choice anyone made.
+   Times New Roman and Tahoma, which is not a typographic choice anyone made.
 
    The two faces below are the openly-licensed stand-ins, self-hosted so that
    the fallback is a decision rather than a guess about what a visitor happens
    to have installed:
 
-     Noto Naskh Arabic      — already named in the brand's primary stack.
+     Noto Naskh Arabic:      already named in the brand's primary stack.
                               Headings and figures.
-     IBM Plex Sans Arabic   — a humanist Arabic sans, much closer to Diodrum's
+     IBM Plex Sans Arabic:   a humanist Arabic sans, much closer to Diodrum's
                               proportions than Tahoma is. Body and interface.
 
    Both sit AFTER the licensed faces in every stack, so a machine with Lyon or
@@ -170,7 +170,7 @@
                  U+FE70-FE74, U+FE76-FEFC;
 }
 /* Latin. The English sub-labels, the source filenames, and every figure on the
-   page — the digits are Latin even where the sentence around them is not. */
+   page: the digits are Latin even where the sentence around them is not. */
 @font-face {
   font-family: "IBM Plex Sans Arabic";
   font-style: normal; font-weight: 400; font-display: swap;
@@ -240,7 +240,7 @@
      ---------------------------------------------------------------------- */
   --ease-out-soft:  cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out-quick: cubic-bezier(0.22, 0.61, 0.36, 1);
-  /* Press. Shorter and flatter — a button going down should feel immediate
+  /* Press. Shorter and flatter, because a button going down should feel immediate
      and the release should not bounce, which on a ministry page reads as a
      glitch rather than as personality. */
   --ease-press:     cubic-bezier(0.4, 0, 0.2, 1);
@@ -253,7 +253,7 @@
   /* -------------------------------------------------------------------------
      Radius
 
-     The identity is square-shouldered — worked metal, not soft plastic — so
+     The identity is square-shouldered (worked metal, not soft plastic), so
      this is a tight scale, not a squircle system. What matters is that it is
      a scale at all: the page had 2px, 3px, 0 and 999px scattered by hand,
      and inner elements were not stepping down from their containers.
@@ -300,7 +300,7 @@
 
      A line of Arabic text stops being readable past roughly the same length a
      line of Latin does. The dashboard's main column is deliberately very wide
-     — charts want the room — so prose inside it has to be constrained on its
+     (charts want the room), so prose inside it has to be constrained on its
      own rather than inheriting the container.
      ---------------------------------------------------------------------- */
   --measure: 74ch;
@@ -309,7 +309,7 @@
 /* ---------------------------------------------------------------------------
    Grain
 
-   A fixed, unhittable film over the whole viewport at 3.5% — enough to keep
+   A fixed, unhittable film over the whole viewport at 3.5%, enough to keep
    large flat fields from reading as dead vector, not enough to be visible as
    texture. Monochrome, so it introduces no colour of its own.
 
@@ -349,10 +349,10 @@
 <style>
 /* inlined from assets/reactbits.css */
 /*! Interface layer for the MIM graduates dashboard.
- *  Built by scripts/build_ui.mjs from ui/ — do not edit this file.
+ *  Built by scripts/build_ui.mjs from ui/. Do not edit this file.
  *
  *  Bundles React 18 and components from React Bits (https://reactbits.dev),
- *  Copyright (c) David Haz, MIT + Commons Clause — see ui/reactbits/LICENSE.md.
+ *  Copyright (c) David Haz, MIT + Commons Clause, see ui/reactbits/LICENSE.md.
  *  Also bundles GSAP (https://gsap.com), Motion (https://motion.dev) and
  *  OGL (https://github.com/oframe/ogl), each under its own licence.
  */
@@ -444,7 +444,7 @@ strong, b { font-weight: 600; }
 
 /* ---------- section band ----------
    GooeyNav's seam is a blur-and-contrast filter, which only resolves over a
-   dark field — so this band is the darkest brand grey, which is also what the
+   dark field, so this band is the darkest brand grey, which is also what the
    aurora above it needs to read as light rather than as a coloured panel. */
 .navband {
   background: var(--mim-black-500);
@@ -465,7 +465,7 @@ strong, b { font-weight: 600; }
 .navband-inner:empty { height: 48px; }
 
 /* Without the bundle the sections are still a list of links on the same dark
-   band — no blob, same reach. */
+   band, no blob, same reach. */
 .navband-fallback { display: flex; gap: 2px; }
 .navband-fallback a {
   color: var(--mim-grey-light); text-decoration: none; white-space: nowrap;
@@ -518,7 +518,7 @@ strong, b { font-weight: 600; }
 
 /* The grid wants every pixel of width it can have, so the container stays
    wide; what it did not have was room to breathe against the band above it
-   or the footer below. Bottom is larger than top on purpose — optically they
+   or the footer below. Bottom is larger than top on purpose, because optically they
    read as equal once the footer's own rule is counted. */
 main {
   padding: clamp(20px, 2.6vw, 38px) clamp(14px, 2.2vw, 30px) clamp(30px, 4vw, 60px);
@@ -544,7 +544,7 @@ main {
 
 .kpis { display: grid; gap: clamp(13px, 1.1vw, 17px); margin-bottom: clamp(18px, 1.8vw, 26px);
         grid-template-columns: repeat(auto-fit, minmax(196px, 1fr)); }
-/* The tile's shell — white, square, hairline, coloured top rule — is stated
+/* The tile's shell (white, square, hairline, coloured top rule) is stated
    in ui/mim.css, where it overrides SpotlightCard's own dark panel. What is
    left here is the type inside it, which React Bits has no opinion about. */
 /* The island is the grid cell; the tile inside it fills the cell whether it is
@@ -583,13 +583,13 @@ main {
         grid-template-columns: repeat(12, 1fr); align-items: start; }
 /* Every card is wrapped so React Bits' AnimatedContent can reveal it on
    scroll. The wrapper is the grid child, which is why the column spans live
-   on it and not on the card — and why it is in the markup from the start,
+   on it and not on the card, and why it is in the markup from the start,
    rather than being inserted around the card afterwards: the chart inside
    measures itself before the bundle hydrates, and it must measure the width
    it is going to keep. */
 .cardwrap { grid-column: span 12; min-width: 0; }
 /* The border is gone. A hairline ring plus a tinted shadow says "this is a
-   surface above the page" without drawing a hard box around every figure —
+   surface above the page" without drawing a hard box around every figure,
    and with twenty of these on the overview, twenty hard boxes was most of
    what you saw. */
 .card {
@@ -867,9 +867,9 @@ body.win-open { overflow: hidden; }
 /* ---------- region tile map ----------
    A tile grid rather than a projection: every region gets the same square, so
    a small one is as easy to hit as a large one, and no region is lost at a
-   glance because its land area is small. The container is forced to LTR — a
+   glance because its land area is small. The container is forced to LTR, since a
    map of the Kingdom has the east coast on the right whichever way the text
-   around it reads — and each tile turns its own text back to RTL. */
+   around it reads, and each tile turns its own text back to RTL. */
 .regionmap {
   direction: ltr;
   display: grid;
@@ -933,7 +933,7 @@ body.win-open { overflow: hidden; }
 .rgpick-n { font-size: 10.5px; opacity: .7; font-variant-numeric: tabular-nums; direction: ltr; }
 
 /* A difference between two regions. Direction is carried by the arrow and the
-   sign, never by colour alone — and the two colours are the brand's accents,
+   sign, never by colour alone, and the two colours are the brand's accents,
    the only pair that stays apart under colour-vision deficiency. */
 .delta { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 .delta.up { color: var(--mim-blue-800); }
@@ -1125,7 +1125,7 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 2px 6p
     <!-- The sentence lives here, in the markup, not in an attribute: React
          Bits' SplitText takes its text as a prop, so the bundle reads it off
          the element. A reader without JavaScript, and a crawler, still find a
-         real <h1>. splitType is words, never chars — Arabic is cursive and
+         real <h1>. splitType is words, never chars, because Arabic is cursive and
          splitting a word into glyphs severs the joins. -->
     <h1 data-rb="SplitText"
         data-rb-props='{"tag":"span","splitType":"words","textAlign":"start","delay":55,"duration":0.9,"threshold":0.05,"rootMargin":"0px","from":{"opacity":0,"y":18},"to":{"opacity":1,"y":0}}'
@@ -1229,10 +1229,10 @@ var yo={},mo={};var xo,_o=function(){function t(t,e,n){var i=this;this._sleepAft
 <script>
 /* inlined from assets/reactbits.js */
 /*! Interface layer for the MIM graduates dashboard.
- *  Built by scripts/build_ui.mjs from ui/ — do not edit this file.
+ *  Built by scripts/build_ui.mjs from ui/. Do not edit this file.
  *
  *  Bundles React 18 and components from React Bits (https://reactbits.dev),
- *  Copyright (c) David Haz, MIT + Commons Clause — see ui/reactbits/LICENSE.md.
+ *  Copyright (c) David Haz, MIT + Commons Clause, see ui/reactbits/LICENSE.md.
  *  Also bundles GSAP (https://gsap.com), Motion (https://motion.dev) and
  *  OGL (https://github.com/oframe/ogl), each under its own licence.
  */
@@ -1398,8 +1398,8 @@ function esc(s) {
 function idx(block) { var m = {}; block.cols.forEach(function (n, i) { m[n] = i; }); return m; }
 
 /* ------------------------- React Bits island bridge ---------------------- */
-/* assets/reactbits.js publishes window.MIMUI. If it failed to load — a blocked
-   request, an old browser — every helper below still emits the plain markup it
+/* assets/reactbits.js publishes window.MIMUI. If it failed to load (a blocked
+   request, an old browser), every helper below still emits the plain markup it
    always did and the dashboard works without a single animation. That is why
    the static version of a tile is written inside its island rather than being
    passed to the component as data: an un-hydrated island is the old page. */
@@ -1422,7 +1422,7 @@ function rbHead(text) {
       animationSpeed: 11, yoyo: false }) + esc(text) + "</span>";
 }
 /* A search that found nothing. It says what was looked for and offers the way
-   back, rather than the one grey sentence that used to sit here — which left
+   back, rather than the one grey sentence that used to sit here, which left
    a visitor who had mistyped with nothing to do but mistype again. */
 function emptySearch(q, inputId, what) {
   return '<div class="nodata">' +
@@ -1514,7 +1514,7 @@ var YEARS = D.meta.years.slice().sort();
    sheet. Two things to hold on to about it:
 
    It carries no year and no region. It is a snapshot of who is in the job
-   today, not a series — so the year chips at the top of the page do not
+   today, not a series, so the year chips at the top of the page do not
    touch these figures, and every view that shows them says so rather than
    letting a reader assume the filter applied.
 
@@ -1628,7 +1628,7 @@ function baseText() { return { color: C.ink, fontFamily: FONT, fontSize: 12 }; }
 
 /* Mix a hex colour towards white. `keep` is the share of the hue retained, so
    the graduates bar reads as the same category as the employed bar drawn on
-   top of it — one hue, two strengths, no second colour to decode. */
+   top of it: one hue, two strengths, no second colour to decode. */
 function tint(hex, keep) {
   if (hex.charAt(0) !== "#") return hex;
   var n = parseInt(hex.slice(1), 16);
@@ -1794,7 +1794,7 @@ function card(title, hint, body, span) {
    gives a screen reader the chart's subject; the numbers themselves are in the
    البيانات tab, which is the accessible equivalent of the whole dashboard. */
 function chartCard(title, hint, id, span, cls) {
-  var label = title + (hint ? " · " + hint : "") + " — رسم بياني";
+  var label = title + (hint ? " · " + hint : "") + " (رسم بياني)";
   return card(title, hint,
     '<div class="chart ' + (cls || "") + '" id="' + id + '" role="img" aria-label="' +
     esc(label) + '"></div>', span);
@@ -1909,7 +1909,7 @@ function viewOverview() {
         '<p class="hint prov" id="oNqfProv"></p>' +
         '<p class="hint" id="oNqfNote"></p>' +
         '<div class="chart" id="oNqf" role="img" ' +
-        'aria-label="توزيع الخريجين على مستويات الإطار الوطني للمؤهلات — رسم بياني"></div>',
+        'aria-label="توزيع الخريجين على مستويات الإطار الوطني للمؤهلات (رسم بياني)"></div>',
         "span6") +
       chartCard("التوزيع الجغرافي", "By region · المناطق الإدارية", "oRegion", "span6", "tall") +
       chartCard("أعلى التخصصات المهنية", "Top vocational specializations", "oVocMaj", "span6", "tall") +
@@ -1958,7 +1958,7 @@ function viewOverview() {
 }
 
 /* ========================================================================= */
-/*  VIEW: university majors — browse and detail                              */
+/*  VIEW: university majors, browse and detail                               */
 /* ========================================================================= */
 var UNI_LEVELS = [
   { key: "g", dim: "generalMajor",  field: "gi", label: "المجال العام" },
@@ -2098,7 +2098,7 @@ function viewUniDetail(majorIdx) {
 }
 
 /* ========================================================================= */
-/*  VIEW: vocational majors — browse and detail                              */
+/*  VIEW: vocational majors, browse and detail                               */
 /* ========================================================================= */
 function viewVocBrowse() {
   var rows = vocRows();
@@ -2174,7 +2174,7 @@ function viewVocDetail(majorIdx) {
 }
 
 /* ========================================================================= */
-/*  VIEW: occupations — browse, occupation page, specialization page          */
+/*  VIEW: occupations, browse / occupation / specialization pages            */
 /* ========================================================================= */
 /* The sheet's 921 rows are 548 occupations. A repeated رمز المهنة means the
    occupation has specializations (التخصص المهني), each stored as its own row.
@@ -2189,10 +2189,10 @@ var occFilter = { q: "", nqf: "", sector: "", group: "" };
 function occOf(t) { return OCC[t.base]; }
 function specOf(t, i) { return OCC[t.children[i]]; }
 
-/* Skills, tasks, sectors and fields belong to whichever record is on screen —
+/* Skills, tasks, sectors and fields belong to whichever record is on screen,
    the occupation's own base row, or one specialization. */
 /* The occupation's own employment row, and how it sits against the sectors it
-   serves. Returns null for an occupation the workforce sheet does not carry —
+   serves. Returns null for an occupation the workforce sheet does not carry,
    which is most of them: it covers 503 of 548. */
 function workforceOf(rec) {
   var list = rec.code ? (JOBS_BY_CODE[rec.code] || []) : [];
@@ -2678,7 +2678,7 @@ function viewOccSpec(code, idx) {
 }
 
 /* ========================================================================= */
-/*  VIEW: workforce — the demand side                                        */
+/*  VIEW: workforce, the demand side                                         */
 /* ========================================================================= */
 /* Bands for "how localised is this occupation". Fixed edges rather than
    quantiles, so a band means the same thing every time the page is opened,
@@ -2739,7 +2739,7 @@ function viewWorkforce() {
         sub: fmt(jobTotals(full).total) + " وظيفة بنسبة ١٠٠٪" },
       { cls: "is-uni", label: "متوسط التوطين للمهنة",
         raw: pct(JOBS.reduce(function (a, j) { return a + j.rate; }, 0), JOBS.length),
-        sub: "متوسط المهن لا الوظائف — غير مرجّح بالحجم" }
+        sub: "متوسط المهن لا الوظائف، غير مرجّح بالحجم" }
     ]) +
     '<div class="grid">' +
       chartCard("التوطين حسب فئة المهنة",
@@ -2864,8 +2864,8 @@ function viewWorkforce() {
 /* Two sides that were collected for different purposes and do not share a
    grain, so the page is built to say so rather than to hide it:
 
-     demand  — current employment per occupation. No year, no region.
-     supply  — graduates per year, per region, per major.
+     demand:  current employment per occupation. No year, no region.
+     supply:  graduates per year, per region, per major.
 
    They meet only through the occupation's education field, and only where a
    field name also exists as a university major. That bridge covers the
@@ -2877,7 +2877,7 @@ var sdFilter = { sector: "", region: "", q: "", skill: "", isced: "" };
 
 function supplyFor(occ) {
   /* Graduates of the majors this occupation's education fields point at.
-     Region filter applies here and only here — the demand side carries none. */
+     Region filter applies here and only here: the demand side carries none. */
   if (!occ || !occ.fields || !occ.fields.length) return null;
   var names = occ.fields.map(function (f) { return L.fields[f]; })
                         .filter(function (n) { return D.fieldLinks[n]; });
@@ -2893,8 +2893,8 @@ function supplyFor(occ) {
 }
 
 /* The supply of a SET of occupations is not the sum of their supplies.
-   Occupations share education fields — 248 linked occupations draw on about
-   eighteen distinct majors — so adding each occupation's pool counts the same
+   Occupations share education fields: 248 linked occupations draw on about
+   eighteen distinct majors, so adding each occupation's pool counts the same
    graduates once per occupation that points at them. Summing this page's own
    per-occupation figures gave 2,145,783 graduates against a university file
    holding roughly 185,000: a number that is not large, it is wrong.
@@ -2992,11 +2992,11 @@ function viewSupplyDemand() {
     document.getElementById("sdBody").innerHTML =
       regionNote +
       kpiHtml([
-        { label: "الطلب — إجمالي العاملين", value: t.total,
+        { label: "الطلب: إجمالي العاملين", value: t.total,
           sub: fmt(rows.length) + " مهنة ضمن التصفية" },
         { label: "فرص التوطين", value: t.other,
           sub: "وظائف يشغلها غير سعوديين · " + pct(t.saudi, t.total) + " نسبة التوطين" },
-        { cls: "is-uni", label: "العرض — الخريجون المرتبطون", value: supplyTotal,
+        { cls: "is-uni", label: "العرض: الخريجون المرتبطون", value: supplyTotal,
           sub: fmt(union.majors) + " تخصصًا مميزًا · محسوب مرة واحدة دون تكرار" },
         { label: "تغطية الربط", raw: pct(withSupply.length, rows.length),
           sub: fmt(noSupply.length) + " مهنة بلا تخصص مرتبط" },
@@ -3033,7 +3033,7 @@ function viewSupplyDemand() {
               '<td class="num">' + fmt(j.other) + '</td>' +
               '<td class="num">' + pct(j.saudi, j.total) + '</td>' +
               '<td class="num">' + (has ? fmt(sp.grads) : '<span style="color:#999">غير مرتبط</span>') + '</td>' +
-              '<td class="num">' + (has && j.other ? (sp.grads / j.other).toFixed(2) : "—") + '</td>' +
+              '<td class="num">' + (has && j.other ? (sp.grads / j.other).toFixed(2) : "لا ينطبق") + '</td>' +
             '</tr>';
           }).join("") + '</tbody></table></div>') +
       '</div>';
@@ -3096,7 +3096,7 @@ function viewSupplyDemand() {
 }
 
 /* ========================================================================= */
-/*  VIEW: regions — pick one to see it, two to compare                       */
+/*  VIEW: regions, pick one to see it, two to compare                        */
 /* ========================================================================= */
 /* Graduates only. The workforce sheet carries no region at all, so employment
    and Saudization cannot be cut this way and are not shown here; putting a
@@ -3237,14 +3237,14 @@ function exportComparison(a, b) {
    A card is the view you are looking at as a single picture: the same
    figures, the same charts, the brand's own type and colour, in one PNG that
    can be sent in a message or dropped into a deck. Every view that exports a
-   CSV exports a card too — the CSV is for someone who will work the numbers,
+   CSV exports a card too: the CSV is for someone who will work the numbers,
    the card for someone who will look at them once.
 
    Two shapes. Portrait is for sending and for printing on one page; 16:9 is
    sized for a slide, so nothing has to be cropped to present it.
 
    It is drawn on a canvas rather than rasterised out of the DOM. That keeps
-   it dependency-free and keeps it working from a file:// copy — but the
+   it dependency-free and keeps it working from a file:// copy, but the
    reason that decided it is the charts: each one is re-rendered at the width
    the card gives it, instead of being a screenshot of a 700px chart stretched
    to 1016 with its labels grown to match.                                   */
@@ -3271,7 +3271,7 @@ function cardTok() {
 }
 
 /* Arabic runs right to left, figures stay left to right, and the two sit in
-   the same card — so direction is set per call rather than once. */
+   the same card, so direction is set per call rather than once. */
 function cText(ctx, s, x, y, o) {
   o = o || {};
   var T = cardTok();
@@ -3377,7 +3377,7 @@ function cFooter(ctx, W, y, note, compact) {
           { size: 16, color: T.greyMid, dir: "ltr", align: "left" });
     return y + 24;
   }
-  cText(ctx, "المصدر: وزارة الصناعة والثروة المعدنية — بيانات الخريجين والتوظيف",
+  cText(ctx, "المصدر: وزارة الصناعة والثروة المعدنية، بيانات الخريجين والتوظيف",
         W - PAD, y, { size: 17, color: T.grey });
   y += 28;
   cText(ctx, "سنوات التخرج: " + yearsLabel() + "  ·  أُعدت " +
@@ -3558,7 +3558,7 @@ function buildCard(spec, shape) {
 }
 
 /* The three buttons every exporting view carries, and their wiring. The card
-   takes a moment — fonts, then a chart render per block — so the button says
+   takes a moment (fonts, then a chart render per block), so the button says
    so rather than looking dead. */
 function exportBar(prefix, csvLabel) {
   return '<div class="exportbar">' +
@@ -3780,7 +3780,7 @@ function occupationCardSpec(rec, tree) {
     spec.note = WF_NOTE;
   } else {
     spec.lead = { value: lt.grads, label: "خريجو المجالات المرتبطة",
-                  side: linked.length ? pct(lt.emp, lt.grads) : "—",
+                  side: linked.length ? pct(lt.emp, lt.grads) : "لا ينطبق",
                   sideLabel: "نسبة التوظيف" };
     spec.kpis = [
       { label: "القطاعات التي تخدمها", value: rec.sectors.length, sub: "من ١٣ قطاعًا فرعيًا" },
@@ -3882,8 +3882,8 @@ function supplyCardSpec() {
     title: "العرض والطلب",
     kicker: sdFilterLabel() + " · " + yearsLabel(),
     badge: fmt(S.rows.length) + " مهنة · " + fmt(S.withSupply.length) + " لها عرض",
-    lead: { value: S.t.total, label: "الطلب — إجمالي العاملين",
-            side: fmt(S.supplyTotal), sideLabel: "العرض — خريجون مرتبطون" },
+    lead: { value: S.t.total, label: "الطلب: إجمالي العاملين",
+            side: fmt(S.supplyTotal), sideLabel: "العرض: خريجون مرتبطون" },
     kpis: [
       { label: "فرص التوطين", value: S.t.other, accent: T.purple,
         sub: "وظائف يشغلها غير سعوديون · التوطين " + pct(S.t.saudi, S.t.total) },
@@ -4031,8 +4031,8 @@ function pairBarChart(id, entries, nameA, nameB, opts) {
 /* ------------------------------ the map --------------------------------- */
 /* A tile grid, not a projection: every region gets the same square so a small
    one is as clickable as a large one, placed where it actually sits. The grid
-   is forced to LTR — a map has east on the right whatever direction the text
-   around it runs — and each tile turns its own text back to RTL.
+   is forced to LTR, since a map has east on the right whatever direction the text
+   around it runs, and each tile turns its own text back to RTL.
 
    Columns run west (1) to east (5), rows north (1) to south (5). */
 var REGION_MAP = [
@@ -4080,7 +4080,7 @@ function viewRegions(openIdx, vsIdx) {
   var maxG = names.reduce(function (a, n) { return Math.max(a, stats[n].grads); }, 0) || 1;
   var nat = nationalTotals();
 
-  /* Placed regions first, then anything the data has that the map does not —
+  /* Placed regions first, then anything the data has that the map does not:
      a region added to the source later shows up under the map rather than
      disappearing from the page. */
   var placed = {}; REGION_MAP.forEach(function (t) { placed[t.name] = 1; });
@@ -4101,7 +4101,7 @@ function viewRegions(openIdx, vsIdx) {
       ' style="grid-column:' + t.col + ';grid-row:' + t.row +
         (t.rowSpan ? " / span " + t.rowSpan : "") + ';background:' + bg +
         ';color:' + (dark ? "#fff" : "var(--mim-grey-darkest)") + '"' +
-      ' aria-label="' + esc(t.name + " — " + fmt(s.grads) + " خريجًا") + '">' +
+      ' aria-label="' + esc(t.name + ": " + fmt(s.grads) + " خريجًا") + '">' +
       '<span class="rt-name">' + esc(t.name) + '</span>' +
       '<span class="rt-value">' + fmt(s.grads) + '</span>' +
       '<span class="rt-meta">' + fmt(s.universities) + ' جامعة · ' +
@@ -4113,7 +4113,7 @@ function viewRegions(openIdx, vsIdx) {
     '<p class="scope-note"><strong>نطاق الصفحة:</strong> أعداد الخريجين حسب منطقة ' +
       'الجهة التعليمية، من مصدري المهني والتقني والجامعات. ' +
       '<strong>بيانات العاملين ونسب التوطين لا تحمل منطقة</strong> في مصدرها، ' +
-      'فلا تظهر هنا — ووضع رقم وطني على بطاقة منطقة يُقرأ على أنه رقمها.</p>' +
+      'فلا تظهر هنا؛ ووضع رقم وطني على بطاقة منطقة يُقرأ على أنه رقمها.</p>' +
     '<div class="browse-head">' +
       '<span class="result-count">اضغط منطقة لعرض بياناتها، ومن داخلها يمكنك مقارنتها بأخرى · ' +
         'الأغمق أكثر خريجين</span>' +
@@ -4353,8 +4353,8 @@ function paintRegionCompare(body, sa, sb, a, b) {
     });
   }
   trendChart("rgCmpTrend", [
-    { name: a, empName: a + " — متوظفون", color: C.voc, data: yearlyG(sa), emp: yearlyE(sa) },
-    { name: b, empName: b + " — متوظفون", color: C.uni, data: yearlyG(sb), emp: yearlyE(sb) }
+    { name: a, empName: a + " · متوظفون", color: C.voc, data: yearlyG(sa), emp: yearlyE(sa) },
+    { name: b, empName: b + " · متوظفون", color: C.uni, data: yearlyG(sb), emp: yearlyE(sb) }
   ]);
   var metrics = [
     ["إجمالي الخريجين", sa.grads, sb.grads],
@@ -4544,7 +4544,7 @@ var TABS = [
 /* The section bar is React Bits' GooeyNav. It is a shell island: mounted once
    and re-rendered with a new active index, never taken down, so the blob that
    travels between sections is not interrupted by the repaint underneath it.
-   Without the bundle the same list is written as plain links — the sections
+   Without the bundle the same list is written as plain links: the sections
    stay reachable, they simply do not glide. */
 function navItems() {
   return TABS.map(function (t) {
@@ -4697,7 +4697,7 @@ document.getElementById("provenance").innerHTML =
   "تفاصيل التحليل ومصادر كل قيمة في <code>data/README.md</code>.";
 
 /* The notice is shown until dismissed. localStorage is the only thing this
-   page stores, it holds one boolean, and it never leaves the browser — so a
+   page stores, it holds one boolean, and it never leaves the browser, so a
    private window or blocked storage just means the notice shows again. */
 (function () {
   var el = document.getElementById("privacyNotice");

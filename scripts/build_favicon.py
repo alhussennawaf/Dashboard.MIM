@@ -30,11 +30,11 @@ def main():
     missing = [s for s in FRAMES if not (ASSETS / f"icon-{s}.png").exists()]
     if missing:
         sys.exit("missing frame(s): " + ", ".join(f"icon-{s}.png" for s in missing) +
-                 " — run `node scripts/build_images.js` first")
+                 ": run `node scripts/build_images.js` first")
 
     # Save from the LARGEST frame. Pillow's ICO writer derives the requested
     # sizes from the image it is given, so starting at 16 silently produced a
-    # single-frame icon — it cannot upscale. append_images then supplies the
+    # single-frame icon, and it cannot upscale. append_images then supplies the
     # smaller frames as their own Chromium renders rather than downsamples.
     frames = {s: Image.open(ASSETS / f"icon-{s}.png").convert("RGBA") for s in FRAMES}
     largest = max(FRAMES)

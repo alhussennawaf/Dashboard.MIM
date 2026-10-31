@@ -11,8 +11,8 @@ const GooeyNav = ({
   colors = [1, 2, 3, 1, 2, 3, 1, 4],
   initialActiveIndex = 0,
   // LOCAL CHANGE (Dashboard.MIM): the dashboard's router is the authority on
-  // which section is open — a card or a breadcrumb changes it as often as the
-  // nav does — so the highlight can be driven from outside. Left undefined the
+  // which section is open (a card or a breadcrumb changes it as often as the
+  // nav does), so the highlight can be driven from outside. Left undefined the
   // component behaves exactly as upstream.
   activeIndex: controlledIndex
 }) => {

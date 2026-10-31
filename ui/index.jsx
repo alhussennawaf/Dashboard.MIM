@@ -1,10 +1,10 @@
 /* ============================================================================
-   React Bits interface layer — mount point
+   React Bits interface layer: mount point
    ----------------------------------------------------------------------------
    The dashboard in index.html is plain ES5 and owns every byte of data logic:
    the fact tables, the aggregation, the ECharts figures, the routing. Nothing
    of that moves into React. What moves is the *chrome*: the masthead, the
-   navigation, the KPI tiles, the reveals — rendered with components from
+   navigation, the KPI tiles, the reveals, all rendered with components from
    React Bits (https://reactbits.dev, MIT + Commons Clause, see
    ui/reactbits/LICENSE.md), mounted as islands into markup the dashboard has
    already written.
@@ -47,7 +47,7 @@ import './mim.css';
    Brand tokens
    The components take colours as plain strings, so they have to be resolved
    from the stylesheet rather than passed as var(). Read once, after the
-   stylesheet has applied, and cached — assets/brand.css is static.
+   stylesheet has applied, and cached, because assets/brand.css is static.
    -------------------------------------------------------------------------- */
 let brandCache = null;
 function readBrand() {
@@ -75,7 +75,7 @@ const reducedMotion =
   typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* CountUp's props for one figure. At reduced motion the count does not run,
-   and a counter that never runs shows the number it started from — so the
+   and a counter that never runs shows the number it started from, so the
    start is moved to the finish and the reader gets the figure, not a zero. */
 function counting(value, delay) {
   return reducedMotion
@@ -84,7 +84,7 @@ function counting(value, delay) {
 }
 
 /* ---------------------------------------------------------------------------
-   Adopt — hand existing DOM to a React parent
+   Adopt: hand existing DOM to a React parent
    React cannot take ownership of nodes it did not create, but it can be handed
    a host element to append them to. The host is display:contents, so a React
    Bits wrapper adds behaviour to the dashboard's own markup without adding a
@@ -111,7 +111,7 @@ function Adopt({ node }) {
    and teal stay accents, which is the ratio the guidelines set on p.34. */
 /* Off-screen WebGL still burns a frame budget, so the aurora is mounted only
    while the band it lives in is actually on screen. Crossing that line is rare
-   — the band is the top of the page — so the context is built and lost a
+   (the band is the top of the page), so the context is built and lost a
    handful of times a session, not per frame. */
 function useOnScreen(ref) {
   const [visible, setVisible] = useState(true);
@@ -219,7 +219,7 @@ function Hero({ eyebrow, headline, total, employed, years, occupations, majors, 
 
 /* The section navigation. GooeyNav keeps its own idea of which item is lit,
    which is right while it is the thing being clicked and wrong the moment a
-   card elsewhere on the page changes the route — so the index is mirrored in
+   card elsewhere on the page changes the route, so the index is mirrored in
    from the router on every render. */
 function Nav({ items, activeIndex }) {
   const b = readBrand();
@@ -306,7 +306,7 @@ function resolveProps(props) {
 }
 
 /* Reveal-on-scroll is the one effect applied by the dozen, and at reduced
-   motion it must collapse to "already there" rather than "never arrives" —
+   motion it must collapse to "already there" rather than "never arrives",
    AnimatedContent and FadeContent both start from opacity 0. */
 function revealProps(name, props) {
   if (!reducedMotion) return props;
@@ -357,7 +357,7 @@ function readProps(el) {
 }
 
 /* Components that render a `text` prop rather than children. For these the
-   element's own text is the source — the sentence is in the HTML, where a
+   element's own text is the source: the sentence is in the HTML, where a
    reader without JavaScript and a crawler both still find it, and the
    component is handed a copy rather than the markup being emptied into an
    attribute. */
@@ -399,7 +399,7 @@ function unmountView() {
 }
 
 /* A shell island is addressed by key so it can be re-rendered with new props
-   — the hero's figures follow the year filter — without being torn down. */
+   (the hero's figures follow the year filter) without being torn down. */
 function shell(key, el, name, props) {
   const Comp = REGISTRY[name];
   if (!Comp || !el) return;
@@ -442,7 +442,7 @@ function mountClickSpark() {
 /* ------------------------------- public API ------------------------------ */
 window.MIMUI = {
   hydrate,
-  /* For islands in the page shell — the masthead, the notice bar — which the
+  /* For islands in the page shell (the masthead, the notice bar) which the
      router must never take down with the view it repaints. */
   hydrateOnce: el => hydrate(el, true),
   unmountView,

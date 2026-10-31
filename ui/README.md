@@ -1,9 +1,9 @@
 # Interface layer
 
-The dashboard's data logic — the fact tables, the aggregation, the ECharts
-figures, the routing — is plain ES5 and lives in `index.html`. None of it is in
+The dashboard's data logic (the fact tables, the aggregation, the ECharts
+figures, the routing) is plain ES5 and lives in `index.html`. None of it is in
 here. What is in here is the **chrome**: the masthead title, the aurora band,
-the section navigation, the KPI tiles, the reveals — built with components from
+the section navigation, the KPI tiles, the reveals, all built with components from
 [React Bits](https://reactbits.dev) and mounted into the markup the dashboard
 has already written.
 
@@ -26,7 +26,7 @@ One attribute. Anything `index.html` emits as
 
 is taken over by that component on `MIMUI.hydrate()`. The element's existing
 children are detached and adopted back in as the component's React children,
-through a `display:contents` host — so a React Bits wrapper can wrap markup
+through a `display:contents` host, so a React Bits wrapper can wrap markup
 React never rendered, without adding a box that breaks the grid around it.
 
 Two consequences are deliberate:
@@ -54,7 +54,7 @@ passed in; in `data-rb-props` a value of `"@purple"` resolves to whatever
 `--mim-purple` currently is. Change the token, and the aurora, the pill and the
 gradient headline change with it.
 
-The usage ratio from the brand guidelines (p.34 — greys carrying the layout,
+The usage ratio from the brand guidelines (p.34: greys carrying the layout,
 purple and teal as accent) survives the redesign: the aurora is capped at 42%
 opacity over the darkest brand grey, and every other saturated element is a
 pill, a rule or a figure.
@@ -75,7 +75,7 @@ of a zero.
 | `GooeyNav` | the section navigation |
 | `SpotlightCard` | every KPI tile |
 | `CountUp` | every KPI and hero figure |
-| `SplitText` | the masthead title (split by **word** — Arabic is cursive and splitting a word into glyphs severs the joins) |
+| `SplitText` | the masthead title (split by **word**, because Arabic is cursive and splitting a word into glyphs severs the joins) |
 | `ShinyText` | the masthead's English line, the hero eyebrow |
 | `GradientText` | the hero headline, every detail-page heading |
 | `StarBorder` | the period badge |
@@ -95,7 +95,7 @@ npm run build        # -> assets/reactbits.js, assets/reactbits.css
 The outputs are **committed**, exactly as `assets/echarts.min.js` is: Cloudflare
 serves the repository, there is no build step in the deploy, and `index.html`
 has to keep working when it is opened straight off a disk. `node_modules` is not
-committed and is not needed to serve the site — only to rebuild that pair of
+committed and is not needed to serve the site, only to rebuild that pair of
 files. Re-run after any change under `ui/`, and commit what changes.
 
 ## Checking
@@ -117,7 +117,7 @@ whose fonts cannot load is checking nothing. The suite now runs a small static
 server, which is what Cloudflare does with `site/` in production.
 
 **Click, don't route.** The checks this replaced navigated by assigning
-`location.hash`. That is not what a visitor does — it never runs the
+`location.hash`. That is not what a visitor does: it never runs the
 navigation's click handler, so the travelling blob never appeared, so nobody
 noticed it was painting over the label and leaving the open section as a blank
 rectangle. Anything a visitor reaches by clicking is now reached by clicking,
@@ -127,7 +127,7 @@ it, rather than throwing and taking the rest of the run with it. Never pass
 
 **Assert pixels, not the DOM.** Both bugs this suite was written for were
 invisible to the DOM. The vanished nav label was still the topmost node at the
-centre of its own pill — `elementFromPoint` returned it happily; it simply was
+centre of its own pill: `elementFromPoint` returned it happily; it simply was
 not drawn. So `inkFraction()` screenshots the element, reads it back off a
 canvas as a data URI (no image library, and a `data:` image does not taint the
 canvas the way a `file://` one would) and measures how much of it differs from
@@ -140,7 +140,7 @@ the glyphs and go invisible rather than absent if a colour fails to resolve.
 
 ## Licence
 
-The components under `reactbits/` are © David Haz, MIT with a Commons Clause —
+The components under `reactbits/` are © David Haz, MIT with a Commons Clause,
 see `reactbits/LICENSE.md`. That licence permits their use and modification as
 part of an application, website or product, and forbids selling or
 redistributing the components themselves. This is the former.
@@ -148,7 +148,7 @@ redistributing the components themselves. This is the former.
 The two files that were modified from upstream carry a `LOCAL CHANGE` comment at
 the point of the change, so the copies stay diffable:
 
-* `GooeyNav` — accepts a controlled `activeIndex`, because the dashboard's
+* `GooeyNav`: accepts a controlled `activeIndex`, because the dashboard's
   router, not the navigation, is the authority on which section is open.
 
 Everything else is upstream verbatim; every other difference between React Bits'

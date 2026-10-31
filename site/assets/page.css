@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Layout for the standalone pages — privacy, terms, 404.
+   Layout for the standalone pages: privacy, terms, 404.
    These are plain documents, not the dashboard: they load brand.css for the
    tokens and this for the reading column. No charts, no data, no script.
    ========================================================================== */
@@ -114,7 +114,7 @@ code {
 }
 
 /* A block the Ministry has still to supply. Deliberately impossible to mistake
-   for finished copy — it must read as unfinished to anyone who lands on it. */
+   for finished copy: it must read as unfinished to anyone who lands on it. */
 .placeholder {
   background: #FDF6E3;
   border: 1px dashed #C9A227;
