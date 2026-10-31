@@ -1273,10 +1273,16 @@ function trendChart(id, series) {
    sight. The island carries the finished tile as its child, so the numbers are
    on the page from the first paint and the component replaces them rather
    than filling a blank. */
+/* Counting runs on the first screen and nowhere else: by the time someone
+   has navigated to a page, the figure is what they came for. */
+function countersRun() {
+  return (location.hash || "#overview").indexOf("#overview") === 0;
+}
 function kpiHtml(tiles) {
+  var animate = countersRun();
   return '<section class="kpis">' + tiles.map(function (t) {
     var tone = t.cls === "is-voc" ? "voc" : t.cls === "is-uni" ? "uni" : "";
-    var props = { label: t.label, sub: t.sub || "", tone: tone };
+    var props = { label: t.label, sub: t.sub || "", tone: tone, animate: animate };
     if (t.raw !== undefined) props.raw = t.raw; else props.value = t.value;
     return rbOpen("div", "Kpi", props, "kpi-island") +
       '<div class="kpi ' + (t.cls || "") + '">' +
@@ -1405,18 +1411,20 @@ function viewOverview() {
       { cls: "is-voc", label: "خريجو التعليم المهني والتقني", value: tv.grads,
         sub: "Vocational · " + pct(tv.grads, ta.grads) + " من الإجمالي" },
       { cls: "is-uni", label: "خريجو الجامعات", value: tu.grads,
-        sub: "University · " + pct(tu.grads, ta.grads) + " من الإجمالي" },
+        sub: "University · " + pct(tu.grads, ta.grads) + " من الإجمالي · " +
+             fmt(UD.university.length) + " جامعة" },
       { label: "المتوظفون", value: ta.emp, sub: "Employed · نسبة التوظيف " + pct(ta.emp, ta.grads) },
-      { label: "المهن المشمولة", value: D.occupationTree.length,
+      { label: "المهن المشمولة (المهن الأساسية والأساسية الداعمة)",
+        value: D.occupationTree.length,
         sub: "Occupations · " + fmt(OCC.length) + " صفًا في المصدر" },
       { label: "التخصصات", value: VD.major.length + UD.major.length,
-        sub: VD.major.length + " مهني · " + UD.major.length + " جامعي" }
+        sub: VD.major.length + " مهني · " + UD.major.length +
+             " جامعي في العلوم والهندسة" }
     ]) +
     '<div class="grid">' +
       chartCard("الخريجون حسب سنة التخرج", "Graduates by year · المهني مقابل الجامعي", "oTrend", "span8") +
-      chartCard("التوزيع حسب الجنس", "By gender · الفئة غير المتوفرة بنقش مائل", "oGender", "span4") +
+      chartCard("التوزيع حسب الجنس", "By gender", "oGender", "span4") +
       card("حسب مستوى الإطار الوطني للمؤهلات", "",
-        '<p class="hint prov" id="oNqfProv"></p>' +
         '<p class="hint" id="oNqfNote"></p>' +
         '<div class="chart" id="oNqf" role="img" ' +
         'aria-label="توزيع الخريجين على مستويات الإطار الوطني للمؤهلات (رسم بياني)"></div>',
@@ -1438,10 +1446,11 @@ function viewOverview() {
   ]);
 
   var g = agg(all, function (f) { return genderLabel(f.gender); });
-  barChart("oGender", GENDERS.map(function (x) {
+  /* Only the two the source records. The rows it leaves blank are still in
+     every total on the page; they are simply not drawn as a third bar. */
+  barChart("oGender", ["ذكر", "أنثى"].map(function (x) {
     var c0 = g.get(x); return [x, c0 ? c0.grads : 0, c0 ? c0.emp : 0]; }), {
-    colorFn: function (e) { return e[0] === "ذكر" ? C.voc : e[0] === "أنثى" ? C.uni : C.neutral; },
-    hatchFn: function (e) { return e[0] === "غير متوفر"; }, labelWidth: 90 });
+    colorFn: function (e) { return e[0] === "ذكر" ? C.voc : C.uni; }, labelWidth: 90 });
 
   var nq = agg(all, function (f) { return f.nqf === null || f.nqf === undefined ? "x" : f.nqf; });
   var keys = Array.from(nq.keys()).sort(function (a, b) {
@@ -1453,8 +1462,6 @@ function viewOverview() {
     colorFn: function (e, i) { return keys[i] === "x" ? C.neutral
       : NQF_RAMP[Math.round(keys[i] / 8 * (NQF_RAMP.length - 1))] || C.voc; },
     hatchFn: function (e, i) { return keys[i] === "x"; } });
-  var ownNote = document.getElementById("oNqfProv");
-  if (ownNote) ownNote.textContent = ownerAssignedNote(v, u);
   var uncNote = document.getElementById("oNqfNote");
   if (uncNote) uncNote.textContent = unclassifiedNote(v, u);
 
@@ -1500,29 +1507,51 @@ function viewUniBrowse(levelKey, parentKey, parentIdx) {
 
   var html = crumb +
     '<div class="browse-head">' +
-      '<input type="search" id="qUni" placeholder="بحث في ' + esc(lvl.label) + '…" autocomplete="off">' +
+      '<input type="search" id="qUni" placeholder="بحث في كل التخصصات الجامعية…" ' +
+        'autocomplete="off">' +
       '<span class="result-count" id="cUni"></span>' +
     '</div>' +
     '' + rbList('listUni') + '';
   document.getElementById("view").innerHTML = html;
 
+  /* Searching leaves the ladder. Someone typing a specialization's name is
+     looking for that specialization, not for whether it happens to sit under
+     the branch they had opened, and a search that answers "nothing here"
+     while the thing exists one branch over is worse than no search. So a
+     query runs against every specialization in the file and each hit carries
+     the path it was found on; clearing it returns to the level you were at. */
+  var ALL_MAJORS = ranked(agg(uniRows(), function (f) { return f.mi; }), state.measure);
+  var MAJOR_PATH = (function () {
+    var m = {};
+    uniRows().forEach(function (f) { if (m[f.mi] === undefined) m[f.mi] = f.g; });
+    return m;
+  })();
+
   function paint(q) {
-    var shown = entries.filter(function (e) {
-      return !q || String(UD[lvl.dim][e[0]]).indexOf(q) !== -1;
+    var searching = !!q;
+    var pool = searching ? ALL_MAJORS : entries;
+    var shown = pool.filter(function (e) {
+      if (!q) return true;
+      return String(searching ? UD.major[e[0]] : UD[lvl.dim][e[0]]).indexOf(q) !== -1;
     });
     document.getElementById("cUni").textContent =
-      fmt(shown.length) + " من " + fmt(entries.length);
+      fmt(shown.length) + " من " + fmt(pool.length) +
+      (searching ? " · بحث في كل التخصصات" : "");
     document.getElementById("listUni").innerHTML = shown.length ? shown.map(function (e) {
-      var name = UD[lvl.dim][e[0]];
-      var target = childLevel
-        ? "#uni/" + childLevel.key + "/" + lvl.key + "/" + e[0]
-        : "#uni/detail/" + e[0];
+      var name = searching ? UD.major[e[0]] : UD[lvl.dim][e[0]];
+      var target = searching
+        ? "#uni/detail/" + e[0]
+        : (childLevel ? "#uni/" + childLevel.key + "/" + lvl.key + "/" + e[0]
+                      : "#uni/detail/" + e[0]);
       return '<button class="item" data-go="' + target + '">' +
         '<div class="name">' + esc(name) + '</div>' +
-        '<div class="meta"><span><b>' + fmt(e[1].grads) + '</b> خريج</span>' +
+        '<div class="meta">' +
+        (searching && MAJOR_PATH[e[0]]
+          ? '<span>' + esc(MAJOR_PATH[e[0]]) + '</span>' : "") +
+        '<span><b>' + fmt(e[1].grads) + '</b> خريج</span>' +
         '<span><b>' + fmt(e[1].emp) + '</b> متوظف</span>' +
         '<span>نسبة التوظيف <b>' + pct(e[1].emp, e[1].grads) + '</b></span></div></button>';
-    }).join("") : emptySearch(q, "qUni", lvl.label);
+    }).join("") : emptySearch(q, "qUni", "التخصصات الجامعية");
     wireEmptySearch("qUni", function () { paint(""); });
   }
   paint("");
@@ -1610,20 +1639,58 @@ function viewUniDetail(majorIdx) {
 /* ========================================================================= */
 /*  VIEW: vocational majors, browse and detail                               */
 /* ========================================================================= */
+/* The browse filters survive a visit to a specialization and back, the way
+   the supply page's do: coming back to a list you have narrowed and finding
+   it wide again is the kind of thing that makes people stop narrowing it. */
+var vocFilter = { track: "", region: "", q: "" };
+
 function viewVocBrowse() {
-  var rows = vocRows();
+  var rows = vocRows().filter(function (f) {
+    if (vocFilter.track && f.track !== vocFilter.track) return false;
+    if (vocFilter.region && (f.regionKey || f.region) !== vocFilter.region) return false;
+    return true;
+  });
   var entries = ranked(agg(rows, function (f) { return f.mi; }), state.measure);
+  var allEntries = ranked(agg(vocRows(), function (f) { return f.mi; }), state.measure);
+
+  /* The three the source records, named as the ministry names them. */
+  var TRACKS = [
+    ["technical college", "الكلية التقنية"],
+    ["strategy graduate", "معاهد الشراكات الاستراتيجية"],
+    ["International graduate", "الكليات التقنية العالمية"]
+  ];
+  var regions = [];
+  VOC.forEach(function (f) {
+    var k = f.regionKey || f.region;
+    if (k && regions.indexOf(k) === -1) regions.push(k);
+  });
+  regions.sort();
 
   document.getElementById("view").innerHTML =
     '<div class="browse-head">' +
-      '<input type="search" id="qVoc" placeholder="بحث في التخصصات المهنية…" autocomplete="off">' +
+      '<input type="search" id="qVoc" placeholder="بحث في التخصصات المهنية…" ' +
+        'autocomplete="off" value="' + esc(vocFilter.q) + '">' +
+      '<select id="vocTrack"><option value="">كل أنواع الجهات التعليمية</option>' +
+        TRACKS.map(function (t) {
+          return '<option value="' + esc(t[0]) + '"' +
+                 (vocFilter.track === t[0] ? ' selected' : '') + '>' + esc(t[1]) + '</option>';
+        }).join("") + '</select>' +
+      '<select id="vocRegion"><option value="">كل المناطق</option>' +
+        regions.map(function (n) {
+          return '<option value="' + esc(n) + '"' +
+                 (vocFilter.region === n ? ' selected' : '') + '>' + esc(n) + '</option>';
+        }).join("") + '</select>' +
       '<span class="result-count" id="cVoc"></span>' +
+      (vocFilter.track || vocFilter.region || vocFilter.q
+        ? '<button class="btn-reset" id="vocReset" style="margin-top:0">إعادة تعيين</button>' : "") +
     '</div>' + rbList('listVoc') + '';
 
   function paint(q) {
     var shown = entries.filter(function (e) {
       return !q || String(VD.major[e[0]]).indexOf(q) !== -1; });
-    document.getElementById("cVoc").textContent = fmt(shown.length) + " من " + fmt(entries.length);
+    document.getElementById("cVoc").textContent =
+      fmt(shown.length) + " من " + fmt(entries.length) +
+      (entries.length !== allEntries.length ? " · ضمن التصفية" : "");
     document.getElementById("listVoc").innerHTML = shown.length ? shown.map(function (e) {
       return '<button class="item" data-go="#voc/detail/' + e[0] + '">' +
         '<div class="name">' + esc(VD.major[e[0]]) + '</div>' +
@@ -1631,13 +1698,24 @@ function viewVocBrowse() {
         '<span><b>' + fmt(e[1].emp) + '</b> متوظف</span>' +
         '<span>نسبة التوظيف <b>' + pct(e[1].emp, e[1].grads) + '</b></span></div></button>';
     }).join("") : emptySearch(q, "qVoc", "التخصصات المهنية");
-    wireEmptySearch("qVoc", function () { paint(""); });
+    wireEmptySearch("qVoc", function () { vocFilter.q = ""; paint(""); });
   }
-  paint("");
+  paint(vocFilter.q);
   var t;
   document.getElementById("qVoc").addEventListener("input", function (e) {
     clearTimeout(t); var v = e.target.value.trim();
-    t = setTimeout(function () { paint(v); }, 160);
+    t = setTimeout(function () { vocFilter.q = v; paint(v); }, 160);
+  });
+  ["Track", "Region"].forEach(function (k) {
+    document.getElementById("voc" + k).addEventListener("change", function (e) {
+      vocFilter[k.toLowerCase()] = e.target.value;
+      viewVocBrowse();
+    });
+  });
+  var reset = document.getElementById("vocReset");
+  if (reset) reset.addEventListener("click", function () {
+    vocFilter = { track: "", region: "", q: "" };
+    viewVocBrowse();
   });
 }
 
