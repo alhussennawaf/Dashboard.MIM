@@ -630,6 +630,13 @@ thead th { position: sticky; top: 0; background: var(--mim-black-100); font-weig
 td.num { font-variant-numeric: tabular-nums; direction: ltr; }
 tbody tr { transition: background-color var(--dur-quick) var(--ease-out-quick); }
 tbody tr:hover { background: var(--mim-purple-50); }
+/* A sortable head is a control, so it looks and behaves like one. */
+th.sortable { cursor: pointer; user-select: none; white-space: nowrap;
+              transition: color var(--dur-quick) var(--ease-out-quick); }
+th.sortable:hover { color: var(--mim-purple); }
+th.sortable.is-sorted { color: var(--mim-purple); }
+th.sortable .arrow { font-size: 9px; margin-inline-start: 4px; }
+th.sortable:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: -2px; }
 tr.clickable { cursor: pointer; }
 tr.clickable:hover td:first-child { color: var(--mim-purple); font-weight: 600; }
 tr.clickable:active { background: var(--mim-purple-100); }
@@ -1556,6 +1563,21 @@ var JOBS = WF.rows.map(function (r) {
 var JOBS_BY_CODE = {};
 JOBS.forEach(function (j) { if (j.code) (JOBS_BY_CODE[j.code] = JOBS_BY_CODE[j.code] || []).push(j); });
 var SECTORS = L.sectors || [];
+
+/* أساسية عالية, أساسية متوسطة, أساسية داعمة عالية, أساسية داعمة متوسطة:
+   core before supporting, and high skill before medium inside each. */
+var CLASS_ORDER = [
+  ["أساسية", "مهارات عالية"],
+  ["أساسية", "مهارات متوسطة"],
+  ["أساسية داعمة", "مهارات عالية"],
+  ["أساسية داعمة", "مهارات متوسطة"]
+];
+function classIndex(j) {
+  for (var i = 0; i < CLASS_ORDER.length; i++) {
+    if (CLASS_ORDER[i][0] === j.critical && CLASS_ORDER[i][1] === j.skill) return i;
+  }
+  return CLASS_ORDER.length;
+}
 
 function jobTotals(list) {
   return list.reduce(function (a, j) {
@@ -2991,8 +3013,15 @@ function bandOf(rate) {
 var WF_NAMES = { outerName: "مجموع العمالة", innerName: "سعوديون",
                  ratioName: "نسبة التوطين" };
 
+/* The four figures worth ordering by. Anything else in the table is a name
+   or a list, which sorts to no purpose. */
+var WF_SORTABLE = [["total", "مجموع العمالة"], ["saudi", "سعوديون"],
+                   ["other", "غير سعوديين"], ["rate", "نسبة التوطين"]];
+
 function viewWorkforce() {
   var t = jobTotals(JOBS);
+  var wfSort = { key: "total", dir: "desc" };
+  var wfWhere = { critical: "", skill: "" };
   var zero = JOBS.filter(function (j) { return j.saudi === 0; });
   var full = JOBS.filter(function (j) { return j.total > 0 && j.saudi === j.total; });
   var unmatched = JOBS.filter(function (j) { return !j.code; })
@@ -3014,22 +3043,16 @@ function viewWorkforce() {
         sub: "Total workforce · " + fmt(JOBS.length) + " مهنة" },
       { cls: "is-voc", label: "العاملون السعوديون", value: t.saudi,
         sub: "Saudi · نسبة التوطين " + pct(t.saudi, t.total) },
-      { label: "فرص التوطين", value: t.other,
-        sub: "Non-Saudi · وظائف يشغلها غير سعوديون" },
+      { label: "عاملون غير سعوديون", value: t.other, sub: "Non-Saudi" },
       { label: "مهن بلا سعوديين", value: zero.length,
-        sub: fmt(jobTotals(zero).total) + " وظيفة بنسبة توطين صفر" },
-      { label: "مهن توطينها كامل", value: full.length,
-        sub: fmt(jobTotals(full).total) + " وظيفة بنسبة ١٠٠٪" },
-      { cls: "is-uni", label: "متوسط التوطين للمهنة",
-        raw: pct(JOBS.reduce(function (a, j) { return a + j.rate; }, 0), JOBS.length),
-        sub: "متوسط المهن لا الوظائف، غير مرجّح بالحجم" }
+        sub: fmt(jobTotals(zero).total) + " وظيفة يشغلها غير سعوديون" },
+      { label: "مهن يشغلها سعوديون", value: full.length,
+        sub: fmt(jobTotals(full).total) + " وظيفة" },
+      { cls: "is-uni", label: "نسبة التوطين", raw: pct(t.saudi, t.total),
+        sub: "Saudization · " + fmt(t.saudi) + " من " + fmt(t.total) }
     ]) +
     '<div class="grid">' +
-      chartCard("التوطين حسب فئة المهنة",
-        "الفئات الأربع كما وردت في المصدر · الشريط كامله مجموع العمالة والمملوء منه السعوديون",
-        "wBlock", "span6") +
-      chartCard("تقاطع الأهمية مع المهارة", "الفئات نفسها مفكوكة إلى بعديها",
-        "wCross", "span6") +
+      chartCard("التوطين حسب فئة المهنة", "", "wBlock", "span6") +
       chartCard("توزيع المهن حسب نسبة التوطين",
         "طول الشريط عدد الوظائف في الشريحة، وبين القوسين عدد المهن", "wBand", "span6") +
       chartCard("التوطين حسب القطاع الصناعي",
@@ -3042,46 +3065,90 @@ function viewWorkforce() {
       chartCard("التوطين حسب المجموعة الرئيسية", "تصنيف المهن الرئيسي",
         "wGroup", "span6", "tall") +
       card("جدول العاملين",
-        "كل المهن مرتبة تنازليًا حسب مجموع العمالة · اضغط صفًا لفتح صفحة المهنة",
-        '<div class="table-wrap"><table><thead><tr>' +
+        "صفّه بنوع المهنة ومستوى المهارة، ورتّبه بالضغط على رأس أي عمود · " +
+        "اضغط صفًا لفتح صفحة المهنة",
+        '<div class="browse-head" style="margin-bottom:10px">' +
+          '<select id="wfCritical"><option value="">كل الأنواع</option>' +
+            ["أساسية", "أساسية داعمة"].map(function (n) {
+              return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join("") +
+          '</select>' +
+          '<select id="wfSkill"><option value="">كل مستويات المهارة</option>' +
+            ["مهارات عالية", "مهارات متوسطة"].map(function (n) {
+              return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join("") +
+          '</select>' +
+          '<span class="result-count" id="wfCount"></span>' +
+        '</div>' +
+        '<div class="table-wrap"><table id="wfTable"><thead><tr>' +
           '<th>المهنة</th><th>الفئة</th><th>القطاعات</th>' +
-          '<th class="num">مجموع العمالة</th><th class="num">سعوديون</th>' +
-          '<th class="num">غير سعوديين</th><th class="num">نسبة التوطين</th>' +
-        '</tr></thead><tbody>' +
-        JOBS.slice().sort(function (a, b) { return b.total - a.total; })
-          .map(function (j) {
-            return '<tr' + (j.code ? ' class="clickable" data-go="#occ/' + esc(j.code) + '"' : "") + '>' +
-              '<td>' + esc(j.name) + '</td>' +
-              '<td>' + esc(j.critical + " · " + j.skill) + '</td>' +
-              '<td>' + esc((j.sectors || []).map(function (i) { return SECTORS[i]; })
-                            .join("، ") || "غير متوفر") + '</td>' +
-              '<td class="num">' + fmt(j.total) + '</td>' +
-              '<td class="num">' + fmt(j.saudi) + '</td>' +
-              '<td class="num">' + fmt(j.other) + '</td>' +
-              '<td class="num">' + pct(j.saudi, j.total) + '</td></tr>';
-          }).join("") + '</tbody></table></div>') +
+          WF_SORTABLE.map(function (c) {
+            return '<th class="num sortable" data-sort="' + c[0] + '">' +
+                   esc(c[1]) + '<span class="arrow"></span></th>';
+          }).join("") +
+        '</tr></thead><tbody id="wfRows"></tbody></table></div>') +
     '</div>';
   document.getElementById("view").innerHTML = html;
   wireExports("wf", exportWorkforce, workforceCardSpec);
 
-  barChart("wBlock", WF.blocks.map(function (b, i) {
-    var x = jobTotals(JOBS.filter(function (j) { return j.block === i; }));
-    return [b, x.total, x.saudi];
-  }), Object.assign({ labelWidth: 205, legendColor: C.voc }, WF_NAMES));
-
-  var cross = [];
-  ["مهارات عالية", "مهارات متوسطة"].forEach(function (sk) {
-    ["أساسية", "أساسية داعمة"].forEach(function (cr) {
-      var g = JOBS.filter(function (j) { return j.skill === sk && j.critical === cr; });
-      if (g.length) {
-        var x = jobTotals(g);
-        cross.push([cr + " · " + sk, x.total, x.saudi]);
-      }
+  function paintTable() {
+    var rows = JOBS.filter(function (j) {
+      if (wfWhere.critical && j.critical !== wfWhere.critical) return false;
+      if (wfWhere.skill && j.skill !== wfWhere.skill) return false;
+      return true;
+    }).sort(function (a, b) {
+      var d = a[wfSort.key] - b[wfSort.key];
+      return wfSort.dir === "desc" ? -d : d;
+    });
+    document.getElementById("wfCount").textContent =
+      fmt(rows.length) + " من " + fmt(JOBS.length) + " مهنة";
+    document.getElementById("wfRows").innerHTML = rows.map(function (j) {
+      return '<tr' + (j.code ? ' class="clickable" data-go="#occ/' + esc(j.code) + '"' : "") + '>' +
+        '<td>' + esc(j.name) + '</td>' +
+        '<td>' + esc(j.critical + " · " + j.skill) + '</td>' +
+        '<td>' + esc((j.sectors || []).map(function (i) { return SECTORS[i]; })
+                      .join("، ") || "غير متوفر") + '</td>' +
+        '<td class="num">' + fmt(j.total) + '</td>' +
+        '<td class="num">' + fmt(j.saudi) + '</td>' +
+        '<td class="num">' + fmt(j.other) + '</td>' +
+        '<td class="num">' + pct(j.saudi, j.total) + '</td></tr>';
+    }).join("") ||
+      '<tr><td colspan="7" class="empty">لا توجد مهنة بهذه التصفية.</td></tr>';
+    /* The arrow says which column is ordering the table and which way, so
+       the state is readable without clicking to find out. */
+    [].forEach.call(document.querySelectorAll("#wfTable th.sortable"), function (th) {
+      var on = th.getAttribute("data-sort") === wfSort.key;
+      th.classList.toggle("is-sorted", on);
+      th.querySelector(".arrow").textContent = on ? (wfSort.dir === "desc" ? "▼" : "▲") : "";
+      th.setAttribute("aria-sort", on ? (wfSort.dir === "desc" ? "descending" : "ascending") : "none");
+    });
+  }
+  paintTable();
+  ["Critical", "Skill"].forEach(function (k) {
+    document.getElementById("wf" + k).addEventListener("change", function (e) {
+      wfWhere[k.toLowerCase()] = e.target.value;
+      paintTable();
     });
   });
-  barChart("wCross", cross, Object.assign({ labelWidth: 215,
-    colorFn: function (e) { return e[0].indexOf("عالية") !== -1 ? C.uni : C.voc; },
-    legendColor: C.voc }, WF_NAMES));
+  [].forEach.call(document.querySelectorAll("#wfTable th.sortable"), function (th) {
+    th.addEventListener("click", function () {
+      var k = th.getAttribute("data-sort");
+      /* Clicking the column already in charge turns it round; clicking
+         another starts it at the useful end, which for all four is high
+         first. */
+      if (wfSort.key === k) wfSort.dir = wfSort.dir === "desc" ? "asc" : "desc";
+      else { wfSort.key = k; wfSort.dir = "desc"; }
+      paintTable();
+    });
+  });
+
+  /* Read top to bottom as the ministry reads them: the two core classes
+     first, then the two supporting ones, high skill before medium inside
+     each. barChart draws the last entry at the top, so the list is built
+     backwards. */
+  barChart("wBlock", CLASS_ORDER.slice().reverse().map(function (cls) {
+    var g = JOBS.filter(function (j) { return j.critical === cls[0] && j.skill === cls[1]; });
+    var x = jobTotals(g);
+    return [cls[0] + " · " + cls[1], x.total, x.saudi];
+  }), Object.assign({ labelWidth: 215, legendColor: C.voc }, WF_NAMES));
 
   barChart("wBand", RATE_BANDS.map(function (b, i) {
     var g = JOBS.filter(function (j) { return bandOf(j.rate) === i; });
@@ -3099,9 +3166,13 @@ function viewWorkforce() {
     .sort(function (a, b) { return a[1] - b[1]; });
   barChart("wSector", bySector, Object.assign({ labelWidth: 195, legendColor: C.voc }, WF_NAMES));
 
+  /* The class rides in the label: these fifteen come from all four, and
+     which one an occupation belongs to changes what its rate means. */
   barChart("wTop", JOBS.slice().sort(function (a, b) { return b.total - a.total; })
-    .slice(0, 15).reverse().map(function (j) { return [j.name, j.total, j.saudi]; }),
-    Object.assign({ labelWidth: 195, legendColor: C.voc }, WF_NAMES));
+    .slice(0, 15).reverse().map(function (j) {
+      return [j.name + "  (" + j.critical + " · " + j.skill + ")", j.total, j.saudi];
+    }),
+    Object.assign({ labelWidth: 290, legendColor: C.voc }, WF_NAMES));
 
   barChart("wGap", JOBS.slice().sort(function (a, b) { return b.other - a.other; })
     .slice(0, 15).reverse().map(function (j) {
