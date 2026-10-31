@@ -781,9 +781,9 @@ async function main() {
           detail.head.length > 0 && detail.gradient && headInk > 0.06,
           `head=${JSON.stringify(detail.head.slice(0, 30))} ink=${(headInk * 100).toFixed(1)}%`);
 
-    /* The skills chart. Its whole point is the comparison with the average,
-       so a chart drawn with one series would pass a "did it mount" check and
-       still be the wrong chart. */
+    /* The skills chart: one series over the five levels, no comparison and
+       no hover. The review asked for both to go, and a chart that quietly
+       grew a second series again would still pass a "did it mount" check. */
     const skills = await page.evaluate(() => {
       const el = document.getElementById('occSkillLv');
       if (!el) return { missing: true };
@@ -795,12 +795,17 @@ async function main() {
         canvas: !!el.querySelector('canvas'),
         series: opt ? opt.series.length : 0,
         bars: opt ? opt.series[0].data.length : 0,
-        categories: opt ? opt.xAxis[0].data.length : 0
+        categories: opt ? opt.xAxis[0].data.length : 0,
+        /* ECharts keeps a tooltip entry whether or not one was asked for,
+           so what is asserted is that it was never switched on. */
+        tooltip: opt && opt.tooltip ? opt.tooltip.some(t => t && t.show !== false &&
+                 (t.trigger === 'axis' || t.trigger === 'item')) : false
       };
     });
-    check('the occupation page draws its skill levels against the average',
+    check('the occupation page draws its skill levels, alone and without hover',
           !skills.missing && skills.canvas && skills.w > 200 && skills.h > 100 &&
-          skills.series === 2 && skills.bars === 5 && skills.categories === 5,
+          skills.series === 1 && skills.bars === 5 && skills.categories === 5 &&
+          !skills.tooltip,
           JSON.stringify(skills));
 
     /* The shape. Its axes are not fixed: an occupation the workforce sheet
