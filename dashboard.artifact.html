@@ -2339,6 +2339,13 @@ function describe(rec, tree, specIdx, skipKpis) {
             '<p class="hint" style="margin-top:9px">المعلّمة بـ ✓ تطابق تخصصًا في بيانات خريجي الجامعات مطابقة حرفية.</p>'
           : '<p class="empty">غير متوفرة.</p>'), "span6") +
 
+      (specIdx === undefined
+        ? chartCard("بصمة المهنة",
+            "ستة مقاييس مقابل المهنة الوسيطة · القيمة الخام عند كل رأس · " +
+            "المساحة لا تعني شيئًا، فترتيب المحاور وحده يغيّرها",
+            "occShape", "span6", "tall")
+        : "") +
+
       card("المهارات المطلوبة",
         "المستوى من 5 كما ورد في جدول المهن · الرسم يقارن توزيعها بمتوسط المهن",
         '<div class="chart short" id="' + skillChartId + '" role="img" aria-label="' +
@@ -2529,6 +2536,117 @@ function drawSkillLevels(id, rec) {
   });
 }
 
+/* --------------------------- the job's shape ----------------------------
+   Six measures of one occupation, each against the occupation in the middle
+   of the field. A radar is only good for one thing, recognising a shape at a
+   glance, and it is bad at everything else: its area is meaningless, since
+   reordering the axes changes it while the numbers stay put. So the raw
+   value is written at every vertex and the chart is never the only place a
+   figure appears.
+
+   Two of the six needed work before they were worth an axis.
+
+   Employment size is a long tail: the largest occupation holds 5,484 of the
+   172,229 jobs, so dividing by the maximum pins almost every occupation to
+   the centre and the axis says nothing. It is drawn as a percentile instead,
+   which spreads the field, with the headcount itself at the vertex.
+
+   And an occupation the workforce sheet does not carry has no Saudization
+   and no size. Those two axes are dropped rather than drawn at zero: a
+   collapsed shape reads as a weak job, when what it means is a missing row. */
+var WORK_RANK = (function () {
+  var sorted = JOBS.map(function (j) { return j.total; })
+                   .sort(function (a, b) { return a - b; });
+  return function (total) {
+    if (!sorted.length) return 0;
+    var below = 0;
+    while (below < sorted.length && sorted[below] < total) below++;
+    return below / sorted.length * 100;
+  };
+})();
+
+function occupationShape(rec) {
+  var w = workforceOf(rec);
+  var tech = rec.skills.technical.filter(function (s) { return s[1]; });
+  var axes = [
+    { name: "المستوى التقني",
+      raw: tech.length
+        ? (tech.reduce(function (a, s) { return a + s[1]; }, 0) / tech.length).toFixed(1) + " من ٥"
+        : "غير متوفر",
+      pct: tech.length
+        ? tech.reduce(function (a, s) { return a + s[1]; }, 0) / tech.length / 5 * 100 : 0 },
+    { name: "عدد المهارات", raw: fmt(skillLevels(rec).reduce(function (a, n) { return a + n; }, 0)),
+      pct: skillLevels(rec).reduce(function (a, n) { return a + n; }, 0) /
+           OCC.reduce(function (a, r) {
+             return Math.max(a, skillLevels(r).reduce(function (x, n) { return x + n; }, 0)); }, 1) * 100 },
+    { name: "القطاعات", raw: fmt(rec.sectors.length), pct: rec.sectors.length / 13 * 100 },
+    { name: "الإطار الوطني",
+      raw: rec.nqfLevel === null || rec.nqfLevel === undefined ? UNCLASSIFIED : rec.nqfLevel,
+      pct: (rec.nqfLevel || 0) / 6 * 100 }
+  ];
+  if (w) {
+    axes.push({ name: "نسبة التوطين", raw: pct(w.saudi, w.total), pct: w.rate * 100 });
+    axes.push({ name: "حجم العمالة", raw: fmt(w.total) + " وظيفة", pct: WORK_RANK(w.total) });
+  }
+  return { axes: axes, hasWork: !!w };
+}
+
+/* The occupation in the middle of the field, so a shape has something to be
+   a shape against. */
+var MEDIAN_SHAPE = (function () {
+  function mid(v) { v = v.slice().sort(function (a, b) { return a - b; }); return v[Math.floor(v.length / 2)]; }
+  var all = jobTotals(JOBS);
+  return {
+    tech: mid(OCC.map(function (r) {
+      var t = r.skills.technical.filter(function (s) { return s[1]; });
+      return t.length ? t.reduce(function (a, s) { return a + s[1]; }, 0) / t.length : 0;
+    })) / 5 * 100,
+    skills: mid(OCC.map(function (r) {
+      return skillLevels(r).reduce(function (a, n) { return a + n; }, 0); })) /
+      OCC.reduce(function (a, r) {
+        return Math.max(a, skillLevels(r).reduce(function (x, n) { return x + n; }, 0)); }, 1) * 100,
+    sectors: mid(OCC.map(function (r) { return r.sectors.length; })) / 13 * 100,
+    nqf: mid(OCC.map(function (r) { return r.nqfLevel || 0; })) / 6 * 100,
+    rate: all.total ? all.saudi / all.total * 100 : 0,
+    work: 50
+  };
+})();
+
+function drawOccShape(id, rec) {
+  if (!document.getElementById(id)) return;
+  var c = mount(id); if (!c) return;
+  var sh = occupationShape(rec);
+  var median = [MEDIAN_SHAPE.tech, MEDIAN_SHAPE.skills, MEDIAN_SHAPE.sectors, MEDIAN_SHAPE.nqf];
+  if (sh.hasWork) median = median.concat([MEDIAN_SHAPE.rate, MEDIAN_SHAPE.work]);
+  c.setOption({
+    textStyle: baseText(),
+    legend: { top: 0, right: 2, left: 2, icon: "roundRect", itemWidth: 13, itemHeight: 9,
+              textStyle: { color: C.muted, fontFamily: FONT, fontSize: 12 } },
+    tooltip: tip({}),
+    radar: {
+      center: ["50%", "57%"], radius: "60%",
+      indicator: sh.axes.map(function (a) { return { name: a.name + "\n" + a.raw, max: 100 }; }),
+      axisName: { color: C.ink, fontFamily: FONT, fontSize: 11.5, lineHeight: 15 },
+      splitLine: { lineStyle: { color: C.grid } },
+      splitArea: { areaStyle: { color: ["#FFFFFF", "#FAFAFA"] } },
+      axisLine: { lineStyle: { color: C.grid } }
+    },
+    series: [{
+      type: "radar", symbolSize: 4,
+      data: [
+        { value: median, name: "المهنة الوسيطة",
+          lineStyle: { color: C.neutral, width: 1, type: "dashed" },
+          itemStyle: { color: C.neutral },
+          areaStyle: { color: "rgba(179,179,179,.16)" } },
+        { value: sh.axes.map(function (a) { return +a.pct.toFixed(1); }),
+          name: rec.specAr || rec.ar,
+          lineStyle: { color: C.voc, width: 2 }, itemStyle: { color: C.voc },
+          areaStyle: { color: "rgba(65,50,88,.22)" } }
+      ]
+    }]
+  });
+}
+
 function skillBlock(title, entries) {
   if (!entries.length) return "";
   return '<h4 class="subhead">' + esc(title) + '</h4>' +
@@ -2597,6 +2715,7 @@ function viewOccDetail(code) {
               function () { return occupationCardSpec(o, t); });
   drawWorkforceCharts(o);
   drawSkillLevels("occSkillLv", o);
+  drawOccShape("occShape", o);
 }
 
 /* A specialization opens over its occupation rather than replacing it, so the

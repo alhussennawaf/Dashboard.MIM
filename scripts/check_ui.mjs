@@ -803,6 +803,29 @@ async function main() {
           skills.series === 2 && skills.bars === 5 && skills.categories === 5,
           JSON.stringify(skills));
 
+    /* The shape. Its axes are not fixed: an occupation the workforce sheet
+       does not carry drops the two axes it has no data for rather than
+       drawing them at zero, so the count is 6 or 4 and never anything else. */
+    const shape = await page.evaluate(() => {
+      const el = document.getElementById('occShape');
+      if (!el) return { missing: true };
+      const inst = window.echarts && echarts.getInstanceByDom(el);
+      const opt = inst && inst.getOption();
+      return {
+        canvas: !!el.querySelector('canvas'),
+        w: Math.round(el.getBoundingClientRect().width),
+        axes: opt ? opt.radar[0].indicator.length : 0,
+        series: opt ? opt.series[0].data.length : 0,
+        /* Every vertex carries its raw value, because the shape alone is
+           not a reading. */
+        labelled: opt ? opt.radar[0].indicator.every(i => /\n/.test(i.name)) : false
+      };
+    });
+    check('the occupation page draws its shape against the median',
+          !shape.missing && shape.canvas && shape.w > 200 &&
+          (shape.axes === 6 || shape.axes === 4) && shape.series === 2 && shape.labelled,
+          JSON.stringify(shape));
+
     const spec = page.locator('.specitem').first();
     if (await spec.count()) {
       /* This tile sits inside a React Bits GlareHover, whose sweep is a
