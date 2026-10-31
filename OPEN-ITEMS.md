@@ -18,9 +18,10 @@ otherwise, and they are not re-litigated at the start of every session.
   the `[–—-]` character class in `parse_sources.py`, which splits the
   ministry's own strings, and four inside the vendored ECharts build, which
   reappear in the two inlined pages.
-* **The localisation figure is «فرص التوطين», not «فجوة التوطين»**, and every
-  tile showing it keeps «وظائف يشغلها غير سعوديون» underneath, because the
-  name alone reads as vacancies and these posts are filled.
+* **The localisation figure is «عاملون غير سعوديون».** It was «فجوة
+  التوطين», then «فرص التوطين» for a few hours on 2026-10-31, and the review
+  round settled it on the literal name. The sub-line that used to explain
+  «فرص» is gone with it: the label no longer needs one.
 * **Every view that exports a CSV also exports a card**, in both shapes:
   portrait to send, 16:9 for a slide. The single-region portrait card carries
   two charts (the medium of the three lengths that were offered).
@@ -35,11 +36,9 @@ otherwise, and they are not re-litigated at the start of every session.
 
 ## 2. Waiting on a person
 
-* **Three commits are merged into nothing yet.** `claude/upbeat-maxwell-dthuip`
-  is ahead of the default branch by: the contact address and this file
-  (`08ffe22`), the occupation shape hexagon (`fe8350a`), and the source-totals
-  note (`047f0ff`). All three pass 99/99 checks. Merging them also means
-  republishing the artifact, which is currently a version behind.
+* Nothing is waiting to be merged. The default branch carries everything
+  through the review round of 2026-10-31 (`ca5eab2`), and the artifact is
+  republished to match.
 * **Five merged branches need deleting.** `labour-market`, `redesign`,
   `design-polish`, `claude/modest-cray-2b2sgd`, and
   `claude/upbeat-maxwell-dthuip` once the three commits above are in. All are
@@ -159,7 +158,7 @@ one self-contained page, rebuilt by `scripts/build_artifact.py` and published
 to that same URL. It is **private** until shared from its own Share menu. Its
 export buttons work through a bridge that `build_artifact.py` appends: the
 viewer never lets a framed page save a file, so without it every export would
-silently do nothing. It is currently one version behind the branch.
+silently do nothing.
 
 ---
 
