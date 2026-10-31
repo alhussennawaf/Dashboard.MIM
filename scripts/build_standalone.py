@@ -61,7 +61,7 @@ def main():
     html, n_foot = re.subn(r'\s*<nav class="footlinks".*?</nav>', "", html, flags=re.S)
     # The notice has no nested <div>, so its own closing tag is the first one
     # after it. An earlier version matched "</div>\s*</div>" and swallowed a
-    # quarter of the file before finding a pair — hence the size check below.
+    # quarter of the file before finding a pair, hence the size check below.
     html, n_note = re.subn(r'\s*<div class="notice" id="privacyNotice".*?</div>',
                            "", html, flags=re.S)
     if (n_foot, n_note) != (1, 1):
@@ -69,7 +69,7 @@ def main():
                  f"found {n_foot} and {n_note}")
 
     # Fonts are referenced from inside the inlined CSS as url(fonts/NAME.woff2),
-    # which none of the checks below would catch — the standalone file would
+    # which none of the checks below would catch: the standalone file would
     # simply travel with every @font-face pointing at nothing, and silently
     # fall back to Times New Roman, which is the thing self-hosting them was
     # meant to stop. They are folded in here as data URIs.
@@ -104,13 +104,13 @@ def main():
 
     # Inlining only ever grows the file. If the result is smaller than the
     # sources it was built from, something was stripped that should not have
-    # been — which is exactly how a regex that over-matched went unnoticed.
+    # been, which is exactly how a regex that over-matched went unnoticed.
     floor = SRC.stat().st_size + sum(
         (ROOT / r).stat().st_size for r in
         ("assets/echarts.min.js", "assets/reactbits.js", "data/dashboard-data.js"))
     if len(html.encode("utf-8")) < floor * 0.98:
         sys.exit(f"output is {len(html.encode('utf-8')):,} bytes but its sources "
-                 f"alone are {floor:,} — stripping removed too much")
+                 f"alone are {floor:,}: stripping removed too much")
 
     OUT.write_text(html, encoding="utf-8")
     print(f"inlined {n_js} script(s), {n_css} stylesheet(s), "

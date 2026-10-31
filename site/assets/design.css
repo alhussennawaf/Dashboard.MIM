@@ -1,11 +1,11 @@
 /* ============================================================================
-   Design system — everything that is a decision but not a brand value.
+   Design system: everything that is a decision but not a brand value.
    ----------------------------------------------------------------------------
    assets/brand.css holds what the MIM guidelines set: the palette, and which
    typefaces the identity names. It stays the source of truth for those and
    nothing here overrides it.
 
-   This file holds the rest of the system — the faces that make the named
+   This file holds the rest of the system: the faces that make the named
    fallbacks real, and the scales for motion, radius, elevation and layering
    that were previously ad-hoc values retyped at each call site.
    ========================================================================== */
@@ -16,15 +16,15 @@
    The brand names Lyon Arabic and Diodrum Arabic. Both are licensed commercial
    faces that are not redistributed with this repository, so in practice almost
    every visitor fell through to the end of the stack and read the dashboard in
-   Times New Roman and Tahoma — which is not a typographic choice anyone made.
+   Times New Roman and Tahoma, which is not a typographic choice anyone made.
 
    The two faces below are the openly-licensed stand-ins, self-hosted so that
    the fallback is a decision rather than a guess about what a visitor happens
    to have installed:
 
-     Noto Naskh Arabic      — already named in the brand's primary stack.
+     Noto Naskh Arabic:      already named in the brand's primary stack.
                               Headings and figures.
-     IBM Plex Sans Arabic   — a humanist Arabic sans, much closer to Diodrum's
+     IBM Plex Sans Arabic:   a humanist Arabic sans, much closer to Diodrum's
                               proportions than Tahoma is. Body and interface.
 
    Both sit AFTER the licensed faces in every stack, so a machine with Lyon or
@@ -61,7 +61,7 @@
                  U+FE70-FE74, U+FE76-FEFC;
 }
 /* Latin. The English sub-labels, the source filenames, and every figure on the
-   page — the digits are Latin even where the sentence around them is not. */
+   page: the digits are Latin even where the sentence around them is not. */
 @font-face {
   font-family: "IBM Plex Sans Arabic";
   font-style: normal; font-weight: 400; font-display: swap;
@@ -131,7 +131,7 @@
      ---------------------------------------------------------------------- */
   --ease-out-soft:  cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out-quick: cubic-bezier(0.22, 0.61, 0.36, 1);
-  /* Press. Shorter and flatter — a button going down should feel immediate
+  /* Press. Shorter and flatter, because a button going down should feel immediate
      and the release should not bounce, which on a ministry page reads as a
      glitch rather than as personality. */
   --ease-press:     cubic-bezier(0.4, 0, 0.2, 1);
@@ -144,7 +144,7 @@
   /* -------------------------------------------------------------------------
      Radius
 
-     The identity is square-shouldered — worked metal, not soft plastic — so
+     The identity is square-shouldered (worked metal, not soft plastic), so
      this is a tight scale, not a squircle system. What matters is that it is
      a scale at all: the page had 2px, 3px, 0 and 999px scattered by hand,
      and inner elements were not stepping down from their containers.
@@ -191,7 +191,7 @@
 
      A line of Arabic text stops being readable past roughly the same length a
      line of Latin does. The dashboard's main column is deliberately very wide
-     — charts want the room — so prose inside it has to be constrained on its
+     (charts want the room), so prose inside it has to be constrained on its
      own rather than inheriting the container.
      ---------------------------------------------------------------------- */
   --measure: 74ch;
@@ -200,7 +200,7 @@
 /* ---------------------------------------------------------------------------
    Grain
 
-   A fixed, unhittable film over the whole viewport at 3.5% — enough to keep
+   A fixed, unhittable film over the whole viewport at 3.5%, enough to keep
    large flat fields from reading as dead vector, not enough to be visible as
    texture. Monochrome, so it introduces no colour of its own.
 

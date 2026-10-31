@@ -519,7 +519,7 @@ def parse_workforce(report, occupations):
 
     Joined to the master list by occupation name, because the sheet carries no
     occupation code. Names that do not match are kept and reported rather than
-    dropped — an unmatched row is a real occupation whose employment we hold
+    dropped: an unmatched row is a real occupation whose employment we hold
     and whose description we do not.
     """
     _, body = sheet_rows(WORKFORCE_XLSX, "Sheet1", header_row=2)

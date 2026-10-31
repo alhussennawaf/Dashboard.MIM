@@ -120,7 +120,7 @@ def main():
     src_2025 = sum(int(r["M"]) for r in body if r.get("M") and r.get("A") == "2025")
     # The payload declares any EducationLevel the project owner corrected. Apply
     # the same declaration to this independent read, so the check still compares
-    # like with like — and an UNdeclared divergence still fails.
+    # like with like, and an UNdeclared divergence still fails.
     corrections = payload["nqf"].get("corrections", [])
 
     def level_of(r):

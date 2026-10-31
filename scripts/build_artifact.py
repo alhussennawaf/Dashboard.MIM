@@ -14,7 +14,7 @@ Nothing about the design changes: the brand palette, layout and copy are the
 reviewed dashboard exactly as it ships in index.html.
 
 One behaviour is added, and only here: the exports. The dashboard hands a file
-over the way the web does — an <a download> pointing at a blob — and the
+over the way the web does, with an <a download> pointing at a blob, and the
 Artifact viewer never grants a framed page that permission, so in a published
 artifact every export button would silently do nothing. The bridge below
 routes those same clicks through the viewer's own save, which asks the person
@@ -96,7 +96,7 @@ DOWNLOAD_BRIDGE = """<script>
 
 def main():
     if not SRC.exists():
-        sys.exit(f"missing {SRC} — run scripts/build_standalone.py first")
+        sys.exit(f"missing {SRC}: run scripts/build_standalone.py first")
     html = SRC.read_text(encoding="utf-8")
 
     # Split on positions, not a non-greedy regex: the inlined ECharts source

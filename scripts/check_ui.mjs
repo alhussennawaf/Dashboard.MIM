@@ -34,7 +34,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
  * which quietly changes the rules: a null origin fails CORS, so every
  * @font-face is blocked and the whole page renders in the fallback stack.
  * Checking the typography of a page whose fonts cannot load is checking
- * nothing. The repository already knows this — it ships its data as .js
+ * nothing. The repository already knows this: it ships its data as .js
  * rather than .json for the same reason.
  *
  * So: a static server over the repository root, which is what Cloudflare
@@ -77,12 +77,12 @@ function check(name, ok, detail) {
 }
 
 /* Click something, and report a FAIL rather than throwing if it cannot be
- * clicked. An overlay swallowing a button is a finding, not a crash — and a
+ * clicked. An overlay swallowing a button is a finding, not a crash, and a
  * crash here would take the whole run down with it and hide everything after,
  * which is exactly what happened the first time an overlay did swallow one.
  * The element is centred first: the section bar is sticky, and something
  * parked under it is intercepted for a reason that is not a bug. Never pass
- * `force` — interception is the signal this is looking for. */
+ * `force`: interception is the signal this is looking for. */
 async function clickOrFail(name, locator, timeout = 6000) {
   try {
     await locator.evaluate(e => e.scrollIntoView({ block: 'center' }));
@@ -125,7 +125,7 @@ async function openPage(browser, opts = {}) {
  *
  * `inset` trims the edges first, and it is not optional tidying. A pill's own
  * anti-aliased border and rounded corners read as ink against the band behind
- * it — enough of it that the first version of this check scored a completely
+ * it, enough of it that the first version of this check scored a completely
  * blank pill at 2.01% and waved it through. Only the interior says whether
  * anything was written there. */
 async function inkFraction(page, locator, inset = 0) {
@@ -166,12 +166,12 @@ async function main() {
   const browser = await chromium.launch(launchOptions);
 
   /* ---------------------------------------------------------------------
-     SECTION NAVIGATION — clicked, not routed
+     SECTION NAVIGATION: clicked, not routed
      --------------------------------------------------------------------- */
   console.log('\nSECTION NAVIGATION  (real clicks, bar sticky)');
   {
     const page = await openPage(browser);
-    /* Scrolled, so the bar is pinned — which is how it is used and how the
+    /* Scrolled, so the bar is pinned, which is how it is used and how the
        blob's stacking is actually exercised. */
     await page.evaluate(() => window.scrollTo(0, 700));
     await page.waitForTimeout(300);
@@ -206,7 +206,7 @@ async function main() {
 
       /* The bug: the blob painted over the item and the label vanished, so the
          open section was a flat rectangle. Hit-testing alone would have missed
-         it — the label was still the topmost node, it just was not drawn. */
+         it: the label was still the topmost node, it just was not drawn. */
       check(`section ${i + 1} (${state.hash || '#overview'}) keeps its label visible`,
             ink > 0.04 && !state.covered && state.label.length > 0,
             `label=${JSON.stringify(state.label)} ink=${(ink * 100).toFixed(1)}% ` +
@@ -226,7 +226,7 @@ async function main() {
   }
 
   /* ---------------------------------------------------------------------
-     TYPOGRAPHY — the self-hosted faces actually arrived
+     TYPOGRAPHY: the self-hosted faces actually arrived
      --------------------------------------------------------------------- */
   console.log('\nTYPOGRAPHY');
   {
@@ -263,7 +263,7 @@ async function main() {
   }
 
   /* ---------------------------------------------------------------------
-     STATES — press feedback, and the skeleton that precedes the first paint
+     STATES: press feedback, and the skeleton that precedes the first paint
      --------------------------------------------------------------------- */
   console.log('\nSTATES');
   {
@@ -323,7 +323,7 @@ async function main() {
   }
 
   /* ---------------------------------------------------------------------
-     REGIONS — read the map, open one, compare from inside it
+     REGIONS: read the map, open one, compare from inside it
      --------------------------------------------------------------------- */
   console.log('\nREGIONS');
   {
@@ -392,7 +392,7 @@ async function main() {
           JSON.stringify(one));
 
     /* The compare picker is the whole point of the window, and it starts
-       hidden — a button that toggles nothing would leave the page looking
+       hidden, and a button that toggles nothing would leave the page looking
        finished. */
     const hiddenFirst = await page.evaluate(() =>
       document.getElementById('rgPicker').hidden);
@@ -523,7 +523,7 @@ async function main() {
   }
 
   /* ---------------------------------------------------------------------
-     EXPORT CARDS — every exporting view hands over a real PNG
+     EXPORT CARDS: every exporting view hands over a real PNG
      --------------------------------------------------------------------- */
   console.log('\nEXPORT CARDS');
   {
@@ -644,7 +644,7 @@ async function main() {
   }
 
   /* ---------------------------------------------------------------------
-     CHARTS — the reveal wrapper must not cost them their width
+     CHARTS: the reveal wrapper must not cost them their width
      --------------------------------------------------------------------- */
   console.log('\nCHARTS AND LAYOUT');
   {
@@ -673,7 +673,7 @@ async function main() {
   }
 
   /* ---------------------------------------------------------------------
-     FILTERS, SEARCH, THE SPECIALIZATION WINDOW — all by click
+     FILTERS, SEARCH, THE SPECIALIZATION WINDOW: all by click
      --------------------------------------------------------------------- */
   console.log('\nINTERACTION');
   {
@@ -709,7 +709,7 @@ async function main() {
       gradient: !!document.querySelector('.detail-head .animated-gradient-text')
     }));
     /* A gradient heading is painted through the glyphs, so an unresolved
-       colour leaves it transparent — present in the DOM, and invisible.
+       colour leaves it transparent: present in the DOM, and invisible.
        Measured on the run of text itself rather than the heading block: the
        block is mostly empty gutter, which would dilute a short title's ink
        below any threshold worth setting. */
@@ -750,7 +750,7 @@ async function main() {
   }
 
   /* ---------------------------------------------------------------------
-     REDUCED MOTION — the finished state, not a frozen first frame
+     REDUCED MOTION: the finished state, not a frozen first frame
      --------------------------------------------------------------------- */
   console.log('\nREDUCED MOTION');
   {
@@ -772,7 +772,7 @@ async function main() {
   }
 
   /* ---------------------------------------------------------------------
-     BUNDLE BLOCKED — the dashboard as it was before this layer existed
+     BUNDLE BLOCKED: the dashboard as it was before this layer existed
      --------------------------------------------------------------------- */
   console.log('\nBUNDLE BLOCKED');
   {
