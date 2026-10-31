@@ -2295,7 +2295,7 @@ function describe(rec, tree, specIdx, skipKpis) {
             sub: "Total workforce · " + esc(w.job.critical + " · " + w.job.skill) },
           { cls: "is-voc", label: "العاملون السعوديون", value: w.saudi,
             sub: "Saudi · نسبة التوطين " + pct(w.saudi, w.total) },
-          { label: "فجوة التوطين", value: w.other,
+          { label: "فرص التوطين", value: w.other,
             sub: "وظائف يشغلها غير سعوديون" },
           { cls: "is-uni", label: "نسبة التوطين", raw: pct(w.saudi, w.total),
             sub: vs || ("متوسط المهن جميعًا " + pct(jobTotals(JOBS).saudi, jobTotals(JOBS).total)) }
@@ -2304,8 +2304,8 @@ function describe(rec, tree, specIdx, skipKpis) {
           chartCard("نسبة التوطين مقارنةً بمحيطها",
             "المهنة مقابل متوسط قطاعاتها ومقابل جميع المهن · بالنسبة لا بالعدد",
             "occWf", "span6") +
-          chartCard("ترتيب المهنة بين أكبر فجوات التوطين",
-            "أعلى عشر فجوات، والمهنة الحالية مُبرزة", "occWfRank", "span6") +
+          chartCard("ترتيب المهنة بين أكبر فرص التوطين",
+            "أعلى عشر فرص، والمهنة الحالية مُبرزة", "occWfRank", "span6") +
         '</div>';
     })()) +
 
@@ -2731,8 +2731,8 @@ function viewWorkforce() {
         sub: "Total workforce · " + fmt(JOBS.length) + " مهنة" },
       { cls: "is-voc", label: "العاملون السعوديون", value: t.saudi,
         sub: "Saudi · نسبة التوطين " + pct(t.saudi, t.total) },
-      { label: "وظائف يشغلها غير سعوديين", value: t.other,
-        sub: "Non-Saudi · حجم فرصة التوطين" },
+      { label: "فرص التوطين", value: t.other,
+        sub: "Non-Saudi · وظائف يشغلها غير سعوديون" },
       { label: "مهن بلا سعوديين", value: zero.length,
         sub: fmt(jobTotals(zero).total) + " وظيفة بنسبة توطين صفر" },
       { label: "مهن توطينها كامل", value: full.length,
@@ -2752,7 +2752,7 @@ function viewWorkforce() {
       chartCard("التوطين حسب القطاع الصناعي",
         "المهنة الواحدة قد تخدم أكثر من قطاع فتُحتسب في كلٍّ منها", "wSector", "span6", "tall") +
       chartCard("أكبر المهن توظيفًا", "بترتيب مجموع العمالة", "wTop", "span6", "tall") +
-      chartCard("أكبر فجوات التوطين",
+      chartCard("أكبر فرص التوطين",
         "بترتيب عدد الوظائف التي يشغلها غير سعوديين", "wGap", "span6", "tall") +
       chartCard("التوطين حسب مستوى المؤهل المطلوب",
         "المستوى بحسب التصنيف السعودي للمهن، من قائمة المهن المعتمدة", "wIsced", "span6") +
@@ -2994,7 +2994,7 @@ function viewSupplyDemand() {
       kpiHtml([
         { label: "الطلب — إجمالي العاملين", value: t.total,
           sub: fmt(rows.length) + " مهنة ضمن التصفية" },
-        { label: "فجوة التوطين", value: t.other,
+        { label: "فرص التوطين", value: t.other,
           sub: "وظائف يشغلها غير سعوديين · " + pct(t.saudi, t.total) + " نسبة التوطين" },
         { cls: "is-uni", label: "العرض — الخريجون المرتبطون", value: supplyTotal,
           sub: fmt(union.majors) + " تخصصًا مميزًا · محسوب مرة واحدة دون تكرار" },
@@ -3002,7 +3002,7 @@ function viewSupplyDemand() {
           sub: fmt(noSupply.length) + " مهنة بلا تخصص مرتبط" },
         { cls: "is-voc", label: "خريجون لكل وظيفة غير مشغولة بسعودي",
           raw: gapCovered ? (supplyTotal / gapCovered).toFixed(2) : "غير متوفر",
-          sub: "عرض بلا تكرار ÷ فجوة المهن المرتبطة" },
+          sub: "عرض بلا تكرار ÷ فرص المهن المرتبطة" },
         { label: "الطلب المغطّى بالربط", value: demandCovered,
           sub: pct(demandCovered, t.total) + " من وظائف التصفية" }
       ]) +
@@ -3010,17 +3010,17 @@ function viewSupplyDemand() {
         chartCard("العرض مقابل الطلب في أكبر المهن",
           "الشريط الكامل مجموع العمالة والمملوء منه السعوديون · الرقم المقابل خريجو التخصصات المرتبطة",
           "sdcTop", "span12", "tall") +
-        chartCard("فجوة التوطين مقابل العرض السنوي", "المهن المرتبطة فقط", "sdcGap", "span6", "tall") +
+        chartCard("فرص التوطين مقابل العرض السنوي", "المهن المرتبطة فقط", "sdcGap", "span6", "tall") +
         chartCard("العرض والطلب حسب القطاع", "مجموع كل قطاع ضمن التصفية", "sdcSector", "span6", "tall") +
         card("جدول العرض والطلب",
-          "مرتب تنازليًا حسب فجوة التوطين · «غير مرتبط» تعني أن مجال المهنة التعليمي " +
+          "مرتب تنازليًا حسب فرص التوطين · «غير مرتبط» تعني أن مجال المهنة التعليمي " +
           "لا يقابله تخصص جامعي بالاسم نفسه · عمود العرض هو حوض الخريجين الذي تسحب منه " +
           "المهنة، وقد تتشارك فيه عدة مهن فلا يصح جمعه عموديًا",
           '<div class="table-wrap"><table><thead><tr>' +
             '<th>المهنة</th><th>المؤهل المطلوب</th>' +
             '<th class="num">العاملون</th><th class="num">سعوديون</th>' +
-            '<th class="num">الفجوة</th><th class="num">نسبة التوطين</th>' +
-            '<th class="num">العرض (خريجون)</th><th class="num">خريج لكل فجوة</th>' +
+            '<th class="num">فرص التوطين</th><th class="num">نسبة التوطين</th>' +
+            '<th class="num">العرض (خريجون)</th><th class="num">خريج لكل فرصة</th>' +
           '</tr></thead><tbody>' +
           rows.slice().sort(function (a, b) { return b.other - a.other; }).map(function (j) {
             var sp = j.occ ? supplyFor(j.occ) : null;
@@ -3050,8 +3050,8 @@ function viewSupplyDemand() {
           return [x.j.name, x.sp.grads, x.j.other];
         }), { labelWidth: 210, labelRoom: 80, legendColor: C.uni,
               colorFn: function () { return C.uni; },
-              outerName: "الخريجون المرتبطون", innerName: "فجوة التوطين",
-              ratioName: "الفجوة كنسبة من العرض" });
+              outerName: "الخريجون المرتبطون", innerName: "فرص التوطين",
+              ratioName: "الفرص كنسبة من العرض" });
     } else {
       ["sdcTop", "sdcGap"].forEach(function (id) {
         var n = document.getElementById(id);
@@ -3069,8 +3069,8 @@ function viewSupplyDemand() {
     if (sec.length) {
       barChart("sdcSector", sec, { labelWidth: 175, labelRoom: 80, legendColor: C.uni,
         colorFn: function () { return C.uni; },
-        outerName: "فجوة التوطين", innerName: "الخريجون المرتبطون",
-        ratioName: "تغطية العرض للفجوة" });
+        outerName: "فرص التوطين", innerName: "الخريجون المرتبطون",
+        ratioName: "تغطية العرض للفرص" });
     }
     if (ui()) ui().hydrate(document.getElementById("view"));
   }
@@ -3745,7 +3745,7 @@ function occupationCardSpec(rec, tree) {
     spec.kpis = [
       { label: "العاملون السعوديون", value: w.saudi, accent: T.purple,
         sub: "Saudi · " + rec.type },
-      { label: "فجوة التوطين", value: w.other, sub: "وظائف يشغلها غير سعوديين" },
+      { label: "فرص التوطين", value: w.other, sub: "وظائف يشغلها غير سعوديين" },
       { label: "نسبة التوطين", raw: pct(w.saudi, w.total), accent: T.blue,
         sub: "متوسط المهن جميعًا " + pct(all.saudi, all.total) },
       { label: "القطاعات التي تخدمها", value: rec.sectors.length, sub: "من ١٣ قطاعًا فرعيًا" },
@@ -3766,8 +3766,8 @@ function occupationCardSpec(rec, tree) {
         barChart(id, cmp, { labelWidth: 215, labelRoom: 64, unit: "٪ توطين",
           colorFn: function (e) { return e[0] === rec.ar ? C.uni : C.neutral; } });
       } });
-    spec.charts.push({ title: "ترتيب المهنة بين أكبر فجوات التوطين", h: 340,
-      sub: "أعلى عشر فجوات، والمهنة الحالية مُبرزة",
+    spec.charts.push({ title: "ترتيب المهنة بين أكبر فرص التوطين", h: 340,
+      sub: "أعلى عشر فرص، والمهنة الحالية مُبرزة",
       draw: function (id) {
         var top = JOBS.slice().sort(function (x, y) { return y.other - x.other; }).slice(0, 10);
         var here = JOBS.filter(function (j) { return j.code === rec.code; })[0];
@@ -3816,7 +3816,7 @@ function workforceCardSpec() {
     kpis: [
       { label: "العاملون السعوديون", value: t.saudi, accent: T.purple,
         sub: "نسبة التوطين " + pct(t.saudi, t.total) },
-      { label: "وظائف يشغلها غير سعوديين", value: t.other, sub: "حجم فرصة التوطين" },
+      { label: "فرص التوطين", value: t.other, sub: "وظائف يشغلها غير سعوديون" },
       { label: "مهن بلا سعوديين", value: zero.length,
         sub: fmt(jobTotals(zero).total) + " وظيفة بنسبة صفر" },
       { label: "مهن توطينها كامل", value: full.length,
@@ -3834,7 +3834,7 @@ function workforceCardSpec() {
             .slice(0, 12).reverse().map(function (j) { return [j.name, j.total, j.saudi]; }),
             Object.assign({ labelWidth: 195, legendColor: C.voc }, WF_NAMES));
         } },
-      { title: "أكبر فجوات التوطين", sub: "بعدد الوظائف التي يشغلها غير سعوديون", h: 420,
+      { title: "أكبر فرص التوطين", sub: "بعدد الوظائف التي يشغلها غير سعوديون", h: 420,
         draw: function (id) {
           barChart(id, JOBS.slice().sort(function (a, b) { return b.other - a.other; })
             .slice(0, 12).reverse().map(function (j) {
@@ -3885,15 +3885,15 @@ function supplyCardSpec() {
     lead: { value: S.t.total, label: "الطلب — إجمالي العاملين",
             side: fmt(S.supplyTotal), sideLabel: "العرض — خريجون مرتبطون" },
     kpis: [
-      { label: "فجوة التوطين", value: S.t.other, accent: T.purple,
-        sub: "نسبة التوطين " + pct(S.t.saudi, S.t.total) },
+      { label: "فرص التوطين", value: S.t.other, accent: T.purple,
+        sub: "وظائف يشغلها غير سعوديون · التوطين " + pct(S.t.saudi, S.t.total) },
       { label: "العرض بلا تكرار", value: S.supplyTotal, accent: T.blue,
         sub: fmt(S.union.majors) + " تخصصًا مميزًا" },
       { label: "تغطية الربط", raw: pct(S.withSupply.length, S.rows.length),
         sub: fmt(S.noSupply.length) + " مهنة بلا تخصص مرتبط" },
       { label: "خريجون لكل وظيفة غير مشغولة بسعودي",
         raw: S.gapCovered ? (S.supplyTotal / S.gapCovered).toFixed(2) : "غير متوفر",
-        sub: "عرض بلا تكرار ÷ فجوة المهن المرتبطة" },
+        sub: "عرض بلا تكرار ÷ فرص المهن المرتبطة" },
       { label: "الطلب المغطّى بالربط", value: S.demandCovered,
         sub: pct(S.demandCovered, S.t.total) + " من وظائف التصفية" },
       { label: "المهن ضمن التصفية", value: S.rows.length, sub: "من " + fmt(JOBS.length) + " مهنة" }
@@ -3906,14 +3906,14 @@ function supplyCardSpec() {
             return [x.j.name + "  (عرض " + fmt(x.sp.grads) + ")", x.j.total, x.j.saudi];
           }), Object.assign({ labelWidth: 290, labelRoom: 80, legendColor: C.voc }, WF_NAMES));
         } },
-      { title: "فجوة التوطين مقابل العرض السنوي", sub: "المهن المرتبطة فقط", h: 400,
+      { title: "فرص التوطين مقابل العرض السنوي", sub: "المهن المرتبطة فقط", h: 400,
         draw: function (id) {
           barChart(id, top.slice().sort(function (a, b) { return a.j.other - b.j.other; })
             .map(function (x) { return [x.j.name, x.sp.grads, x.j.other]; }),
             { labelWidth: 210, labelRoom: 80, legendColor: C.uni,
               colorFn: function () { return C.uni; },
-              outerName: "الخريجون المرتبطون", innerName: "فجوة التوطين",
-              ratioName: "الفجوة كنسبة من العرض" });
+              outerName: "الخريجون المرتبطون", innerName: "فرص التوطين",
+              ratioName: "الفرص كنسبة من العرض" });
         } }
     ] : [],
     note: sdFilter.region
@@ -3939,7 +3939,7 @@ function exportOccupation(rec, tree) {
   if (w) {
     rows.push(["مجموع العاملين", w.total]);
     rows.push(["العاملون السعوديون", w.saudi]);
-    rows.push(["فجوة التوطين", w.other]);
+    rows.push(["فرص التوطين", w.other]);
     rows.push(["نسبة التوطين", +(w.rate * 100).toFixed(1)]);
     rows.push(["ملاحظة", WF_NOTE]);
   } else {
@@ -3972,8 +3972,8 @@ function exportWorkforce() {
 function exportSupply() {
   var S = sdSummary();
   var rows = [["التصفية", sdFilterLabel()], ["سنوات التخرج", yearsLabel()], [],
-              ["المهنة", "المؤهل المطلوب", "العاملون", "سعوديون", "الفجوة",
-               "نسبة التوطين", "العرض (خريجون)", "خريج لكل فجوة"]];
+              ["المهنة", "المؤهل المطلوب", "العاملون", "سعوديون", "فرص التوطين",
+               "نسبة التوطين", "العرض (خريجون)", "خريج لكل فرصة"]];
   S.rows.slice().sort(function (a, b) { return b.other - a.other; }).forEach(function (j) {
     var sp = j.occ ? supplyFor(j.occ) : null;
     var has = sp && sp.grads > 0;
