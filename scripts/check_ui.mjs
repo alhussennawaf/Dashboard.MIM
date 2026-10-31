@@ -781,6 +781,28 @@ async function main() {
           detail.head.length > 0 && detail.gradient && headInk > 0.06,
           `head=${JSON.stringify(detail.head.slice(0, 30))} ink=${(headInk * 100).toFixed(1)}%`);
 
+    /* The skills chart. Its whole point is the comparison with the average,
+       so a chart drawn with one series would pass a "did it mount" check and
+       still be the wrong chart. */
+    const skills = await page.evaluate(() => {
+      const el = document.getElementById('occSkillLv');
+      if (!el) return { missing: true };
+      const r = el.getBoundingClientRect();
+      const inst = window.echarts && echarts.getInstanceByDom(el);
+      const opt = inst && inst.getOption();
+      return {
+        w: Math.round(r.width), h: Math.round(r.height),
+        canvas: !!el.querySelector('canvas'),
+        series: opt ? opt.series.length : 0,
+        bars: opt ? opt.series[0].data.length : 0,
+        categories: opt ? opt.xAxis[0].data.length : 0
+      };
+    });
+    check('the occupation page draws its skill levels against the average',
+          !skills.missing && skills.canvas && skills.w > 200 && skills.h > 100 &&
+          skills.series === 2 && skills.bars === 5 && skills.categories === 5,
+          JSON.stringify(skills));
+
     const spec = page.locator('.specitem').first();
     if (await spec.count()) {
       /* This tile sits inside a React Bits GlareHover, whose sweep is a
@@ -797,6 +819,24 @@ async function main() {
       }));
       check('the specialization window opens with its figures',
             win.open && win.kpis > 0 && win.flat === 0, JSON.stringify(win));
+
+      /* The occupation page is still in the document behind the window, so
+         both copies of the skills card are present at once. They carry
+         different ids for that reason, and this is what would catch them
+         sharing one again: the window's own chart would never be found. */
+      const specSkills = await page.evaluate(() => {
+        const el = document.querySelector('#specWin #specSkillLv');
+        if (!el) return { missing: true };
+        const r = el.getBoundingClientRect();
+        return { w: Math.round(r.width), canvas: !!el.querySelector('canvas'),
+                 duplicates: document.querySelectorAll('#specSkillLv').length,
+                 pageCopyStillThere: !!document.getElementById('occSkillLv') };
+      });
+      check('the specialization window draws its own skills chart',
+            !specSkills.missing && specSkills.canvas && specSkills.w > 200 &&
+            specSkills.duplicates === 1 && specSkills.pageCopyStillThere,
+            JSON.stringify(specSkills));
+
       if (win.open) {
         await page.keyboard.press('Escape');
         await page.waitForTimeout(700);

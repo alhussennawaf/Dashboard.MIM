@@ -1774,6 +1774,9 @@ function describe(rec, tree, specIdx, skipKpis) {
   var estimated = rec.matchStatus && rec.matchStatus.indexOf("تقديري") !== -1;
   var nSkills = ["technical", "basic", "general", "leadership"]
     .reduce(function (a, k) { return a + rec.skills[k].length; }, 0);
+  /* The occupation page is still in the document behind the specialization
+     window, so the two copies of this card cannot share a chart id. */
+  var skillChartId = specIdx === undefined ? "occSkillLv" : "specSkillLv";
 
   return (estimated ? '<p class="scope-note warn-note"><strong>تنبيه:</strong> ' +
       'حالة مطابقة البرامج مسجّلة في المصدر بأنها «' + esc(rec.matchStatus) +
@@ -1855,7 +1858,11 @@ function describe(rec, tree, specIdx, skipKpis) {
             '<p class="hint" style="margin-top:9px">المعلّمة بـ ✓ تطابق تخصصًا في بيانات خريجي الجامعات مطابقة حرفية.</p>'
           : '<p class="empty">غير متوفرة.</p>'), "span6") +
 
-      card("المهارات المطلوبة", "المستوى من 5 كما ورد في جدول المهن",
+      card("المهارات المطلوبة",
+        "المستوى من 5 كما ورد في جدول المهن · الرسم يقارن توزيعها بمتوسط المهن",
+        '<div class="chart short" id="' + skillChartId + '" role="img" aria-label="' +
+          esc("توزيع مهارات " + (rec.specAr || rec.ar) + " على المستويات الخمسة — رسم بياني") +
+        '"></div>' +
         '<div class="skills-wrap">' +
         ((skillBlock("المهارات الفنية", rec.skills.technical) +
           skillBlock("المهارات الأساسية", rec.skills.basic) +
@@ -1979,6 +1986,68 @@ function viewOccBrowse() {
   });
 }
 
+/* ---------------------------- skill levels ------------------------------
+   The four skill categories look like four things to compare and are not:
+   leadership is empty in 886 of the 921 records, and the basic and general
+   levels sit at 1.2 with almost no spread. The level is where the variation
+   actually lives, so the chart counts a record's skills at each of the five
+   levels. 484 distinct shapes come out of 921 records, against 276 for the
+   categories, and the shapes mean something: a row of ones is a job someone
+   learns quickly, a weight at four and five is a job that takes years.
+
+   The grey behind each bar is the average occupation, because a count on its
+   own answers nothing: eight skills at level four is a lot or a little only
+   against what a job here normally asks. */
+var SKILL_CATS = ["technical", "basic", "general", "leadership"];
+function skillLevels(rec) {
+  var h = [0, 0, 0, 0, 0];
+  SKILL_CATS.forEach(function (c) {
+    (rec.skills[c] || []).forEach(function (s) { if (s[1]) h[s[1] - 1]++; });
+  });
+  return h;
+}
+var TYPICAL_LEVELS = (function () {
+  var sum = [0, 0, 0, 0, 0];
+  OCC.forEach(function (r) {
+    skillLevels(r).forEach(function (n, i) { sum[i] += n; });
+  });
+  return sum.map(function (n) { return +(n / OCC.length).toFixed(1); });
+})();
+var LEVEL_LABELS = ["المستوى ١", "المستوى ٢", "المستوى ٣", "المستوى ٤", "المستوى ٥"];
+
+function drawSkillLevels(id, rec) {
+  var node = document.getElementById(id);
+  if (!node) return;
+  var c = mount(id); if (!c) return;
+  var h = skillLevels(rec);
+  c.setOption({
+    textStyle: baseText(),
+    grid: { left: 6, right: 14, top: 34, bottom: 6, containLabel: true },
+    legend: { top: 0, right: 2, left: 2, icon: "roundRect", itemWidth: 13, itemHeight: 9,
+              textStyle: { color: C.muted, fontFamily: FONT, fontSize: 12 } },
+    tooltip: tip({ trigger: "axis", axisPointer: { type: "shadow" } }),
+    xAxis: Object.assign({ type: "category", data: LEVEL_LABELS }, AXIS,
+                         { splitLine: { show: false } }),
+    yAxis: Object.assign({ type: "value" }, AXIS),
+    series: [
+      { name: "هذه المهنة", type: "bar", barWidth: "46%",
+        itemStyle: { color: C.voc },
+        /* One hue deepening with the level, the same ramp the framework page
+           and the region map use, so a dark bar means the same thing here. */
+        data: h.map(function (n, i) {
+          return { value: n,
+                   itemStyle: { color: NQF_RAMP[Math.min(NQF_RAMP.length - 1, i * 2 + 1)],
+                                borderRadius: [4, 4, 0, 0] } };
+        }),
+        label: { show: true, position: "top", color: C.ink, fontFamily: FONT,
+                 fontSize: 12, fontWeight: 600 } },
+      { name: "متوسط المهن جميعًا", type: "bar", barWidth: "22%", barGap: "-78%", z: 1,
+        itemStyle: { color: "rgba(179,179,179,.55)", borderRadius: [3, 3, 0, 0] },
+        data: TYPICAL_LEVELS }
+    ]
+  });
+}
+
 function skillBlock(title, entries) {
   if (!entries.length) return "";
   return '<h4 class="subhead">' + esc(title) + '</h4>' +
@@ -2046,6 +2115,7 @@ function viewOccDetail(code) {
   wireExports("occ", function () { exportOccupation(o, t); },
               function () { return occupationCardSpec(o, t); });
   drawWorkforceCharts(o);
+  drawSkillLevels("occSkillLv", o);
 }
 
 /* A specialization opens over its occupation rather than replacing it, so the
@@ -2172,6 +2242,7 @@ function viewOccSpec(code, idx) {
       { colorFn: function () { return C.uni; }, legendColor: C.uni,
         labelWidth: 190, labelRoom: 74 });
   }
+  drawSkillLevels("specSkillLv", c);
   specCharts = live.splice(mountedBefore);
 
   specKeyHandler = function (e) {
@@ -3240,7 +3311,11 @@ function occupationCardSpec(rec, tree) {
     badge: rec.nqfLevel !== null && rec.nqfLevel !== undefined
       ? "الإطار الوطني · المستوى " + rec.nqfLevel : UNCLASSIFIED,
     file: "مهنة-" + rec.ar + "-" + yearsLabel(),
-    charts: []
+    charts: [
+      { title: "مستويات المهارات", h: 260,
+        sub: "عدد مهارات المهنة في كل مستوى، والرمادي متوسط المهن",
+        draw: function (id) { drawSkillLevels(id, rec); } }
+    ]
   };
   if (w) {
     var all = jobTotals(JOBS);
