@@ -2647,6 +2647,25 @@ function drawOccShape(id, rec) {
   });
 }
 
+/* The workforce sheet prints a total under each of its four blocks. Three
+   agree with the rows beneath them to the unit; one states two Saudis more
+   than its rows carry. The ministry has confirmed the printed total is the
+   right one, so this is no longer an open question and no longer a warning
+   on the page. It is still written down, here and in the payload, because a
+   reader who adds the rows will find the same two and deserves to know the
+   answer rather than to wonder. The two are not invented into any
+   occupation: there is no row to put them in. */
+function sourceTotalsNote() {
+  var g = (WF.gaps || []);
+  if (!g.length) return "";
+  return g.map(function (x) {
+    return "«" + WF.blocks[x.block] + "»: الملف يذكر " + fmt(x.statedSaudi) +
+      " سعوديًا ويحمل " + fmt(x.rowsSaudi) + " بجمع صفوفه، بفارق " +
+      fmt(x.statedSaudi - x.rowsSaudi) + ". المعلن هو المعتمد لدى جهة البيانات، " +
+      "وتُعرض أرقام اللوحة بجمع الصفوف لأن كل رقم فيها يجب أن يُفتح إلى مهنة باسمها.";
+  }).join(" ");
+}
+
 function skillBlock(title, entries) {
   if (!entries.length) return "";
   return '<h4 class="subhead">' + esc(title) + '</h4>' +
@@ -2885,10 +2904,6 @@ function viewWorkforce() {
   var t = jobTotals(JOBS);
   var zero = JOBS.filter(function (j) { return j.saudi === 0; });
   var full = JOBS.filter(function (j) { return j.total > 0 && j.saudi === j.total; });
-  var gapNote = (WF.gaps || []).map(function (g) {
-    return WF.blocks[g.block] + ": المجموع المعلن " + fmt(g.statedSaudi) +
-           " سعوديًا مقابل " + fmt(g.rowsSaudi) + " بجمع صفوفه";
-  }).join(" · ");
   var unmatched = JOBS.filter(function (j) { return !j.code; })
                       .map(function (j) { return j.name; });
 
@@ -2898,10 +2913,6 @@ function viewWorkforce() {
       exportBar("wf", "تصدير جدول العاملين (CSV)") +
     '</div>' +
     '<p class="scope-note"><strong>نطاق البيانات:</strong> ' + esc(WF_NOTE) + '</p>' +
-    (gapNote
-      ? '<p class="scope-note warn-note"><strong>فرق في مجموع المصدر.</strong> ' +
-        esc(gapNote) + '. تُعرض الأرقام بجمع الصفوف، والمعلن مذكور كما ورد دون ترجيح.</p>'
-      : "") +
     (unmatched.length
       ? '<p class="scope-note warn-note"><strong>' + fmt(unmatched.length) +
         ' مهنة بلا مطابقة</strong> في قائمة المهن المعتمدة، فتظهر أعداد عامليها دون وصف ' +
@@ -4640,6 +4651,10 @@ function viewNqf() {
 
   document.getElementById("view").innerHTML =
     '<p class="scope-note"><strong>المصدر:</strong> ' + esc(D.nqf.source) + '</p>' +
+    (sourceTotalsNote()
+      ? '<p class="scope-note"><strong>مطابقة مجاميع ملف العاملين.</strong> ' +
+        esc(sourceTotalsNote()) + '</p>'
+      : "") +
     (ownText
       ? '<p class="scope-note"><strong>تسكين من جهة البيانات.</strong> ' +
         esc(ownText) + '</p>'
