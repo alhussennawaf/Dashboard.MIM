@@ -2384,13 +2384,6 @@ function describe(rec, tree, specIdx, skipKpis) {
   /* Who taught the linked specializations, by the graduates they produced. */
   var teachers = ranked(agg(linked, function (r) { return r.uni; }), "grads")
                    .map(function (e) { return [e[0], e[1].grads]; });
-  /* When every row of the table below carries the same field name, the
-     column is repeating one fact 30 times. It is said once in the subtitle
-     instead. These names are the source's own ISCED buckets, and one of
-     them is a catch-all that most engineering programmes fall into. */
-  var fieldsSeen = {};
-  linked.forEach(function (r) { fieldsSeen[r.d] = 1; });
-  var oneField = Object.keys(fieldsSeen).length === 1 ? Object.keys(fieldsSeen)[0] : "";
   var nSkills = ["technical", "basic", "general", "leadership"]
     .reduce(function (a, k) { return a + rec.skills[k].length; }, 0);
   /* The occupation page is still in the document behind the specialization
@@ -2512,19 +2505,15 @@ function describe(rec, tree, specIdx, skipKpis) {
         "span6") +
 
       card("خريجو المجالات التعليمية المرتبطة",
+        linked.length ? "أعلى التخصصات الجامعية ضمن المجالات المطابقة" : "",
         linked.length
-          ? "أعلى التخصصات الجامعية ضمن المجالات المطابقة" +
-            (oneField ? " · المجال: " + oneField : "")
-          : "",
-        linked.length
-          ? '<div class="table-wrap"><table><thead><tr><th>التخصص</th>' +
-            (oneField ? "" : '<th>المجال</th>') +
+          ? '<div class="table-wrap"><table><thead><tr><th>التخصص</th><th>المجال</th>' +
             '<th>الخريجون</th><th>المتوظفون</th><th>النسبة</th></tr></thead><tbody>' +
             linkedMajors.slice(0, 30).map(function (e) {
               var r0 = linked.filter(function (x) { return x.mi === e[0]; })[0];
               return '<tr class="clickable" data-go="#uni/detail/' + e[0] + '">' +
                 '<td>' + esc(UD.major[e[0]]) + '</td>' +
-                (oneField ? "" : '<td>' + esc(r0 ? r0.d : "") + '</td>') +
+                '<td>' + esc(r0 ? r0.d : "") + '</td>' +
                 '<td class="num">' + fmt(e[1].grads) + '</td>' +
                 '<td class="num">' + fmt(e[1].emp) + '</td>' +
                 '<td class="num">' + pct(e[1].emp, e[1].grads) + '</td></tr>';
