@@ -556,6 +556,9 @@ main {
 .kpi .label {
   font-size: 11.5px; font-weight: 500; color: var(--mim-grey-dark);
   margin-bottom: 6px; letter-spacing: .012em;
+  /* A label that carries a line break keeps it: the qualifier under
+     «المهن المشمولة» is a second line, not a longer first one. */
+  white-space: pre-line;
 }
 /* The figure is the reason the tile exists: display face, optical tracking,
    and the descenders given room so a comma never clips. */
@@ -1930,7 +1933,7 @@ function viewOverview() {
         sub: "University · " + pct(tu.grads, ta.grads) + " من الإجمالي · " +
              fmt(UD.university.length) + " جامعة" },
       { label: "المتوظفون", value: ta.emp, sub: "Employed · نسبة التوظيف " + pct(ta.emp, ta.grads) },
-      { label: "المهن المشمولة (المهن الأساسية والأساسية الداعمة)",
+      { label: "المهن المشمولة\n(المهن الأساسية والأساسية الداعمة)",
         value: D.occupationTree.length,
         sub: "Occupations · " + fmt(OCC.length) + " صفًا في المصدر" },
       { label: "التخصصات", value: VD.major.length + UD.major.length,
@@ -1962,11 +1965,10 @@ function viewOverview() {
   ]);
 
   var g = agg(all, function (f) { return genderLabel(f.gender); });
-  /* Only the two the source records. The rows it leaves blank are still in
-     every total on the page; they are simply not drawn as a third bar. */
-  barChart("oGender", ["ذكر", "أنثى"].map(function (x) {
+  barChart("oGender", GENDERS.map(function (x) {
     var c0 = g.get(x); return [x, c0 ? c0.grads : 0, c0 ? c0.emp : 0]; }), {
-    colorFn: function (e) { return e[0] === "ذكر" ? C.voc : C.uni; }, labelWidth: 90 });
+    colorFn: function (e) { return e[0] === "ذكر" ? C.voc : e[0] === "أنثى" ? C.uni : C.neutral; },
+    hatchFn: function (e) { return e[0] === "غير متوفر"; }, labelWidth: 90 });
 
   var nq = agg(all, function (f) { return f.nqf === null || f.nqf === undefined ? "x" : f.nqf; });
   var keys = Array.from(nq.keys()).sort(function (a, b) {
@@ -3778,7 +3780,8 @@ function cKpis(ctx, x0, y, width, items, cols, th) {
     ctx.strokeStyle = T.line; ctx.lineWidth = 1;
     ctx.strokeRect(x + 0.5, ty + 0.5, tw - 1, th - 1);
     ctx.fillStyle = it.accent || T.greyMid; ctx.fillRect(x, ty, tw, 4);
-    cText(ctx, it.label, x + tw - 18, ty + th * 0.32, { size: 18, color: T.grey });
+    cText(ctx, String(it.label).replace(/\n/g, " "), x + tw - 18, ty + th * 0.32,
+          { size: 18, color: T.grey });
     cText(ctx, it.raw !== undefined ? it.raw : fmt(it.value), x + tw - 18, ty + th * 0.70,
           { size: th > 125 ? 38 : 32, font: T.fn, weight: 600, dir: "ltr" });
     if (it.sub) cText(ctx, it.sub, x + tw - 18, ty + th * 0.90, { size: 16, color: T.grey });
