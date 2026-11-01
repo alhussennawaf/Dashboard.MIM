@@ -1935,7 +1935,7 @@ function describe(rec, tree, specIdx, skipKpis) {
           { label: "مجموع العاملين", value: w.total,
             sub: esc(w.job.critical + " · " + w.job.skill) },
           { cls: "is-voc", label: "العاملون السعوديون", value: w.saudi, sub: "" },
-          { label: "عاملون غير سعوديون", value: w.other, sub: "" },
+          { label: "عاملون غير سعوديين", value: w.other, sub: "" },
           { cls: "is-uni", label: "نسبة التوطين", raw: pct(w.saudi, w.total),
             sub: "من مجموع العاملين" }
         ]) +
@@ -2462,9 +2462,9 @@ function viewWorkforce() {
         sub: fmt(JOBS.length) + " مهنة" },
       { cls: "is-voc", label: "العاملون السعوديون", value: t.saudi,
         sub: "نسبة التوطين " + pct(t.saudi, t.total) },
-      { label: "عاملون غير سعوديون", value: t.other, sub: "وظائف قائمة" },
+      { label: "عاملون غير سعوديين", value: t.other, sub: "وظائف قائمة" },
       { label: "مهن بلا سعوديين", value: zero.length,
-        sub: fmt(jobTotals(zero).total) + " وظيفة يشغلها غير سعوديون" },
+        sub: fmt(jobTotals(zero).total) + " وظيفة يشغلها غير سعوديين" },
       { label: "مهن يشغلها سعوديون", value: full.length,
         sub: fmt(jobTotals(full).total) + " وظيفة" },
       { cls: "is-uni", label: "نسبة التوطين", raw: pct(t.saudi, t.total),
@@ -2771,8 +2771,8 @@ function viewSupplyDemand() {
       kpiHtml([
         { label: "الطلب: إجمالي العاملين", value: t.total,
           sub: fmt(rows.length) + " مهنة ضمن التصفية" },
-        { label: "فرص التوطين", value: t.other,
-          sub: "وظائف يشغلها غير سعوديين · " + pct(t.saudi, t.total) + " نسبة التوطين" },
+        { label: "عاملون غير سعوديين", value: t.other,
+          sub: "نسبة التوطين " + pct(t.saudi, t.total) },
         { cls: "is-uni", label: "العرض: الخريجون المرتبطون", value: supplyTotal,
           sub: fmt(union.majors) + " تخصصًا مميزًا · محسوب مرة واحدة دون تكرار" },
         { label: "تغطية الربط", raw: pct(withSupply.length, rows.length),
@@ -3520,7 +3520,7 @@ function occupationCardSpec(rec, tree) {
     spec.kpis = [
       { label: "العاملون السعوديون", value: w.saudi, accent: T.purple,
         sub: rec.type },
-      { label: "عاملون غير سعوديون", value: w.other, sub: "" },
+      { label: "عاملون غير سعوديين", value: w.other, sub: "" },
       { label: "نسبة التوطين", raw: pct(w.saudi, w.total), accent: T.blue,
         sub: "من مجموع العاملين" },
       { label: "القطاعات التي تخدمها", value: rec.sectors.length, sub: "من ١٣ قطاعًا فرعيًا" },
@@ -3585,7 +3585,7 @@ function workforceCardSpec() {
     kpis: [
       { label: "العاملون السعوديون", value: t.saudi, accent: T.purple,
         sub: "نسبة التوطين " + pct(t.saudi, t.total) },
-      { label: "فرص التوطين", value: t.other, sub: "وظائف يشغلها غير سعوديون" },
+      { label: "عاملون غير سعوديين", value: t.other, sub: "وظائف قائمة" },
       { label: "مهن بلا سعوديين", value: zero.length,
         sub: fmt(jobTotals(zero).total) + " وظيفة بنسبة صفر" },
       { label: "مهن توطينها كامل", value: full.length,
@@ -3603,7 +3603,7 @@ function workforceCardSpec() {
             .slice(0, 12).reverse().map(function (j) { return [j.name, j.total, j.saudi]; }),
             Object.assign({ labelWidth: 195, legendColor: C.voc }, WF_NAMES));
         } },
-      { title: "أكبر فرص التوطين", sub: "بعدد الوظائف التي يشغلها غير سعوديون", h: 420,
+      { title: "أكبر فرص التوطين", sub: "بعدد الوظائف التي يشغلها غير سعوديين", h: 420,
         draw: function (id) {
           barChart(id, JOBS.slice().sort(function (a, b) { return b.other - a.other; })
             .slice(0, 12).reverse().map(function (j) {
@@ -3654,8 +3654,8 @@ function supplyCardSpec() {
     lead: { value: S.t.total, label: "الطلب: إجمالي العاملين",
             side: fmt(S.supplyTotal), sideLabel: "العرض: خريجون مرتبطون" },
     kpis: [
-      { label: "فرص التوطين", value: S.t.other, accent: T.purple,
-        sub: "وظائف يشغلها غير سعوديون · التوطين " + pct(S.t.saudi, S.t.total) },
+      { label: "عاملون غير سعوديين", value: S.t.other, accent: T.purple,
+        sub: "نسبة التوطين " + pct(S.t.saudi, S.t.total) },
       { label: "العرض بلا تكرار", value: S.supplyTotal, accent: T.blue,
         sub: fmt(S.union.majors) + " تخصصًا مميزًا" },
       { label: "تغطية الربط", raw: pct(S.withSupply.length, S.rows.length),
