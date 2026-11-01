@@ -25,7 +25,9 @@ directly and does not run this script. Re-run it after any change to the pages,
 assets or parsed data, and commit what changes.
 """
 
+import hashlib
 import json
+import re
 import shutil
 import sys
 from datetime import date
@@ -99,9 +101,11 @@ HEADERS = """\
   X-Frame-Options: SAMEORIGIN
   Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()
 
-# Vendored libraries and artwork: change rarely, and a stale copy is only ever
-# a revalidation away. This is the repeat-visit win: ECharts and the React
-# Bits bundle are the two large ones, and neither moves between deploys.
+# Vendored libraries and artwork. A week is safe because every script and
+# stylesheet is requested with a ?v= of its own contents, so a rebuilt file
+# is a different URL and a cached copy is never the wrong copy. Without that
+# stamp this header is a trap: max-age alone does not revalidate, so a
+# visitor keeps the old bundle until it expires.
 /assets/*
   Cache-Control: public, max-age=604800
 
@@ -148,6 +152,29 @@ def write_sitemap(url):
         f"{rows}</urlset>\n", encoding="utf-8")
 
 
+# Files whose contents change between deploys and whose URL therefore has to.
+# Everything under /assets/ is served with a week's Cache-Control, which is
+# right for a vendored library and wrong for a file we rebuild: a visitor who
+# had the page open before a deploy would keep their copy of the bundle for up
+# to seven days, and the deploy would look like it had not happened. Naming
+# each build differently is what makes the long cache safe.
+FINGERPRINT = re.compile(
+    r'(?P<attr>src|href)="(?P<path>(?:assets|data)/[^"?]+\.(?:js|css))"')
+
+
+def stamp_assets(html: str, site: Path) -> str:
+    """Append ?v=<content hash> to every local script and stylesheet."""
+
+    def one(m):
+        target = site / m.group("path")
+        if not target.exists():
+            return m.group(0)
+        digest = hashlib.sha256(target.read_bytes()).hexdigest()[:10]
+        return f'{m.group("attr")}="{m.group("path")}?v={digest}"'
+
+    return FINGERPRINT.sub(one, html)
+
+
 def main():
     url, token, indexable = load_config()
 
@@ -167,6 +194,7 @@ def main():
         page = SITE / rel
         html = page.read_text(encoding="utf-8")
         html = html.replace(URL_TOKEN, url)
+        html = stamp_assets(html, SITE)
         if token:
             html = html.replace("</body>", BEACON.format(token=token) + "</body>", 1)
         if not indexable and '<meta name="robots"' not in html:
@@ -175,6 +203,11 @@ def main():
 
     if URL_TOKEN in (SITE / "index.html").read_text(encoding="utf-8"):
         sys.exit(f"{URL_TOKEN} survived substitution in index.html")
+
+    stamped = (SITE / "index.html").read_text(encoding="utf-8")
+    if "reactbits.js?v=" not in stamped:
+        sys.exit("the React Bits bundle was not fingerprinted; a deploy would "
+                 "be invisible to anyone holding a cached copy")
 
     write_robots(url, indexable)
     write_sitemap(url)
