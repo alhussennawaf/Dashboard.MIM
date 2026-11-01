@@ -261,18 +261,14 @@ main {
 /* align-items:start keeps a short card from stretching to match a tall
    neighbour, which otherwise leaves a large void beside long lists. */
 .grid { display: grid; gap: clamp(15px, 1.3vw, 20px);
-        grid-template-columns: repeat(12, 1fr); align-items: stretch; }
+        grid-template-columns: repeat(12, 1fr); align-items: start; }
 /* Every card is wrapped so React Bits' AnimatedContent can reveal it on
    scroll. The wrapper is the grid child, which is why the column spans live
    on it and not on the card, and why it is in the markup from the start,
    rather than being inserted around the card afterwards: the chart inside
    measures itself before the bundle hydrates, and it must measure the width
    it is going to keep. */
-.cardwrap { grid-column: span 12; min-width: 0; display: flex; }
-/* The reveal wrapper is the grid child, so the card reaches the row's full
-   height through it rather than leaving the hole under a short card that
-   top-alignment used to leave. */
-.cardwrap > .card { flex: 1 1 auto; }
+.cardwrap { grid-column: span 12; min-width: 0; }
 /* The border is gone. A hairline ring plus a tinted shadow says "this is a
    surface above the page" without drawing a hard box around every figure,
    and with twenty of these on the overview, twenty hard boxes was most of
