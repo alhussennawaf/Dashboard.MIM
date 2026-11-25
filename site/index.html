@@ -885,6 +885,7 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 2px 6p
 <script src="assets/echarts.min.js?v=b66b25aeb4"></script>
 <script src="assets/reactbits.js?v=fae178f1d8"></script>
 <script src="data/dashboard-data.js?v=678503208a"></script>
+<script src="data/center-workforce.js?v=48179ef3f1"></script>
 <script>
 (function () {
 "use strict";
@@ -4300,6 +4301,483 @@ function viewData() {
 }
 
 /* ========================================================================= */
+/*  بيانات العاملين — المركز الوطني للمعلومات                                 */
+/* ========================================================================= */
+/* A second, wider reading of employment than العاملون في سوق العمل. That tab
+   counts the 503 occupations of the approved framework in one quarter; this
+   one counts every occupation recorded inside an industrial establishment in
+   one month, 1,701 of them. The two totals are far apart and are not meant to
+   reconcile, so each tab states its own scope above the figures.
+
+   The payload is a fact cube: one row per combination of place, establishment
+   band, pay band, nationality, gender and occupation class, carrying the head
+   count. Summing it over any dimension is exact. The one exception is the
+   economic sector, which the source writes as several codes in a single cell
+   when an establishment spans more than one: the fact row keeps that whole
+   combination as one index and `sectorAtoms` maps it to its parts, so only the
+   sector chart walks the parts and only that chart double counts. */
+
+var CW = window.MIM_CENTER || null;
+var CW_NAT_SAUDI = CW ? CW.dims.nat.indexOf("سعودي") : -1;
+/* Fact row layout, by position. */
+var CWX = { reg: 0, sec: 1, size: 2, nit: 3, sta: 4, sal: 5, nat: 6, sex: 7, cls: 8, w: 9 };
+
+var CW_SCOPE = CW
+  ? "كل العاملين المسجّلين في المنشآت الصناعية: " + fmt(CW.occ.code.length) +
+    " مهنة في " + fmt(CW.meta.establishments) + " منشأة. المصدر " + CW.meta.source +
+    " عن " + CW.meta.period + "."
+  : "";
+/* Said once, plainly: this tab and العاملون في سوق العمل count different
+   things, and a reader who meets the two totals side by side deserves to be
+   told why before they ask. */
+var CW_VS = "هذا التبويب لا يطابق تبويب «العاملون في سوق العمل» ولا يُقارن به: " +
+  "ذاك يغطي المهن المعتمدة في إطار الصناعة والتعدين خلال الربع الثالث 2026، " +
+  "وهذا يغطي كل المهن المسجّلة في المنشآت الصناعية خلال شهر واحد.";
+
+/* Filters. The spec asks for الجنسية and نوع الجنس on every indicator; the rest
+   are page-level and narrow the cube for all of the charts at once. */
+var cwF = { nat: "", sex: "", reg: "", size: "", nit: "", sta: "" };
+var cwSort = { key: "total", dir: "desc" };
+var cwQuery = "";
+
+function cwOn(key) { return cwF[key] !== ""; }
+/* The occupation table and the establishment counts are not in the cube: they
+   are precomputed by nationality and gender only, so a page-level filter that
+   they cannot honour has to be declared rather than silently ignored. */
+function cwPlaceFilters() {
+  return ["reg", "size", "nit", "sta"].filter(cwOn);
+}
+var CW_FILTER_AR = { reg: "المنطقة", size: "حجم المنشأة", nit: "النطاق",
+                     sta: "حالة المنشأة", nat: "الجنسية", sex: "نوع الجنس" };
+
+function cwPass(r) {
+  if (cwF.nat !== "" && r[CWX.nat] !== +cwF.nat) return false;
+  if (cwF.sex !== "" && r[CWX.sex] !== +cwF.sex) return false;
+  if (cwF.reg !== "" && r[CWX.reg] !== +cwF.reg) return false;
+  if (cwF.size !== "" && r[CWX.size] !== +cwF.size) return false;
+  if (cwF.nit !== "" && r[CWX.nit] !== +cwF.nit) return false;
+  if (cwF.sta !== "" && r[CWX.sta] !== +cwF.sta) return false;
+  return true;
+}
+
+/* Walk the filtered cube once, bucketing by whatever key the caller wants.
+   keyFn returns an index, or an array of them for the sector, whose parts are
+   deliberately counted more than once. Each bucket carries [total, saudis]. */
+function cwCollect(keyFn) {
+  var m = {}, F = CW.facts, i, j, r, ks, k, e;
+  for (i = 0; i < F.length; i++) {
+    r = F[i];
+    if (!cwPass(r)) continue;
+    ks = keyFn(r);
+    if (typeof ks === "number") { CW_ONE[0] = ks; ks = CW_ONE; }
+    for (j = 0; j < ks.length; j++) {
+      k = ks[j];
+      e = m[k] || (m[k] = [0, 0]);
+      e[0] += r[CWX.w];
+      if (r[CWX.nat] === CW_NAT_SAUDI) e[1] += r[CWX.w];
+    }
+  }
+  return m;
+}
+var CW_ONE = [0];
+
+/* [label, total, saudis] sorted by size, which is how every bar on this page
+   reads: longest at the top. `extra` appends the establishment count to the
+   label where the source supports one. */
+function cwEntries(m, labels, extra) {
+  var out = [];
+  Object.keys(m).forEach(function (k) {
+    var i = +k, lab = labels[i];
+    if (lab === undefined) return;
+    if (extra) lab += "  (" + fmt(extra[i]) + " منشأة)";
+    out.push([lab, m[k][0], m[k][1]]);
+  });
+  return out.sort(function (a, b) { return a[1] - b[1]; });
+}
+function cwTotals() {
+  var t = 0, s = 0, F = CW.facts, i, r;
+  for (i = 0; i < F.length; i++) {
+    r = F[i];
+    if (!cwPass(r)) continue;
+    t += r[CWX.w];
+    if (r[CWX.nat] === CW_NAT_SAUDI) s += r[CWX.w];
+  }
+  return { total: t, saudi: s, other: t - s };
+}
+/* Establishments are distinct counts, so they cannot be summed out of the
+   cube. They are precomputed per dimension value, and per value by nationality
+   and gender; a place filter cannot narrow them, which the page says. */
+function cwEst(dim) {
+  var b = CW.est[dim];
+  if (!b) return null;
+  if (cwF.nat === "" && cwF.sex === "") return b.all;
+  var pairs = [];
+  [0, 1].forEach(function (n) {
+    [0, 1].forEach(function (x) {
+      if (cwF.nat !== "" && n !== +cwF.nat) return;
+      if (cwF.sex !== "" && x !== +cwF.sex) return;
+      pairs.push(n * 2 + x);
+    });
+  });
+  /* With one nationality and one gender chosen the stored set is exact; with a
+     pair of them the sets overlap, so the largest is the honest floor. */
+  return b.byNatSex.map(function (row) {
+    return pairs.reduce(function (a, p) { return Math.max(a, row[p]); }, 0);
+  });
+}
+
+/* Establishments partition cleanly by region, size, status and city, so a
+   filter on exactly one of those still has an exact answer. Any other
+   combination does not, and the tile says so rather than printing a total that
+   does not match the bars beside it. */
+function cwEstTotal() {
+  function sum(a) { return a.reduce(function (x, y) { return x + y; }, 0); }
+  var place = cwPlaceFilters();
+  if (place.length === 0) return { value: sum(cwEst("region")), exact: true };
+  if (place.length === 1) {
+    if (place[0] === "reg") return { value: cwEst("region")[+cwF.reg], exact: true };
+    if (place[0] === "size") return { value: cwEst("size")[+cwF.size], exact: true };
+    if (place[0] === "sta") return { value: cwEst("status")[+cwF.sta], exact: true };
+  }
+  return { value: sum(cwEst("region")), exact: false };
+}
+
+function cwSelect(id, label, labels, key) {
+  return '<select id="' + id + '" aria-label="' + esc(label) + '">' +
+    '<option value="">' + esc(label) + '</option>' +
+    labels.map(function (n, i) {
+      return '<option value="' + i + '"' + (cwF[key] === String(i) ? " selected" : "") +
+             '>' + esc(n) + '</option>';
+    }).join("") + '</select>';
+}
+/* The stat row is written without the React island wrapper so a filter change
+   can rewrite it in place: these are static figures, and the counters only run
+   on the overview anyway. */
+function cwKpis(tiles) {
+  return tiles.map(function (t) {
+    return '<div class="kpi-island"><div class="kpi ' + (t.cls || "") + '">' +
+      '<div class="label">' + esc(t.label) + '</div>' +
+      '<div class="value">' + (t.raw !== undefined ? esc(t.raw) : fmt(t.value)) + '</div>' +
+      '<div class="sub">' + esc(t.sub || "") + '</div></div></div>';
+  }).join("");
+}
+
+function cwOccRows() {
+  var o = CW.occ, m = {}, i, c, k;
+  for (i = 0; i < o.cells.length; i++) {
+    c = o.cells[i];
+    if (cwF.nat !== "" && c[1] !== +cwF.nat) continue;
+    if (cwF.sex !== "" && c[2] !== +cwF.sex) continue;
+    k = c[0];
+    var e = m[k] || (m[k] = [0, 0]);
+    e[0] += c[3];
+    if (c[1] === CW_NAT_SAUDI) e[1] += c[3];
+  }
+  var cls = CW.classes, d = CW.dims, out = [];
+  Object.keys(m).forEach(function (k) {
+    var i = +k, cl = cls[o.cls[i]], tot = m[k][0];
+    if (!tot) return;
+    out.push({ name: o.name[i], code: o.code[i], major: d.major[cl[0]],
+               type: d.type[cl[1]], skill: d.skill[cl[2]],
+               total: tot, saudi: m[k][1], other: tot - m[k][1],
+               rate: tot ? m[k][1] / tot : 0 });
+  });
+  return out;
+}
+
+function viewCenter() {
+  var v = document.getElementById("view");
+  if (!CW) {
+    v.innerHTML = '<p class="scope-note warn-note"><strong>البيانات غير محمّلة:</strong> ' +
+      'ملف <code>data/center-workforce.js</code> لم يُحمَّل، فلا يمكن عرض هذا التبويب.</p>';
+    return;
+  }
+  var d = CW.dims, t = cwTotals(), blocked = cwPlaceFilters();
+  var sd = CW.sectorDouble;
+  var est = cwEstTotal();
+
+  var notHonoured = blocked.length
+    ? '<p class="scope-note warn-note"><strong>تنبيه:</strong> جدول المهن وأعداد ' +
+      'المنشآت لا يتأثران بفلتر ' +
+      esc(blocked.map(function (k) { return "«" + CW_FILTER_AR[k] + "»"; }).join(" و")) +
+      '، لأن المصدر يوفّرهما حسب الجنسية والجنس فقط.</p>'
+    : "";
+
+  v.innerHTML =
+    '<div class="browse-head">' +
+      '<span class="result-count">' + fmt(CW.occ.code.length) + ' مهنة · ' +
+        fmt(CW.meta.establishments) + ' منشأة · ' + esc(CW.meta.period) + '</span>' +
+      exportBar("cw", "تصدير بيانات العاملين (CSV)") +
+    '</div>' +
+    '<p class="scope-note"><strong>نطاق البيانات:</strong> ' + esc(CW_SCOPE) + '</p>' +
+    '<p class="scope-note"><strong>لا يقارَن بتبويب العاملين:</strong> ' + esc(CW_VS) + '</p>' +
+    '<div class="browse-head" style="margin-bottom:14px">' +
+      cwSelect("cwfNat", "كل الجنسيات", d.nat, "nat") +
+      cwSelect("cwfSex", "كل الأجناس", d.sex, "sex") +
+      cwSelect("cwfReg", "كل المناطق", d.region, "reg") +
+      cwSelect("cwfSize", "كل الأحجام", d.size, "size") +
+      cwSelect("cwfNit", "كل النطاقات", d.nitaq, "nit") +
+      cwSelect("cwfSta", "كل الحالات", d.status, "sta") +
+      '<button id="cwReset" class="chip">مسح الفلاتر</button>' +
+    '</div>' +
+    notHonoured +
+    '<section class="kpis" id="cwKpis">' + cwKpis([
+      { label: "إجمالي العاملين", value: t.total,
+        sub: fmt(CW.occ.code.length) + " مهنة" },
+      { cls: "is-voc", label: "العاملون السعوديون", value: t.saudi,
+        sub: "نسبة التوطين " + pct(t.saudi, t.total) },
+      { label: "عاملون غير سعوديون", value: t.other, sub: "وظائف قائمة" },
+      { cls: "is-uni", label: "نسبة التوطين", raw: pct(t.saudi, t.total),
+        sub: fmt(t.saudi) + " من " + fmt(t.total) },
+      { label: "المنشآت", value: est.value,
+        sub: est.exact ? "منشأة بها عمالة مسجّلة" : "غير متأثر بالتصفية الحالية" },
+      { label: "الإناث", raw: pct(cwSexTotal(1), t.total),
+        sub: fmt(cwSexTotal(1)) + " عاملة" }
+    ]) + '</section>' +
+    '<div class="grid">' +
+      chartCard("توزيع العاملين على القطاعات الاقتصادية",
+        "المنشأة الواحدة قد تعمل في أكثر من قطاع فتُحتسب عمالتها في كلٍّ منها، " +
+        "ولذلك يزيد مجموع الأشرطة على إجمالي العاملين · بين القوسين عدد المنشآت",
+        "cwSector", "span6", "tall") +
+      chartCard("توزيع العاملين على المجموعات الرئيسية",
+        "التصنيف السعودي الموحّد للمهن", "cwMajor", "span6", "tall") +
+      chartCard("توزيع العاملين على المناطق الإدارية",
+        "بين القوسين عدد المنشآت في المنطقة", "cwRegion", "span12", "tall") +
+      chartCard("إحصائيات العاملين حسب حجم المنشأة",
+        "بين القوسين عدد المنشآت", "cwSize", "span6") +
+      chartCard("إحصائيات العاملين حسب نطاق المنشأة",
+        "نطاقات برنامج نطاقات · بين القوسين عدد المنشآت", "cwNitaq", "span6") +
+      chartCard("توزيع العاملين حسب مستوى المهارة",
+        "مستوى المهارة كما ورد في المصدر، و«لا يوجد» فئة قائمة فيه لا تقدير لها",
+        "cwSkill", "span6") +
+      chartCard("توزيع العاملين حسب تصنيف المهن",
+        "أساسية وأساسية داعمة وداعمة · و«لا يوجد» مهن غير مصنّفة ضمن قطاع الصناعة والتعدين",
+        "cwType", "span6") +
+      chartCard("توزيع العاملين حسب فئة الأجر",
+        "المصدر لا يسجّل فئة أجر لغير السعوديين، فجميعهم «(غير مصنف)»",
+        "cwSalary", "span12") +
+      card("جدول العاملين حسب المهنة",
+        "ابحث بالاسم أو الرمز، ورتّب بالضغط على رأس أي عمود",
+        '<div class="browse-head" style="margin-bottom:10px">' +
+          '<input id="cwQ" type="search" placeholder="ابحث عن مهنة أو رمز" ' +
+            'value="' + esc(cwQuery) + '" aria-label="ابحث عن مهنة">' +
+          '<span class="result-count" id="cwCount"></span>' +
+        '</div>' +
+        '<div class="table-wrap"><table id="cwTable"><thead><tr>' +
+          '<th>المهنة</th><th>الرمز</th><th>المجموعة الرئيسية</th>' +
+          '<th>تصنيف المهنة</th><th>مستوى المهارة</th>' +
+          CW_SORTABLE.map(function (c) {
+            return '<th class="sortable num" data-sort="' + c[0] + '" tabindex="0" ' +
+                   'role="button">' + esc(c[1]) + ' <span class="arrow"></span></th>';
+          }).join("") +
+        '</tr></thead><tbody id="cwRows"></tbody></table></div>', "span12") +
+    '</div>';
+
+  cwWire();
+  cwPaintTable();
+  drawCenterCharts();
+  wireExports("cw", cwExportCsv, cwCardSpec);
+}
+
+var CW_SORTABLE = [["total", "مجموع العاملين"], ["saudi", "سعوديون"],
+                   ["other", "غير سعوديين"], ["rate", "نسبة التوطين"]];
+
+function cwSexTotal(sexIdx) {
+  var F = CW.facts, i, r, s = 0;
+  for (i = 0; i < F.length; i++) {
+    r = F[i];
+    if (!cwPass(r)) continue;
+    if (r[CWX.sex] === sexIdx) s += r[CWX.w];
+  }
+  return s;
+}
+
+/* A filter change rebuilds the figures, the charts and the table in place.
+   The cards themselves stay, so the reveal animation does not replay and the
+   page does not jump back to the top on every click. */
+function cwRepaint() {
+  var t = cwTotals(), est = cwEstTotal();
+  document.getElementById("cwKpis").innerHTML = cwKpis([
+    { label: "إجمالي العاملين", value: t.total, sub: fmt(CW.occ.code.length) + " مهنة" },
+    { cls: "is-voc", label: "العاملون السعوديون", value: t.saudi,
+      sub: "نسبة التوطين " + pct(t.saudi, t.total) },
+    { label: "عاملون غير سعوديون", value: t.other, sub: "وظائف قائمة" },
+    { cls: "is-uni", label: "نسبة التوطين", raw: pct(t.saudi, t.total),
+      sub: fmt(t.saudi) + " من " + fmt(t.total) },
+    { label: "المنشآت", value: est.value,
+      sub: est.exact ? "منشأة بها عمالة مسجّلة" : "غير متأثر بالتصفية الحالية" },
+    { label: "الإناث", raw: pct(cwSexTotal(1), t.total),
+      sub: fmt(cwSexTotal(1)) + " عاملة" }
+  ]);
+  cwPaintTable();
+  drawCenterCharts();
+}
+
+function cwWire() {
+  [["cwfNat", "nat"], ["cwfSex", "sex"], ["cwfReg", "reg"],
+   ["cwfSize", "size"], ["cwfNit", "nit"], ["cwfSta", "sta"]].forEach(function (p) {
+    var el = document.getElementById(p[0]);
+    if (!el) return;
+    el.addEventListener("change", function () {
+      cwF[p[1]] = el.value;
+      /* A place filter switching on or off changes which warning the page
+         owes the reader, so that one case rebuilds the view. */
+      if (["reg", "size", "nit", "sta"].indexOf(p[1]) !== -1) viewCenter();
+      else cwRepaint();
+    });
+  });
+  var reset = document.getElementById("cwReset");
+  if (reset) reset.addEventListener("click", function () {
+    cwF = { nat: "", sex: "", reg: "", size: "", nit: "", sta: "" };
+    cwQuery = "";
+    viewCenter();
+  });
+  var q = document.getElementById("cwQ");
+  if (q) q.addEventListener("input", function () {
+    cwQuery = q.value.trim();
+    cwPaintTable();
+  });
+  [].forEach.call(document.querySelectorAll("#cwTable th.sortable"), function (th) {
+    function go() {
+      var k = th.getAttribute("data-sort");
+      if (cwSort.key === k) cwSort.dir = cwSort.dir === "desc" ? "asc" : "desc";
+      else { cwSort.key = k; cwSort.dir = "desc"; }
+      cwPaintTable();
+    }
+    th.addEventListener("click", go);
+    th.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+    });
+  });
+}
+
+function cwPaintTable() {
+  var all = cwOccRows(), q = cwQuery.toLowerCase();
+  var rows = all.filter(function (r) {
+    return !q || r.name.toLowerCase().indexOf(q) !== -1 || r.code.indexOf(q) !== -1;
+  }).sort(function (a, b) {
+    var dd = a[cwSort.key] - b[cwSort.key];
+    return cwSort.dir === "desc" ? -dd : dd;
+  });
+  document.getElementById("cwCount").textContent =
+    fmt(rows.length) + " من " + fmt(all.length) + " مهنة";
+  document.getElementById("cwRows").innerHTML = rows.map(function (r) {
+    return '<tr>' +
+      '<td>' + hi(r.name, cwQuery) + '</td>' +
+      '<td>' + hi(r.code, cwQuery) + '</td>' +
+      '<td>' + esc(r.major === "NULL" ? "غير مسجّلة" : r.major) + '</td>' +
+      '<td>' + esc(r.type) + '</td>' +
+      '<td>' + esc(r.skill) + '</td>' +
+      '<td class="num">' + fmt(r.total) + '</td>' +
+      '<td class="num">' + fmt(r.saudi) + '</td>' +
+      '<td class="num">' + fmt(r.other) + '</td>' +
+      '<td class="num">' + pct(r.saudi, r.total) + '</td></tr>';
+  }).join("") ||
+    '<tr><td colspan="9" class="empty">لا توجد مهنة بهذه التصفية.</td></tr>';
+  [].forEach.call(document.querySelectorAll("#cwTable th.sortable"), function (th) {
+    var on = th.getAttribute("data-sort") === cwSort.key;
+    th.classList.toggle("is-sorted", on);
+    th.querySelector(".arrow").textContent = on ? (cwSort.dir === "desc" ? "▼" : "▲") : "";
+    th.setAttribute("aria-sort", on ? (cwSort.dir === "desc" ? "descending" : "ascending") : "none");
+  });
+}
+
+var CW_NAMES = { outerName: "مجموع العاملين", innerName: "سعوديون",
+                 ratioName: "نسبة التوطين" };
+
+function cwBar(id, entries, opts) {
+  if (!document.getElementById(id)) return;
+  barChart(id, entries, Object.assign({ legendColor: C.voc }, CW_NAMES, opts || {}));
+}
+function cwByDim(pos) {
+  return cwCollect(function (r) { return r[pos]; });
+}
+function cwByClass(i) {
+  var cls = CW.classes;
+  return cwCollect(function (r) { return cls[r[CWX.cls]][i]; });
+}
+
+function drawCenterCharts() {
+  if (!CW || !document.getElementById("cwSector")) return;
+  var d = CW.dims, atoms = CW.sectorAtoms;
+  /* The establishment count beside a label is a whole-file figure. Once a
+     place filter narrows the bars it no longer describes them, so it goes. */
+  var withEst = cwPlaceFilters().length === 0;
+  function est(dim) { return withEst ? cwEst(dim) : null; }
+
+  cwBar("cwSector", cwEntries(cwCollect(function (r) { return atoms[r[CWX.sec]]; }),
+                              d.sector, est("sector")), { labelWidth: 230 });
+  cwBar("cwMajor", cwEntries(cwByClass(0),
+                             d.major.map(function (n) { return n === "NULL" ? "غير مسجّلة" : n; })),
+        { labelWidth: 235 });
+  cwBar("cwRegion", cwEntries(cwByDim(CWX.reg), d.region, est("region")),
+        { labelWidth: 225 });
+  cwBar("cwSize", cwEntries(cwByDim(CWX.size), d.size, est("size")), { labelWidth: 175 });
+  cwBar("cwNitaq", cwEntries(cwByDim(CWX.nit), d.nitaq, est("nitaq")), { labelWidth: 175 });
+  cwBar("cwSkill", cwEntries(cwByClass(2), d.skill), { labelWidth: 130 });
+  cwBar("cwType", cwEntries(cwByClass(1), d.type), { labelWidth: 150 });
+  cwBar("cwSalary", cwEntries(cwByDim(CWX.sal), d.salary), { labelWidth: 150 });
+}
+
+function cwExportCsv() {
+  var rows = [["المهنة", "الرمز", "المجموعة الرئيسية", "تصنيف المهنة", "مستوى المهارة",
+               "مجموع العاملين", "سعوديون", "غير سعوديين", "نسبة التوطين"]];
+  cwOccRows().sort(function (a, b) { return b.total - a.total; }).forEach(function (r) {
+    rows.push([r.name, r.code, r.major === "NULL" ? "غير مسجّلة" : r.major,
+               r.type, r.skill, r.total, r.saudi, r.other,
+               (r.rate * 100).toFixed(1) + "%"]);
+  });
+  downloadCsv("بيانات-العاملين-" + CW.meta.period.replace(/\s+/g, "-") + ".csv", rows);
+}
+
+function cwCardSpec() {
+  var T = cardTok(), t = cwTotals(), d = CW.dims, atoms = CW.sectorAtoms;
+  var est = cwEstTotal();
+  var on = ["nat", "sex", "reg", "size", "nit", "sta"].filter(cwOn).map(function (k) {
+    var labels = { nat: d.nat, sex: d.sex, reg: d.region, size: d.size,
+                   nit: d.nitaq, sta: d.status }[k];
+    return CW_FILTER_AR[k] + ": " + labels[+cwF[k]];
+  });
+  return {
+    title: "بيانات العاملين",
+    kicker: CW.meta.period + " · " + fmt(CW.occ.code.length) + " مهنة",
+    badge: "نسبة التوطين " + pct(t.saudi, t.total),
+    lead: { value: t.total, label: "إجمالي العاملين",
+            side: fmt(t.saudi), sideLabel: "منهم سعوديون" },
+    kpis: [
+      { label: "العاملون السعوديون", value: t.saudi, accent: T.purple,
+        sub: "نسبة التوطين " + pct(t.saudi, t.total) },
+      { label: "عاملون غير سعوديون", value: t.other, sub: "وظائف قائمة" },
+      { label: "المنشآت", value: est.value,
+        sub: est.exact ? "منشأة بها عمالة مسجّلة" : "غير متأثر بالتصفية" },
+      { label: "الإناث", raw: pct(cwSexTotal(1), t.total),
+        sub: fmt(cwSexTotal(1)) + " عاملة" },
+      { label: "المناطق", value: d.region.length, sub: fmt(CW.dims.city.length) + " مدينة" },
+      { label: "القطاعات", value: d.sector.length, accent: T.blue,
+        sub: "قد تعمل المنشأة في أكثر من قطاع" }
+    ],
+    charts: [
+      { title: "توزيع العاملين على القطاعات الاقتصادية",
+        sub: "الشريط كامله مجموع العاملين والمملوء منه السعوديون · " +
+             "المنشأة متعددة القطاعات تُحتسب في كلٍّ منها", h: 430,
+        draw: function (id) {
+          cwBar(id, cwEntries(cwCollect(function (r) { return atoms[r[CWX.sec]]; }),
+                              d.sector).slice(-12), { labelWidth: 210 });
+        } },
+      { title: "توزيع العاملين على المجموعات الرئيسية", sub: "التصنيف السعودي الموحّد للمهن",
+        h: 430,
+        draw: function (id) {
+          cwBar(id, cwEntries(cwByClass(0),
+            d.major.map(function (n) { return n === "NULL" ? "غير مسجّلة" : n; })).slice(-12),
+            { labelWidth: 220 });
+        } }
+    ],
+    note: CW_SCOPE + (on.length ? "  التصفية: " + on.join(" · ") + "." : ""),
+    file: "بيانات-العاملين"
+  };
+}
+
+/* ========================================================================= */
 /*  Tabs and routing                                                         */
 /* ========================================================================= */
 var TABS = [
@@ -4308,6 +4786,8 @@ var TABS = [
   { id: "uni", label: "التخصصات الجامعية", count: UD.major.length },
   { id: "occ", label: "المهن", count: D.occupationTree.length },
   { id: "workforce", label: "العاملون في سوق العمل", count: JOBS.length },
+  { id: "center", label: "بيانات العاملين",
+    count: CW ? CW.occ.code.length : 0 },
   { id: "supply", label: "العرض والطلب" },
   { id: "regions", label: "المناطق", count: 13 },
   { id: "nqf", label: "الإطار الوطني للمؤهلات" },
@@ -4402,6 +4882,7 @@ function route() {
     else if (p[1]) viewOccDetail(p[1]);
     else viewOccBrowse();
   } else if (tab === "workforce") { viewWorkforce(); }
+  else if (tab === "center") { viewCenter(); }
   else if (tab === "supply") { viewSupplyDemand(); }
   else if (tab === "regions") {
     /* #regions · #regions/<i> · #regions/<i>/<j> */

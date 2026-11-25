@@ -66,7 +66,7 @@ if (process.env.CHROMIUM_PATH) launchOptions.executablePath = process.env.CHROMI
 
 /* Sections the dashboard declares. An exact number, not a floor: this check
    exists to notice one disappearing, which a floor would not. */
-const SECTION_COUNT = 9;
+const SECTION_COUNT = 10;
 
 const results = [];
 function check(name, ok, detail) {
@@ -578,6 +578,98 @@ async function main() {
     }
 
     check('no console or page errors on the regions page',
+          noise.length === 0, noise.slice(0, 4).join(' | '));
+    await context.close();
+  }
+
+  /* ---------------------------------------------------------------------
+     WORKER DATA: the National Information Center tab, its filters, and the
+     one figure on it that cannot honestly follow a filter
+     --------------------------------------------------------------------- */
+  console.log('\nWORKER DATA');
+  {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const page = await context.newPage();
+    const noise = [];
+    page.on('pageerror', e => noise.push('pageerror: ' + e.message));
+    page.on('console', m => { if (m.type() === 'error') noise.push('console: ' + m.text()); });
+    await page.goto(PAGE + '#center', { waitUntil: 'load' });
+    await page.waitForSelector('#cwRows tr', { timeout: 20000 });
+    await page.waitForTimeout(2500);
+
+    /* The tab was asked for by position, between العاملون في سوق العمل and
+       العرض والطلب, so position is what is checked. */
+    const order = await page.evaluate(() =>
+      [...document.querySelectorAll('.gooey-nav-container nav ul li a')]
+        .map(a => a.textContent.replace(/\s*\d[\d,]*\s*$/, '').trim()));
+    const i = order.indexOf('بيانات العاملين');
+    check('the tab sits between العاملون في سوق العمل and العرض والطلب',
+          i > 0 && order[i - 1] === 'العاملون في سوق العمل' &&
+          order[i + 1] === 'العرض والطلب',
+          order.join(' | '));
+
+    /* Every chart on this page is an echarts canvas inside a sized box. A
+       chart that mounted onto the wrong node still produces a canvas, so the
+       box is measured too: a <select> is about 50px tall and a chart is not.
+       This is the check that caught the حجم filter and the حجم chart sharing
+       an id. */
+    const boxes = await page.evaluate(() =>
+      ['cwSector', 'cwMajor', 'cwRegion', 'cwSize', 'cwNitaq', 'cwSkill',
+       'cwType', 'cwSalary'].map(id => {
+        const el = document.getElementById(id);
+        if (!el) return { id, ok: false, why: 'missing' };
+        const r = el.getBoundingClientRect();
+        return { id, ok: !!el.querySelector('canvas') && r.height > 200 && r.width > 200,
+                 why: `${Math.round(r.width)}x${Math.round(r.height)}` };
+      }));
+    const bad = boxes.filter(b => !b.ok);
+    check('all eight charts drew into a box of their own size',
+          bad.length === 0, bad.map(b => b.id + ' ' + b.why).join(', '));
+
+    const headline = (await page.locator('#cwKpis .kpi .value').first().innerText()).trim();
+    check('the stat row carries the headcount the source totals to',
+          headline === '1,004,220', headline);
+
+    const rows = await page.locator('#cwRows tr').count();
+    check('the occupation table paints a row per occupation',
+          rows === 1701, `${rows} rows`);
+
+    /* A filter has to move the figures, not just the markup. */
+    await page.selectOption('#cwfReg', { label: 'منطقة الرياض' });
+    await page.waitForTimeout(2000);
+    const riyadh = (await page.locator('#cwKpis .kpi .value').first().innerText()).trim();
+    check('filtering to a region moves the headcount to that region\'s total',
+          riyadh === '407,570', riyadh);
+
+    /* Establishments partition by region, so that one stays exact. */
+    const estTile = (await page.locator('#cwKpis .kpi').nth(4).innerText()).replace(/\n/g, ' ');
+    check('the establishment tile is exact for a region filter',
+          estTile.includes('5,263'), estTile);
+
+    /* Region and size together cannot be answered from what the source gives,
+       and the tile has to say so rather than print a number that disagrees
+       with the bars beside it. */
+    await page.selectOption('#cwfSize', { label: 'كبيرة' });
+    await page.waitForTimeout(2000);
+    const mixed = (await page.locator('#cwKpis .kpi').nth(4).innerText()).replace(/\n/g, ' ');
+    check('it declares itself unfiltered when the source cannot answer',
+          mixed.includes('غير متأثر بالتصفية'), mixed);
+
+    await page.locator('#cwReset').click();
+    await page.waitForTimeout(2000);
+    const back = (await page.locator('#cwKpis .kpi .value').first().innerText()).trim();
+    check('clearing the filters restores the full headcount', back === '1,004,220', back);
+
+    /* The sector bars deliberately sum past the headcount, and the card says
+       so; the page would be lying if the hint went missing. */
+    const hint = await page.evaluate(() => {
+      const el = document.getElementById('cwSector');
+      return el.closest('.card').querySelector('.hint').textContent;
+    });
+    check('the sector card still warns that its bars double count',
+          hint.includes('أكثر من قطاع'), hint.slice(0, 60));
+
+    check('no console or page errors on the worker data page',
           noise.length === 0, noise.slice(0, 4).join(' | '));
     await context.close();
   }

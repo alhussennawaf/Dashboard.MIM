@@ -58,6 +58,9 @@ PUBLISHED = [
     "assets/icon-512.png",
     "assets/og-image.png",
     "data/dashboard-data.js",
+    # The National Information Center extract behind بيانات العاملين,
+    # aggregated by scripts/parse_center_workforce.py.
+    "data/center-workforce.js",
     # The self-hosted faces the brand's fallback stacks name. Without these the
     # pages fall through to Times New Roman and Tahoma, which is where they
     # landed on almost every visit before they were vendored.
@@ -208,6 +211,16 @@ def main():
     if "reactbits.js?v=" not in stamped:
         sys.exit("the React Bits bundle was not fingerprinted; a deploy would "
                  "be invisible to anyone holding a cached copy")
+
+    # Every local script and stylesheet the page asks for has to have been
+    # copied and fingerprinted. One left out of ASSETS above still renders here
+    # and 404s on the deployed site, which is how بيانات العاملين first shipped
+    # empty. An unstamped reference is that mistake, so it stops the build.
+    unstamped = re.findall(r'(?:src|href)="((?:assets|data)/[^"]+\.(?:js|css))"', stamped)
+    if unstamped:
+        sys.exit("not copied into the site and so not fingerprinted: " +
+                 ", ".join(sorted(set(unstamped))) +
+                 "\n  add each one to ASSETS in this script")
 
     write_robots(url, indexable)
     write_sitemap(url)

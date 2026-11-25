@@ -50,6 +50,14 @@ otherwise, and they are not re-litigated at the start of every session.
   or cut that sentence. This is the only warning `build_site.py` still prints.
 * **`indexable` is true.** The site will be indexed as soon as it is
   reachable. Deliberate, but worth knowing before the link goes out.
+* **Two requested indicators have no data behind them.** The requirements
+  workbook for لوحة بيانات القوى العاملة asks for ten; بيانات العاملين builds
+  eight. Missing: **#5 توزيع العاملين بناء على المدن الصناعية**, because the
+  extract carries المدينة (259 of them) but no industrial-city column at all;
+  and **the أسم المنشأة filter**, asked for on all ten, because the extract
+  carries only رقم المنشأة, an anonymised id. Both need a wider extract from
+  المركز الوطني للمعلومات; neither can be derived from what is on hand. Ask
+  for those two columns when the next month's file is requested.
 * **Safari is unverified.** Everything is checked in Chromium. Two things in
   the export cards lean recent: `ctx.roundRect`, shimmed by hand so it
   degrades, and `ctx.letterSpacing`, ignored where absent at the cost of the
@@ -118,6 +126,39 @@ otherwise, and they are not re-litigated at the start of every session.
   since a national rate on a region card would be read as that region's; and
   on العرض والطلب a region filters supply alone while demand stays national,
   which the page warns about in that state. `WF_NOTE` states it in one place.
+* **The two employment tabs do not reconcile, by design.** العاملون في سوق
+  العمل counts 172,229 across the 503 framework occupations in Q3 2026;
+  بيانات العاملين counts 1,004,220 across 1,701 occupations recorded in
+  industrial establishments in August 2026. Even the comparable slice
+  (أساسية + أساسية داعمة at high and medium skill) is 252,896, not 172,229.
+  Different source, month and universe. Each tab carries its own scope line
+  and the new one says outright that it is not to be compared with the old.
+* **The economic sector arrives several codes to a cell.** The extract writes
+  `12 - صناعة المعادن 16 - مواد البناء` when an establishment spans two
+  sectors, which is why the raw column holds 414 distinct strings for 17 real
+  sectors. The fact cube keeps the whole combination as one index and
+  `sectorAtoms` maps it to its parts, so every total stays exact; only the
+  sector chart walks the parts, and there the bars sum to 1,521,999 against a
+  headcount of 1,004,220, +51.6%. That chart says so in its hint. Never split
+  the sector into the cube's grain: it would double count every other
+  dimension too.
+* **فئة الأجر exists for Saudis only.** All 687,112 non-Saudis are recorded as
+  `(غير مصنف)`, every one. The wage chart can only ever describe the 317,108
+  Saudis, and says so.
+* **99,780 workers carry no skill level.** `لا يوجد` is a real category in the
+  source, matching the 99,780 whose نوع المهنة is also `لا يوجد` — occupations
+  outside the industry and mining framework. مرفق2 maps القسم to a skill level
+  and could fill 94,635 of them, and the project owner decided on 2026-11-25
+  **not** to: the page shows the source's own four categories. Do not derive
+  it without asking again.
+* **(القسم, نوع المهنة, مستوى المهارة) is a pure function of رمز المهنة**,
+  verified across all 1,701 codes with zero conflicts. That is why occupations
+  compress to a lexicon of 1,701 and the fact rows carry one class index of 35
+  instead of three labels.
+* **6,120 of the extract's rows carry no measure at all** — an establishment
+  on file with nothing recorded against it. They are skipped for headcount but
+  still counted as establishments, which is why 15,017 establishments appear
+  but only 13,400 have workers.
 * **Supply must never be summed per occupation.** Occupations share education
   fields, so adding each occupation's pool gives 2,145,783 against a true
   153,078, from a file of 185,596 rows. `supplyUnion()` takes the union of
