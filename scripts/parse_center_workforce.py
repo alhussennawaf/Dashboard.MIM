@@ -93,14 +93,20 @@ def main(src):
 
     need = ["رقم المنشأة", "المنطقة", "المدينة", "القطاع الاقتصادي",
             "الحجم من منشآت", "حالة المنشأة", "النطاق", "الفئة العمرية",
-            "فئة الرواتب", "الجنسية", "الجنس", "رمز المهنة", "المهنة",
+            "الجنسية", "الجنس", "رمز المهنة", "المهنة",
             "القسم", "نوع المهنة/ التخصص المهني", "مستوى المهارة", "عدد العمالة"]
     missing = [h for h in need if h not in I]
     if missing:
         sys.exit("source is missing expected columns: " + ", ".join(missing))
 
+    # فئة الرواتب is deliberately not carried. The source records a wage band
+    # for Saudis only -- all 687,112 non-Saudis read "(غير مصنف)" -- so the
+    # chart it fed could only ever describe a third of the workforce, and was
+    # dropped on 2026-11-25. Keeping the column in the grain split the cube
+    # into 21% more rows for nothing to read. Restore it here and in CWX in
+    # index.html if a wage reading is ever wanted again.
     D = {k: Dim() for k in ("region", "sector", "size", "nitaq", "status",
-                            "salary", "nat", "sex", "major", "type", "skill",
+                            "nat", "sex", "major", "type", "skill",
                             "city", "age")}
     combo = Dim()                     # raw القطاع الاقتصادي cell, as written
     combo_atoms = {}                  # combination index -> [sector atom index]
@@ -138,7 +144,6 @@ def main(src):
         size = D["size"](norm(r[I["الحجم من منشآت"]]))
         nit = D["nitaq"](norm(r[I["النطاق"]]))
         sta = D["status"](norm(r[I["حالة المنشأة"]]))
-        sal = D["salary"](norm(r[I["فئة الرواتب"]]))
         nat = D["nat"](norm(r[I["الجنسية"]]))
         sex = D["sex"](norm(r[I["الجنس"]]))
         age = D["age"](norm(r[I["الفئة العمرية"]]))
@@ -178,7 +183,7 @@ def main(src):
         if parts is None:
             parts = [D["sector"](a) for a in atoms(raw_sec)]
             combo_atoms[ci] = parts
-        facts[(reg, ci, size, nit, sta, sal, nat, sex, cls)] += w
+        facts[(reg, ci, size, nit, sta, nat, sex, cls)] += w
         for si in parts:
             sector_parts += w
             est_dim["sector"][si].add(est)

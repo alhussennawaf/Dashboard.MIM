@@ -4320,7 +4320,7 @@ function viewData() {
 var CW = window.MIM_CENTER || null;
 var CW_NAT_SAUDI = CW ? CW.dims.nat.indexOf("سعودي") : -1;
 /* Fact row layout, by position. */
-var CWX = { reg: 0, sec: 1, size: 2, nit: 3, sta: 4, sal: 5, nat: 6, sex: 7, cls: 8, w: 9 };
+var CWX = { reg: 0, sec: 1, size: 2, nit: 3, sta: 4, nat: 5, sex: 6, cls: 7, w: 8 };
 
 var CW_SCOPE = CW
   ? "كل العاملين المسجّلين في المنشآت الصناعية: " + fmt(CW.occ.code.length) +
@@ -4553,9 +4553,6 @@ function viewCenter() {
       chartCard("توزيع العاملين حسب تصنيف المهن",
         "أساسية وأساسية داعمة وداعمة · و«لا يوجد» مهن غير مصنّفة ضمن قطاع الصناعة والتعدين",
         "cwType", "span6") +
-      chartCard("توزيع العاملين حسب فئة الأجر",
-        "المصدر لا يسجّل فئة أجر لغير السعوديين، فجميعهم «(غير مصنف)»",
-        "cwSalary", "span12") +
       card("جدول العاملين حسب المهنة",
         "ابحث بالاسم أو الرمز، ورتّب بالضغط على رأس أي عمود",
         '<div class="browse-head" style="margin-bottom:10px">' +
@@ -4716,7 +4713,6 @@ function drawCenterCharts() {
   cwBar("cwNitaq", cwEntries(cwByDim(CWX.nit), d.nitaq, est("nitaq")), { labelWidth: 175 });
   cwBar("cwSkill", cwEntries(cwByClass(2), d.skill), { labelWidth: 130 });
   cwBar("cwType", cwEntries(cwByClass(1), d.type), { labelWidth: 150 });
-  cwBar("cwSalary", cwEntries(cwByDim(CWX.sal), d.salary), { labelWidth: 150 });
 }
 
 function cwExportCsv() {

@@ -142,9 +142,13 @@ otherwise, and they are not re-litigated at the start of every session.
   headcount of 1,004,220, +51.6%. That chart says so in its hint. Never split
   the sector into the cube's grain: it would double count every other
   dimension too.
-* **فئة الأجر exists for Saudis only.** All 687,112 non-Saudis are recorded as
-  `(غير مصنف)`, every one. The wage chart can only ever describe the 317,108
-  Saudis, and says so.
+* **فئة الأجر is gone, and the column with it.** The source records a wage
+  band for Saudis only: all 687,112 non-Saudis read `(غير مصنف)`, every one,
+  so the chart could describe barely a third of the workforce. It was dropped
+  on 2026-11-25, and the column was dropped from the cube's grain with it,
+  which cost 21% of the fact rows (84,502 to 66,693) and half a megabyte.
+  `parse_center_workforce.py` says where to put it back; restoring it also
+  means re-indexing `CWX` in index.html, since the fact row gets a column.
 * **99,780 workers carry no skill level.** `لا يوجد` is a real category in the
   source, matching the 99,780 whose نوع المهنة is also `لا يوجد` — occupations
   outside the industry and mining framework. مرفق2 maps القسم to a skill level

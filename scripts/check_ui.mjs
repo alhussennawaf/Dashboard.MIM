@@ -615,7 +615,7 @@ async function main() {
        an id. */
     const boxes = await page.evaluate(() =>
       ['cwSector', 'cwMajor', 'cwRegion', 'cwSize', 'cwNitaq', 'cwSkill',
-       'cwType', 'cwSalary'].map(id => {
+       'cwType'].map(id => {
         const el = document.getElementById(id);
         if (!el) return { id, ok: false, why: 'missing' };
         const r = el.getBoundingClientRect();
@@ -623,7 +623,7 @@ async function main() {
                  why: `${Math.round(r.width)}x${Math.round(r.height)}` };
       }));
     const bad = boxes.filter(b => !b.ok);
-    check('all eight charts drew into a box of their own size',
+    check('all seven charts drew into a box of their own size',
           bad.length === 0, bad.map(b => b.id + ' ' + b.why).join(', '));
 
     const headline = (await page.locator('#cwKpis .kpi .value').first().innerText()).trim();
