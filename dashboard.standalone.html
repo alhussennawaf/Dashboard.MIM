@@ -3645,8 +3645,6 @@ function cFooter(ctx, W, y, note, compact) {
   if (compact) {
     cText(ctx, "المصدر: وزارة الصناعة والثروة المعدنية · سنوات التخرج " + yearsLabel() +
                (note ? " · " + note : ""), W - PAD, y, { size: 17, color: T.grey });
-    cText(ctx, "dashboard-mim.nawaf-husn.workers.dev", PAD, y,
-          { size: 16, color: T.greyMid, dir: "ltr", align: "left" });
     return y + 24;
   }
   cText(ctx, "المصدر: وزارة الصناعة والثروة المعدنية، بيانات الخريجين والتوظيف",
@@ -3656,9 +3654,6 @@ function cFooter(ctx, W, y, note, compact) {
              new Date().toISOString().slice(0, 10), W - PAD, y,
         { size: 17, color: T.grey });
   if (note) { y += 28; cText(ctx, note, W - PAD, y, { size: 16, color: T.greyMid }); }
-  y += 34;
-  cText(ctx, "dashboard-mim.nawaf-husn.workers.dev", W - PAD, y,
-        { size: 16, color: T.greyMid, dir: "ltr", align: "right" });
   return y + 30;
 }
 
