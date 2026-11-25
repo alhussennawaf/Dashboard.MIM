@@ -151,7 +151,12 @@ otherwise, and they are not re-litigated at the start of every session.
   means re-indexing `CWX` in index.html, since the fact row gets a column.
 * **99,780 workers carry no skill level.** `لا يوجد` is a real category in the
   source, matching the 99,780 whose نوع المهنة is also `لا يوجد` — occupations
-  outside the industry and mining framework. مرفق2 maps القسم to a skill level
+  outside the industry and mining framework. It is shown as **«غير مصنف»**:
+  the payload keeps the source's own word and index.html renames the two
+  dimensions on load, which carries the new word to the charts, the table,
+  the CSV and the export card at once. One occupation is itself named
+  `لا يوجد`, under code `-1`, five workers the source holds no occupation for
+  at all; it takes the same word. مرفق2 maps القسم to a skill level
   and could fill 94,635 of them, and the project owner decided on 2026-11-25
   **not** to: the page shows the source's own four categories. Do not derive
   it without asking again.

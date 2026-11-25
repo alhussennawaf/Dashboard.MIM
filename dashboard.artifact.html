@@ -4798,6 +4798,24 @@ function viewData() {
    sector chart walks the parts and only that chart double counts. */
 
 var CW = window.MIM_CENTER || null;
+/* The source writes «لا يوجد» for an occupation it carries no classification
+   or skill level for. That reads as an absence of the occupation rather than
+   of the label, so it is shown as «غير مصنف». The payload keeps the source's
+   own word; the rename is display only, and renaming the dimension here
+   carries it to the charts, the table, the CSV and the export card at once. */
+if (CW) {
+  ["type", "skill"].forEach(function (k) {
+    CW.dims[k] = CW.dims[k].map(function (n) {
+      return n === "لا يوجد" ? "غير مصنف" : n;
+    });
+  });
+  /* One occupation is itself recorded as «لا يوجد», under code -1: five
+     workers the source holds no occupation for at all. It takes the same
+     word as the categories rather than reading as a missing row. */
+  CW.occ.name = CW.occ.name.map(function (n) {
+    return n === "لا يوجد" ? "غير مصنف" : n;
+  });
+}
 var CW_NAT_SAUDI = CW ? CW.dims.nat.indexOf("سعودي") : -1;
 /* Fact row layout, by position. */
 var CWX = { reg: 0, sec: 1, size: 2, nit: 3, sta: 4, nat: 5, sex: 6, cls: 7, w: 8 };
@@ -5028,10 +5046,10 @@ function viewCenter() {
       chartCard("إحصائيات العاملين حسب نطاق المنشأة",
         "نطاقات برنامج نطاقات · بين القوسين عدد المنشآت", "cwNitaq", "span6") +
       chartCard("توزيع العاملين حسب مستوى المهارة",
-        "مستوى المهارة كما ورد في المصدر، و«لا يوجد» فئة قائمة فيه لا تقدير لها",
+        "مستوى المهارة كما ورد في المصدر، و«غير مصنف» فئة قائمة فيه لا تقدير لها",
         "cwSkill", "span6") +
       chartCard("توزيع العاملين حسب تصنيف المهن",
-        "أساسية وأساسية داعمة وداعمة · و«لا يوجد» مهن غير مصنّفة ضمن قطاع الصناعة والتعدين",
+        "أساسية وأساسية داعمة وداعمة · و«غير مصنف» مهن خارج إطار قطاع الصناعة والتعدين",
         "cwType", "span6") +
       card("جدول العاملين حسب المهنة",
         "ابحث بالاسم أو الرمز، ورتّب بالضغط على رأس أي عمود",
