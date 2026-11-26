@@ -657,6 +657,51 @@ input[type="search"]:hover, select:hover { border-color: var(--mim-grey-medium);
 input[type="search"]:focus { border-color: var(--mim-purple); box-shadow: var(--shadow-sm); }
 input[type="search"] { min-width: 250px; }
 input[type="search"]:focus-visible, select:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 1px; }
+
+/* ---------- multi-select filter ---------- */
+/* A <select multiple> answers "show me أساسية at مهارات عالية" badly: it is
+   unusable on a touch screen and says nothing about what is chosen until it
+   is opened. These are a button carrying its own count, opening a list of
+   checkboxes. */
+.multi { position: relative; display: inline-block; }
+.multi-btn {
+  font: inherit; font-size: 14px; padding: 9px 14px; cursor: pointer;
+  border: 1px solid var(--mim-black-300); border-radius: var(--r-md);
+  background: #fff; color: inherit; display: inline-flex; gap: 8px;
+  align-items: center; white-space: nowrap;
+  transition: border-color var(--dur-quick) var(--ease-out-quick),
+              box-shadow var(--dur-quick) var(--ease-out-quick);
+}
+.multi-btn:hover { border-color: var(--mim-grey-medium); }
+.multi-btn[aria-expanded="true"] {
+  border-color: var(--mim-purple); box-shadow: var(--shadow-sm);
+}
+.multi-btn:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 1px; }
+.multi-btn .caret { font-size: 10px; color: var(--mim-grey-dark); }
+.multi-btn .multi-n {
+  font-size: 11.5px; font-weight: 600; color: #fff; background: var(--mim-purple);
+  border-radius: var(--r-pill); padding: 1px 7px; font-variant-numeric: tabular-nums;
+}
+.multi-pop {
+  position: absolute; top: calc(100% + 6px); inset-inline-start: 0; z-index: 40;
+  min-width: 250px; max-height: 320px; overflow-y: auto; padding: 7px;
+  background: #fff; border-radius: var(--r-md);
+  box-shadow: var(--shadow-md), var(--ring-hairline);
+}
+.multi-pop[hidden] { display: none; }
+.multi-pop label {
+  display: flex; gap: 9px; align-items: center; padding: 7px 9px;
+  border-radius: var(--r-sm); font-size: 13.5px; cursor: pointer; line-height: 1.4;
+}
+.multi-pop label:hover { background: var(--mim-black-100); }
+.multi-pop input { accent-color: var(--mim-purple); width: 15px; height: 15px; flex: none; }
+.multi-clear {
+  width: 100%; margin-top: 5px; font: inherit; font-size: 12.5px; padding: 7px;
+  cursor: pointer; background: none; color: var(--mim-grey-dark);
+  border: none; border-top: 1px solid var(--mim-black-200);
+}
+.multi-clear:hover { color: var(--mim-purple); }
+@media (max-width: 880px) { .multi-pop { min-width: 210px; } }
 .result-count { font-size: 12.5px; color: var(--mim-grey-dark); font-variant-numeric: tabular-nums; }
 
 .cardlist { display: grid; gap: 11px; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); }
@@ -4845,6 +4890,33 @@ var CW_VS = "هذا التبويب لا يطابق تبويب «العاملون
    are page-level and narrow the cube for all of the charts at once. */
 var cwF = { nat: "", sex: "", reg: "", size: "", nit: "", sta: "" };
 var cwSort = { key: "total", dir: "desc" };
+/* The table's three classification columns, filtered by ticking values off.
+   They narrow the table only: they are columns of it, and the charts above
+   already draw two of the three in full. */
+var cwPick = { major: [], type: [], skill: [] };
+var CW_PICKS = [["major", "المجموعة الرئيسية"], ["type", "تصنيف المهنة"],
+                ["skill", "مستوى المهارة"]];
+function cwPickLabels(key) {
+  return key === "major"
+    ? CW.dims.major.map(function (n) { return n === "NULL" ? "غير مسجّلة" : n; })
+    : CW.dims[key];
+}
+function cwMulti(key, label) {
+  var on = cwPick[key];
+  return '<div class="multi" data-multi="' + key + '">' +
+    '<button type="button" class="multi-btn" aria-expanded="false" aria-haspopup="true">' +
+      '<span>' + esc(label) + '</span>' +
+      '<span class="multi-n"' + (on.length ? "" : ' hidden') + '>' + on.length + '</span>' +
+      '<span class="caret" aria-hidden="true">\u25BE</span>' +
+    '</button>' +
+    '<div class="multi-pop" hidden role="group" aria-label="' + esc(label) + '">' +
+      cwPickLabels(key).map(function (n, i) {
+        return '<label><input type="checkbox" value="' + i + '"' +
+               (on.indexOf(i) !== -1 ? " checked" : "") + '><span>' + esc(n) + '</span></label>';
+      }).join("") +
+      '<button type="button" class="multi-clear">مسح</button>' +
+    '</div></div>';
+}
 var cwQuery = "";
 
 function cwOn(key) { return cwF[key] !== ""; }
@@ -4986,6 +5058,7 @@ function cwOccRows() {
     if (!tot) return;
     out.push({ name: o.name[i], code: o.code[i], major: d.major[cl[0]],
                type: d.type[cl[1]], skill: d.skill[cl[2]],
+               mi: cl[0], ti: cl[1], si: cl[2],
                total: tot, saudi: m[k][1], other: tot - m[k][1],
                rate: tot ? m[k][1] / tot : 0 });
   });
@@ -5061,10 +5134,12 @@ function viewCenter() {
         "أساسية وأساسية داعمة وداعمة · و«غير مصنف» مهن خارج إطار قطاع الصناعة والتعدين",
         "cwType", "span6") +
       card("جدول العاملين حسب المهنة",
-        "ابحث بالاسم أو الرمز، ورتّب بالضغط على رأس أي عمود",
+        "ابحث بالاسم أو الرمز، صفّه بالمجموعة أو التصنيف أو المهارة، " +
+        "ورتّب بالضغط على رأس أي عمود",
         '<div class="browse-head" style="margin-bottom:10px">' +
           '<input id="cwQ" type="search" placeholder="ابحث عن مهنة أو رمز" ' +
             'value="' + esc(cwQuery) + '" aria-label="ابحث عن مهنة">' +
+          CW_PICKS.map(function (c) { return cwMulti(c[0], c[1]); }).join("") +
           '<span class="result-count" id="cwCount"></span>' +
         '</div>' +
         '<div class="table-wrap"><table id="cwTable"><thead><tr>' +
@@ -5133,6 +5208,7 @@ function cwWire() {
   var reset = document.getElementById("cwReset");
   if (reset) reset.addEventListener("click", function () {
     cwF = { nat: "", sex: "", reg: "", size: "", nit: "", sta: "" };
+    cwPick = { major: [], type: [], skill: [] };
     cwQuery = "";
     viewCenter();
   });
@@ -5153,12 +5229,91 @@ function cwWire() {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
     });
   });
+  cwWireMulti();
+}
+
+/* One panel open at a time, closed by a click anywhere else or by Escape.
+   The document listener is installed once: cwWire runs again on every
+   rebuild of the view, and a second copy would close the panel the first
+   had just opened. */
+var cwMultiBound = false;
+function cwCloseMulti(except) {
+  [].forEach.call(document.querySelectorAll(".multi"), function (m) {
+    if (m === except) return;
+    var b = m.querySelector(".multi-btn"), pop = m.querySelector(".multi-pop");
+    if (b) b.setAttribute("aria-expanded", "false");
+    if (pop) pop.hidden = true;
+  });
+}
+function cwWireMulti() {
+  [].forEach.call(document.querySelectorAll(".multi"), function (m) {
+    var key = m.getAttribute("data-multi");
+    var btn = m.querySelector(".multi-btn");
+    var pop = m.querySelector(".multi-pop");
+    var badge = m.querySelector(".multi-n");
+
+    btn.addEventListener("click", function () {
+      var open = btn.getAttribute("aria-expanded") === "true";
+      cwCloseMulti(m);
+      btn.setAttribute("aria-expanded", open ? "false" : "true");
+      pop.hidden = open;
+    });
+
+    function sync() {
+      var on = cwPick[key];
+      badge.textContent = on.length;
+      badge.hidden = on.length === 0;
+      cwPaintTable();
+    }
+    [].forEach.call(pop.querySelectorAll("input[type=checkbox]"), function (box) {
+      box.addEventListener("change", function () {
+        var i = +box.value, at = cwPick[key].indexOf(i);
+        if (box.checked) { if (at === -1) cwPick[key].push(i); }
+        else if (at !== -1) cwPick[key].splice(at, 1);
+        sync();
+      });
+    });
+    var clear = pop.querySelector(".multi-clear");
+    if (clear) clear.addEventListener("click", function () {
+      cwPick[key] = [];
+      [].forEach.call(pop.querySelectorAll("input[type=checkbox]"), function (b) {
+        b.checked = false;
+      });
+      sync();
+    });
+  });
+  if (cwMultiBound) return;
+  cwMultiBound = true;
+  /* Closing on an outside click is a containment test, not a matter of
+     stopping the event on the way up. React Bits' click-spark layer covers
+     the whole viewport and answers every click with a synthetic one of its
+     own, dispatched from inside that layer and arriving before the real
+     target's. Read as a click outside, it shut the panel on the very click
+     that opened it, so the layer's own click is not a click on anything. */
+  document.addEventListener("click", function (e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
+    if (t.closest(".rb-spark-layer")) return;
+    if (t.closest(".multi")) return;
+    cwCloseMulti(null);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    var open = document.querySelector('.multi-btn[aria-expanded="true"]');
+    if (!open) return;
+    cwCloseMulti(null);
+    open.focus();
+  });
 }
 
 function cwPaintTable() {
   var all = cwOccRows(), q = cwQuery.toLowerCase();
   var rows = all.filter(function (r) {
-    return !q || r.name.toLowerCase().indexOf(q) !== -1 || r.code.indexOf(q) !== -1;
+    if (q && r.name.toLowerCase().indexOf(q) === -1 && r.code.indexOf(q) === -1) return false;
+    if (cwPick.major.length && cwPick.major.indexOf(r.mi) === -1) return false;
+    if (cwPick.type.length && cwPick.type.indexOf(r.ti) === -1) return false;
+    if (cwPick.skill.length && cwPick.skill.indexOf(r.si) === -1) return false;
+    return true;
   }).sort(function (a, b) {
     var dd = a[cwSort.key] - b[cwSort.key];
     return cwSort.dir === "desc" ? -dd : dd;

@@ -669,6 +669,50 @@ async function main() {
     check('the sector card still warns that its bars double count',
           hint.includes('أكثر من قطاع'), hint.slice(0, 60));
 
+    /* The three classification columns filter by ticking values off. The
+       panel staying open through a tick is the whole check: React Bits'
+       spark layer answers every click with a synthetic one of its own from
+       a viewport-sized div, and reading that as a click outside shut the
+       panel on the click that opened it. A DOM-only check would have seen
+       a filter that worked and missed that it could only ever be used once. */
+    await page.locator('.multi[data-multi="skill"] .multi-btn').click();
+    await page.waitForTimeout(400);
+    const opened = await page.locator('.multi[data-multi="skill"] .multi-pop').isVisible();
+    check('a classification filter opens its panel', opened, String(opened));
+
+    await page.locator('.multi[data-multi="skill"] .multi-pop input').nth(2).check();
+    await page.waitForTimeout(600);
+    const afterOne = (await page.locator('#cwCount').innerText()).trim();
+    const stillOpen = await page.locator('.multi[data-multi="skill"] .multi-pop').isVisible();
+    check('ticking a value narrows the table', /^469 /.test(afterOne), afterOne);
+    check('the panel survives its own tick', stillOpen, 'closed on the click that opened it');
+
+    await page.locator('.multi[data-multi="skill"] .multi-pop input').nth(0).check();
+    await page.waitForTimeout(600);
+    const afterTwo = (await page.locator('#cwCount').innerText()).trim();
+    const badge = (await page.locator('.multi[data-multi="skill"] .multi-n').innerText()).trim();
+    check('a second value widens it and the button counts both',
+          /^794 /.test(afterTwo) && badge === '2', `${afterTwo} · badge ${badge}`);
+
+    /* Two columns at once, and the search box on top of them. */
+    await page.locator('.multi[data-multi="type"] .multi-btn').click();
+    await page.waitForTimeout(400);
+    check('opening one panel closes the other',
+          !(await page.locator('.multi[data-multi="skill"] .multi-pop').isVisible()), '');
+    await page.locator('.multi[data-multi="type"] .multi-pop input').nth(0).check();
+    await page.waitForTimeout(600);
+    const composed = (await page.locator('#cwCount').innerText()).trim();
+    /* 469 occupations at مهارات عالية, 794 once متوسطة joins them, and 321 of
+       those 794 are أساسية. Checked against the payload, not read off the UI. */
+    check('filters from two columns compose', /^321 /.test(composed), composed);
+
+    await page.locator('#cwReset').click();
+    await page.waitForTimeout(2000);
+    const cleared = (await page.locator('#cwCount').innerText()).trim();
+    const badges = await page.locator('.multi-n:visible').count();
+    check('clearing the filters empties the picks too',
+          /^1,701 /.test(cleared) && badges === 0, `${cleared} · ${badges} badges`);
+
     check('no console or page errors on the worker data page',
           noise.length === 0, noise.slice(0, 4).join(' | '));
     await context.close();
