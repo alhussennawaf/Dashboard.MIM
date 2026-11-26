@@ -946,7 +946,7 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 2px 6p
 <script src="assets/reactbits.js?v=fae178f1d8"></script>
 <script src="data/dashboard-data.js?v=678503208a"></script>
 <script src="data/center-workforce.js?v=ef5aa1f920"></script>
-<script src="data/i18n.js?v=efa839b9ca"></script>
+<script src="data/i18n.js?v=171db383db"></script>
 <script>
 (function () {
 "use strict";
@@ -1017,6 +1017,7 @@ function T(str) {
   }
   return str;
 }
+window.MIM_T = T;
 
 /* Translate what is on the page, not what is about to be built. Walking the
    text afterwards reaches every string at once, including the ones the React
@@ -1492,7 +1493,8 @@ function card(title, hint, body, span) {
    gives a screen reader the chart's subject; the numbers themselves are in the
    البيانات tab, which is the accessible equivalent of the whole dashboard. */
 function chartCard(title, hint, id, span, cls) {
-  var label = title + (hint ? " · " + hint : "") + " (رسم بياني)";
+  var label = T(title) + (hint ? " · " + T(hint) : "") +
+              (LANG === "en" ? " (chart)" : " (رسم بياني)");
   return card(title, hint,
     '<div class="chart ' + (cls || "") + '" id="' + id + '" role="img" aria-label="' +
     esc(label) + '"></div>', span);
