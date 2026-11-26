@@ -67,6 +67,10 @@ def main():
     if (n_foot, n_note) != (1, 1):
         sys.exit(f"expected one footlinks nav and one notice block, "
                  f"found {n_foot} and {n_note}")
+    # Those links were the last thing left in the footer once the sources line
+    # went, and an empty bar is still a bar: it holds height at the bottom of
+    # every page for nothing. The deployed site keeps its footer, links and all.
+    html = re.sub(r'\s*<footer>\s*</footer>', "", html)
 
     # Fonts are referenced from inside the inlined CSS as url(fonts/NAME.woff2),
     # which none of the checks below would catch: the standalone file would

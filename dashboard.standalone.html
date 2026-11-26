@@ -1228,11 +1228,6 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 2px 6p
   <p class="visually-hidden" role="status">جارٍ تحميل البيانات…</p>
 </main>
 
-<footer>
-  <div id="provenance" data-rb="FadeContent"
-       data-rb-props='{"blur":true,"duration":900,"threshold":0.05}'></div>
-</footer>
-
 <!-- Not a cookie consent dialog, because there is nothing to consent to: the
      page sets no cookies and the analytics is cookieless. A prompt asking
      permission for cookies that do not exist would be false. This states the
@@ -3259,10 +3254,6 @@ function viewSupplyDemand() {
   JOBS.forEach(function (j) { if (j.isced && iscedList.indexOf(j.isced) === -1) iscedList.push(j.isced); });
 
   var html =
-    '<p class="scope-note"><strong>كيف تُقرأ هذه الصفحة:</strong> ' +
-      '«الطلب» عدد العاملين اليوم في المهنة، و«العرض» خريجو التخصصات التي يشير إليها ' +
-      'مجالها التعليمي. الجانبان من مصدرين مختلفين: الطلب لقطة بلا سنة ولا منطقة، ' +
-      'والعرض سلسلة سنوية بمناطق. لذلك يصف كل رقم أدناه تغطيته، ولا يُقدَّر أي رقم ناقص.</p>' +
     '<div class="browse-head">' +
       '<input type="search" id="sdQ" placeholder="بحث في المهن…" autocomplete="off" value="' + esc(sdFilter.q) + '">' +
       '<select id="sdSector"><option value="">كل القطاعات الصناعية</option>' +
@@ -4752,31 +4743,7 @@ function viewNqf() {
       '<td class="num">' + (g ? pct(g.emp, g.grads) : "غير متوفر") + '</td></tr>';
   }).join("");
 
-  var unc = byLevel.get("x");
-  var uncTotal = 0;
-  byLevel.forEach(function (v) { uncTotal += v.grads; });
-  var ownText = ownerAssignedNote(vocRows(), uniRows());
-
   document.getElementById("view").innerHTML =
-    '<p class="scope-note"><strong>المصدر:</strong> ' + esc(D.nqf.source) + '</p>' +
-    (sourceTotalsNote()
-      ? '<p class="scope-note"><strong>مطابقة مجاميع ملف العاملين.</strong> ' +
-        esc(sourceTotalsNote()) + '</p>'
-      : "") +
-    (ownText
-      ? '<p class="scope-note"><strong>تسكين من جهة البيانات.</strong> ' +
-        esc(ownText) + '</p>'
-      : "") +
-    (CORRECTIONS.length
-      ? '<p class="scope-note warn-note"><strong>تصحيح مؤهل.</strong> ' +
-        'صفوف سجّلها ملف الجامعات باسم «أخرى» وحدّدت جهة العمل مؤهلها الفعلي، ' +
-        'فتُقرأ بمؤهلها المصحَّح لا بما في العمود:<br>' + esc(correctionsNote()) + '</p>'
-      : "") +
-    (unc ? '<p class="scope-note warn-note"><strong>' + fmt(unc.grads) + ' خريجًا (' +
-      pct(unc.grads, uncTotal) + ') غير مصنّفين.</strong> ' +
-      esc(unclassifiedNote(vocRows(), uniRows())) + ' ' +
-      'المؤهل مسجّل في المصدر باسم لا يحدد نوعًا، فتُعرض هذه الصفوف كما هي ' +
-      'ولم تُوزَّع على المستويات تقديرًا.</p>' : "") +
     card("مستويات الإطار الوطني للمؤهلات",
       "عدد المهن والخريجين المسكّنين في كل مستوى",
       '<div class="table-wrap"><table><thead><tr>' +
@@ -5593,14 +5560,6 @@ function buildFilters() {
 }
 
 /* ------------------------------ boot ------------------------------------ */
-document.getElementById("provenance").innerHTML =
-  "المصادر: <code>" + esc(D.meta.sources.vocational) + "</code>, <code>" +
-  esc(D.meta.sources.university) + "</code>, <code>" + esc(D.meta.sources.master) +
-  "</code>, <code>" + esc(D.meta.sources.nqf) + "</code>. " +
-  "مستويات الإطار الوطني للمؤهلات من " + esc(D.nqf.source) + ". " +
-  "الهوية البصرية وفق إرشادات العلامة التجارية لوزارة الصناعة والثروة المعدنية (الإصدار 1.1). " +
-  "تفاصيل التحليل ومصادر كل قيمة في <code>data/README.md</code>.";
-
 /* The notice is shown until dismissed. localStorage is the only thing this
    page stores, it holds one boolean, and it never leaves the browser, so a
    private window or blocked storage just means the notice shows again. */
