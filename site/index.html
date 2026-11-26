@@ -946,7 +946,7 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 2px 6p
 <script src="assets/reactbits.js?v=fae178f1d8"></script>
 <script src="data/dashboard-data.js?v=678503208a"></script>
 <script src="data/center-workforce.js?v=ef5aa1f920"></script>
-<script src="data/i18n.js?v=c47aa5a790"></script>
+<script src="data/i18n.js?v=912a5f6192"></script>
 <script>
 (function () {
 "use strict";
@@ -4631,6 +4631,18 @@ function cwKpis(tiles) {
   }).join("");
 }
 
+/* 520 of the Center's 1,701 occupation codes are also in the master sheet,
+   which carries an English name for every one of its 921. Those are the
+   ministry's own wording, so they are read from it rather than translated;
+   the rest fall back to the dictionary, and then to their Arabic. */
+function cwOccName(i) {
+  var ar = CW.occ.name[i];
+  if (LANG !== "en") return ar;
+  var m = OCC_BY_CODE[String(CW.occ.code[i]).trim()];
+  if (m && m.en) return m.en;
+  return T(ar);
+}
+
 function cwOccRows() {
   var o = CW.occ, m = {}, i, c, k;
   for (i = 0; i < o.cells.length; i++) {
@@ -4646,7 +4658,7 @@ function cwOccRows() {
   Object.keys(m).forEach(function (k) {
     var i = +k, cl = cls[o.cls[i]], tot = m[k][0];
     if (!tot) return;
-    out.push({ name: o.name[i], code: o.code[i], major: d.major[cl[0]],
+    out.push({ name: cwOccName(i), code: o.code[i], major: d.major[cl[0]],
                type: d.type[cl[1]], skill: d.skill[cl[2]],
                mi: cl[0], ti: cl[1], si: cl[2],
                total: tot, saudi: m[k][1], other: tot - m[k][1],
