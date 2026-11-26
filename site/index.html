@@ -946,7 +946,7 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 2px 6p
 <script src="assets/reactbits.js?v=fae178f1d8"></script>
 <script src="data/dashboard-data.js?v=678503208a"></script>
 <script src="data/center-workforce.js?v=ef5aa1f920"></script>
-<script src="data/i18n.js?v=171db383db"></script>
+<script src="data/i18n.js?v=c47aa5a790"></script>
 <script>
 (function () {
 "use strict";
@@ -1554,6 +1554,15 @@ function unclassifiedNote(v, u) {
     : "«" + UNCLASSIFIED + "» مؤهلات لا يربطها الإطار بمستوى واحد: " + list + ".";
 }
 
+/* An occupation's name in the reading language. Every one of the 921 in the
+   master sheet carries an English name, so this is the source's own wording
+   rather than a translation; a workforce row that matched no master record
+   keeps its Arabic. */
+function occLabel(j) {
+  if (LANG !== "en" || !j) return j && j.name;
+  return (j.occ && j.occ.en) || j.name;
+}
+
 function nqfName(level) {
   if (level === null || level === undefined) return UNCLASSIFIED;
   var hit = D.nqf.levels.filter(function (l) { return l.level === level; })[0];
@@ -2025,14 +2034,14 @@ function rateRank(w, dir) {
      way and the two charts read the same direction. */
   return picked.sort(function (a, b) { return a.rate - b.rate; })
     .map(function (j) {
-      return [j.name + "  (" + fmt(j.total) + ")", +(j.rate * 100).toFixed(1)];
+      return [occLabel(j) + "  (" + fmt(j.total) + ")", +(j.rate * 100).toFixed(1)];
     });
 }
 
 function drawWorkforceCharts(rec) {
   var w = workforceOf(rec);
   if (!w || !document.getElementById("occWfTop")) return;
-  var mine = w.job.name + "  (";
+  var mine = occLabel(w.job) + "  (";
   function paint(id, dir) {
     barChart(id, rateRank(w, dir), {
       labelWidth: 215, labelRoom: 70, unit: "٪ توطين",
@@ -2676,7 +2685,7 @@ function viewWorkforce() {
       fmt(rows.length) + " من " + fmt(JOBS.length) + " مهنة";
     document.getElementById("wfRows").innerHTML = rows.map(function (j) {
       return '<tr' + (j.code ? ' class="clickable" data-go="#occ/' + esc(j.code) + '"' : "") + '>' +
-        '<td>' + esc(j.name) + '</td>' +
+        '<td>' + esc(occLabel(j)) + '</td>' +
         '<td>' + esc(j.critical + " · " + j.skill) + '</td>' +
         '<td>' + esc((j.sectors || []).map(function (i) { return SECTORS[i]; })
                       .join("، ") || "غير متوفر") + '</td>' +
@@ -2746,7 +2755,7 @@ function viewWorkforce() {
      and the hatch survives being printed in grey. */
   var wTop = JOBS.slice().sort(function (a, b) { return b.total - a.total; }).slice(0, 15);
   barChart("wTop", wTop.slice().reverse().map(function (j) {
-      return [j.name + "  (" + j.critical + " · " + j.skill + ")", j.total, j.saudi];
+      return [occLabel(j) + "  (" + T(j.critical) + " · " + T(j.skill) + ")", j.total, j.saudi];
     }),
     Object.assign({ labelWidth: 290, legendColor: C.voc,
       colorFn: function (e) { return e[0].indexOf("أساسية داعمة") !== -1 ? C.uni : C.voc; },
@@ -2754,7 +2763,7 @@ function viewWorkforce() {
 
   barChart("wGap", JOBS.slice().sort(function (a, b) { return b.other - a.other; })
     .slice(0, 15).reverse().map(function (j) {
-      return [j.name + "  (" + pct(j.saudi, j.total) + ")", j.other];
+      return [occLabel(j) + "  (" + pct(j.saudi, j.total) + ")", j.other];
     }), { labelWidth: 235, labelRoom: 84, unit: "وظيفة يشغلها غير سعودي",
           colorFn: function () { return C.neutral; } });
 
@@ -2954,7 +2963,7 @@ function viewSupplyDemand() {
             var sp = j.occ ? supplyFor(j.occ) : null;
             var has = sp && sp.grads > 0;
             return '<tr' + (j.code ? ' class="clickable" data-go="#occ/' + esc(j.code) + '"' : "") + '>' +
-              '<td>' + esc(j.name) + '</td>' +
+              '<td>' + esc(occLabel(j)) + '</td>' +
               '<td>' + esc(j.isced || "غير متوفر") + '</td>' +
               '<td class="num">' + fmt(j.total) + '</td>' +
               '<td class="num">' + fmt(j.saudi) + '</td>' +
@@ -2970,12 +2979,12 @@ function viewSupplyDemand() {
     var top = withSupply.slice().sort(function (a, b) { return b.j.total - a.j.total; }).slice(0, 14);
     if (top.length) {
       barChart("sdcTop", top.slice().reverse().map(function (x) {
-        return [x.j.name + "  (عرض " + fmt(x.sp.grads) + ")", x.j.total, x.j.saudi];
+        return [occLabel(x.j) + "  (" + (LANG === "en" ? "supply " : "عرض ") + fmt(x.sp.grads) + ")", x.j.total, x.j.saudi];
       }), Object.assign({ labelWidth: 290, labelRoom: 80, legendColor: C.voc }, WF_NAMES));
 
       barChart("sdcGap", top.slice().sort(function (a, b) { return a.j.other - b.j.other; })
         .map(function (x) {
-          return [x.j.name, x.sp.grads, x.j.other];
+          return [occLabel(x.j), x.sp.grads, x.j.other];
         }), { labelWidth: 210, labelRoom: 80, legendColor: C.uni,
               colorFn: function () { return C.uni; },
               outerName: "الخريجون المرتبطون", innerName: "عاملون غير سعوديين",
@@ -3679,7 +3688,7 @@ function occupationCardSpec(rec, tree) {
       sub: "ضمن فئتها: " + w.job.critical + " · " + w.job.skill +
            " · بين القوسين مجموع العمالة",
       draw: function (id) {
-        var mine = w.job.name + "  (";
+        var mine = occLabel(w.job) + "  (";
         barChart(id, rateRank(w, "top"), {
           labelWidth: 215, labelRoom: 70, unit: "٪ توطين",
           colorFn: function (e) { return e[0].indexOf(mine) === 0 ? C.uni : C.neutral; } });
@@ -3687,7 +3696,7 @@ function occupationCardSpec(rec, tree) {
     spec.charts.push({ title: "مقابل أدنى عشر مهن في نسبة التوطين", h: 320,
       sub: "الفئة نفسها · بين القوسين مجموع العمالة",
       draw: function (id) {
-        var mine = w.job.name + "  (";
+        var mine = occLabel(w.job) + "  (";
         barChart(id, rateRank(w, "low"), {
           labelWidth: 215, labelRoom: 70, unit: "٪ توطين",
           colorFn: function (e) { return e[0].indexOf(mine) === 0 ? C.uni : C.neutral; } });
@@ -3746,14 +3755,14 @@ function workforceCardSpec() {
         h: 420,
         draw: function (id) {
           barChart(id, JOBS.slice().sort(function (a, b) { return b.total - a.total; })
-            .slice(0, 12).reverse().map(function (j) { return [j.name, j.total, j.saudi]; }),
+            .slice(0, 12).reverse().map(function (j) { return [occLabel(j), j.total, j.saudi]; }),
             Object.assign({ labelWidth: 195, legendColor: C.voc }, WF_NAMES));
         } },
       { title: "أكبر أعداد العاملين غير السعوديين", sub: "بعدد الوظائف التي يشغلها غير سعوديين", h: 420,
         draw: function (id) {
           barChart(id, JOBS.slice().sort(function (a, b) { return b.other - a.other; })
             .slice(0, 12).reverse().map(function (j) {
-              return [j.name + "  (" + pct(j.saudi, j.total) + ")", j.other];
+              return [occLabel(j) + "  (" + pct(j.saudi, j.total) + ")", j.other];
             }), { labelWidth: 235, labelRoom: 84, unit: "وظيفة يشغلها غير سعودي",
                   colorFn: function () { return C.neutral; } });
         } }
@@ -3818,13 +3827,13 @@ function supplyCardSpec() {
         sub: "الشريط كامله مجموع العمالة والمملوء منه السعوديون · وبين القوسين العرض",
         draw: function (id) {
           barChart(id, top.slice().reverse().map(function (x) {
-            return [x.j.name + "  (عرض " + fmt(x.sp.grads) + ")", x.j.total, x.j.saudi];
+            return [occLabel(x.j) + "  (" + (LANG === "en" ? "supply " : "عرض ") + fmt(x.sp.grads) + ")", x.j.total, x.j.saudi];
           }), Object.assign({ labelWidth: 290, labelRoom: 80, legendColor: C.voc }, WF_NAMES));
         } },
       { title: "العاملون غير السعوديين مقابل العرض السنوي", sub: "المهن المرتبطة فقط", h: 400,
         draw: function (id) {
           barChart(id, top.slice().sort(function (a, b) { return a.j.other - b.j.other; })
-            .map(function (x) { return [x.j.name, x.sp.grads, x.j.other]; }),
+            .map(function (x) { return [occLabel(x.j), x.sp.grads, x.j.other]; }),
             { labelWidth: 210, labelRoom: 80, legendColor: C.uni,
               colorFn: function () { return C.uni; },
               outerName: "الخريجون المرتبطون", innerName: "عاملون غير سعوديين",
