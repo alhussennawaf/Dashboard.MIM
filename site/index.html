@@ -336,6 +336,22 @@ input[type="search"]:focus { border-color: var(--mim-purple); box-shadow: var(--
 input[type="search"] { min-width: 250px; }
 input[type="search"]:focus-visible, select:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 1px; }
 
+.langbtn {
+  font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; flex: none;
+  align-self: center; margin-inline-start: auto; white-space: nowrap;
+  padding: 8px 18px; min-height: 40px;
+  border: 1px solid var(--mim-black-300); border-radius: var(--r-pill);
+  background: #fff; color: var(--mim-grey-dark);
+  transition: border-color var(--dur-quick) var(--ease-out-quick),
+              color var(--dur-quick) var(--ease-out-quick),
+              box-shadow var(--dur-quick) var(--ease-out-quick),
+              transform var(--dur-instant) var(--ease-press);
+}
+.langbtn:hover { border-color: var(--mim-purple); color: var(--mim-purple);
+                 box-shadow: var(--shadow-sm); }
+.langbtn:active { transform: scale(.96); box-shadow: none; }
+.langbtn:focus-visible { outline: 2px solid var(--mim-blue-700); outline-offset: 2px; }
+
 /* ---------- multi-select filter ---------- */
 /* A <select multiple> answers "show me أساسية at مهارات عالية" badly: it is
    unusable on a touch screen and says nothing about what is chosen until it
@@ -873,6 +889,7 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 2px 6p
          data-rb-props='{"speed":7,"spread":110,"color":"@greyDark","shineColor":"@purpleGlow"}'
          >Vocational &amp; University Graduates · Industry and Mining Sector</div>
   </div>
+  <button id="langBtn" class="langbtn" type="button">English</button>
 </header>
 
 <!-- The aurora band. Its figures follow the year filter, so it is re-rendered
@@ -929,6 +946,7 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 2px 6p
 <script src="assets/reactbits.js?v=fae178f1d8"></script>
 <script src="data/dashboard-data.js?v=678503208a"></script>
 <script src="data/center-workforce.js?v=ef5aa1f920"></script>
+<script src="data/i18n.js?v=efa839b9ca"></script>
 <script>
 (function () {
 "use strict";
@@ -966,6 +984,87 @@ function esc(s) {
     .replace(/"/g, "&quot;");
 }
 function idx(block) { var m = {}; block.cols.forEach(function (n, i) { m[n] = i; }); return m; }
+
+/* ----------------------------- language -------------------------------- */
+/* Arabic is what the data says and what the code compares against: 91 places
+   in this file test an Arabic value directly, and the filters, chart
+   categories and table cells all key off the source's own wording. So the
+   language never touches the data. It is applied once, to the text that has
+   already been drawn, which is why switching it costs a repaint and nothing
+   else, and why a missing translation shows its Arabic instead of a blank. */
+var EN = window.MIM_EN || {};
+var EN_PAT = window.MIM_EN_PATTERNS || [];
+var AR_CHAR = /[\u0600-\u06FF]/;
+var LANG = (function () {
+  var q = /[?&]lang=(ar|en)/.exec(location.search);
+  if (q) return q[1];
+  try { return localStorage.getItem("mim.lang") === "en" ? "en" : "ar"; }
+  catch (e) { return "ar"; }
+})();
+
+function T(str) {
+  if (LANG !== "en" || str == null) return str;
+  var t = String(str).trim();
+  if (!t || !AR_CHAR.test(t)) {
+    var direct = EN[t];
+    if (direct) return direct;
+  }
+  var hit = EN[t];
+  if (hit) return hit;
+  for (var i = 0; i < EN_PAT.length; i++) {
+    var m = EN_PAT[i][0].exec(t);
+    if (m) return EN_PAT[i][1](m);
+  }
+  return str;
+}
+
+/* Translate what is on the page, not what is about to be built. Walking the
+   text afterwards reaches every string at once, including the ones the React
+   islands wrote themselves, without wrapping 571 call sites by hand. */
+var I18N_ATTRS = ["placeholder", "aria-label", "title", "alt"];
+function translateTree(root) {
+  if (LANG !== "en" || !root) return;
+  var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+  var node, nodes = [];
+  while ((node = walker.nextNode())) {
+    if (node.nodeValue && AR_CHAR.test(node.nodeValue)) nodes.push(node);
+  }
+  nodes.forEach(function (n) {
+    var raw = n.nodeValue, norm = raw.replace(/\s+/g, " ").trim();
+    if (!norm) return;
+    var out = T(norm);
+    if (out === norm) return;
+    n.nodeValue = (/^\s/.test(raw) ? " " : "") + out + (/\s$/.test(raw) ? " " : "");
+  });
+  I18N_ATTRS.forEach(function (attr) {
+    var list = root.querySelectorAll ? root.querySelectorAll("[" + attr + "]") : [];
+    [].forEach.call(list, function (el) {
+      var v = el.getAttribute(attr);
+      if (!v || !AR_CHAR.test(v)) return;
+      var out = T(v.trim());
+      if (out !== v.trim()) el.setAttribute(attr, out);
+    });
+  });
+}
+
+/* The charts are canvas: no text node of theirs is reachable above, and a
+   label that changed length moves every bar, so they are measured again. */
+function retranslateCharts() {
+  live.forEach(function (c) { try { c.resize(); } catch (e) {} });
+}
+
+function applyLang() {
+  var root = document.documentElement;
+  root.lang = LANG === "en" ? "en" : "ar";
+  root.dir = LANG === "en" ? "ltr" : "rtl";
+  var btn = document.getElementById("langBtn");
+  if (btn) {
+    btn.textContent = LANG === "en" ? "العربية" : "English";
+    btn.setAttribute("aria-label",
+      LANG === "en" ? "التبديل إلى العربية" : "Switch to English");
+  }
+  try { localStorage.setItem("mim.lang", LANG); } catch (e) {}
+}
 
 /* ------------------------- React Bits island bridge ---------------------- */
 /* assets/reactbits.js publishes window.MIMUI. If it failed to load (a blocked
@@ -1244,9 +1343,9 @@ function barChart(id, entries, opts) {
   var base = opts.legendColor || C.voc;
   /* The pair of names this chart is drawing. Defaults keep every existing
      caller reading exactly as it did; the workforce views pass their own. */
-  var NAME_OUT = opts.outerName || "الخريجون";
-  var NAME_IN = opts.innerName || "المتوظفون";
-  var NAME_RATIO = opts.ratioName || "نسبة التوظيف";
+  var NAME_OUT = T(opts.outerName || "الخريجون");
+  var NAME_IN = T(opts.innerName || "المتوظفون");
+  var NAME_RATIO = T(opts.ratioName || "نسبة التوظيف");
 
   function colourAt(e, i) { return opts.colorFn ? opts.colorFn(e, i) : C.voc; }
   var data = entries.map(function (e, i) {
@@ -1306,7 +1405,8 @@ function barChart(id, entries, opts) {
     xAxis: Object.assign({ type: "value" }, AXIS,
                          { axisLine: { show: false }, splitLine: { show: false },
                            axisLabel: { show: false } }),
-    yAxis: Object.assign({ type: "category", data: entries.map(function (e) { return e[0]; }) },
+    yAxis: Object.assign({ type: "category",
+                           data: entries.map(function (e) { return T(e[0]); }) },
       AXIS, { splitLine: { show: false }, axisLine: { show: false },
               axisLabel: { color: C.muted, fontFamily: FONT, fontSize: 11.5,
                            width: opts.labelWidth || 200, overflow: "truncate" } }),
@@ -1321,12 +1421,12 @@ function trendChart(id, series) {
   var c = mount(id); if (!c) return;
   var lines = [];
   series.forEach(function (s) {
-    lines.push({ name: s.name, type: "line", symbol: "circle", symbolSize: 9,
+    lines.push({ name: T(s.name), type: "line", symbol: "circle", symbolSize: 9,
                  lineStyle: { width: 2, color: s.color },
                  itemStyle: { color: s.color, borderColor: "#fff", borderWidth: 2 },
                  emphasis: { focus: "series" }, data: s.data });
     if (s.emp) {
-      lines.push({ name: s.empName || ("المتوظفون · " + s.name), type: "line",
+      lines.push({ name: T(s.empName || ("المتوظفون · " + s.name)), type: "line",
                    symbol: "circle", symbolSize: 7,
                    lineStyle: { width: 2, color: s.color, type: "dashed" },
                    itemStyle: { color: "#fff", borderColor: s.color, borderWidth: 2 },
@@ -1444,15 +1544,19 @@ function unclassifiedNote(v, u) {
   v.forEach(function (f) { if (f.nqf === null || f.nqf === undefined) add(f.qual, f); });
   u.forEach(function (f) { if (f.nqf === null || f.nqf === undefined) add(f.level, f); });
   if (!m.size) return "";
-  return "«" + UNCLASSIFIED + "» مؤهلات لا يربطها الإطار بمستوى واحد: " +
-    ranked(m, "grads").map(function (e) {
-      return e[0] + " (" + fmt(e[1].grads) + ")"; }).join(" · ") + ".";
+  var list = ranked(m, "grads").map(function (e) {
+    return T(e[0]) + " (" + fmt(e[1].grads) + ")"; }).join(" · ");
+  return LANG === "en"
+    ? "\u201C" + T(UNCLASSIFIED) + "\u201D: qualifications the framework does " +
+      "not tie to a single level: " + list + "."
+    : "«" + UNCLASSIFIED + "» مؤهلات لا يربطها الإطار بمستوى واحد: " + list + ".";
 }
 
 function nqfName(level) {
   if (level === null || level === undefined) return UNCLASSIFIED;
   var hit = D.nqf.levels.filter(function (l) { return l.level === level; })[0];
-  return hit ? level + " · " + hit.ar : String(level);
+  if (!hit) return String(level);
+  return level + " · " + (LANG === "en" && hit.en ? hit.en : hit.ar);
 }
 
 /* Year/gender/region/level charts shared by the two detail views. */
@@ -1485,9 +1589,14 @@ function viewOverview() {
   var tv = total(v), tu = total(u), ta = total(all);
 
   var html =
-    '<p class="scope-note"><strong>نطاق البيانات:</strong> ' +
-      esc(D.meta.scope.university.ar) +
-      '. بيانات الجامعات تغطي مجالين عامين فقط ولا تمثل جميع خريجي الجامعات.</p>' +
+    '<p class="scope-note"><strong>' + esc(T("نطاق البيانات:")) + '</strong> ' +
+      (LANG === "en"
+        ? esc(D.meta.scope.university.en) +
+          ' University data covers two broad fields only and does not represent ' +
+          'all university graduates.'
+        : esc(D.meta.scope.university.ar) +
+          '. بيانات الجامعات تغطي مجالين عامين فقط ولا تمثل جميع خريجي الجامعات.') +
+      '</p>' +
     kpiHtml([
       { label: "إجمالي الخريجين", value: ta.grads,
         sub: "خلال " + state.years.length + " سنوات" },
@@ -4928,7 +5037,7 @@ var TABS = [
    stay reachable, they simply do not glide. */
 function navItems() {
   return TABS.map(function (t) {
-    return { label: t.label, count: t.count ? fmt(t.count) : "", href: "#" + t.id };
+    return { label: T(t.label), count: t.count ? fmt(t.count) : "", href: "#" + t.id };
   });
 }
 function markTab(id) {
@@ -4941,7 +5050,7 @@ function markTab(id) {
   host.innerHTML = '<nav class="navband-fallback" aria-label="أقسام اللوحة">' +
     TABS.map(function (t, i) {
       return '<a href="#' + t.id + '"' + (i === active ? ' aria-current="page"' : "") + '>' +
-        esc(t.label) + (t.count ? '<span class="nav-count">' + fmt(t.count) + '</span>' : "") +
+        esc(T(t.label)) + (t.count ? '<span class="nav-count">' + fmt(t.count) + '</span>' : "") +
         '</a>';
     }).join("") + '</nav>';
 }
@@ -4957,7 +5066,7 @@ function paintHero() {
   if (!u) {
     host.innerHTML = '<div class="hero-inner"><div class="hero-copy">' +
       '<div class="hero-eyebrow">' + esc(D.meta.sources ? "وزارة الصناعة والثروة المعدنية" : "") + '</div>' +
-      '<div class="hero-headline">' + HERO_HEADLINE + '</div>' +
+      '<div class="hero-headline">' + esc(T(HERO_HEADLINE)) + '</div>' +
       '<div class="hero-figures"><div class="hero-figure is-lead">' +
       '<div class="hero-figure-value">' + fmt(t.grads) + '</div>' +
       '<div class="hero-figure-label">إجمالي الخريجين</div></div></div>' +
@@ -4966,8 +5075,8 @@ function paintHero() {
   }
   u.shell("hero", host, "Hero", {
     compact: (location.hash || "#overview").indexOf("#overview") !== 0,
-    eyebrow: "إحصاءات الخريجين · GRADUATE STATISTICS",
-    headline: HERO_HEADLINE,
+    eyebrow: T("إحصاءات الخريجين · GRADUATE STATISTICS"),
+    headline: T(HERO_HEADLINE),
     total: t.grads,
     employed: t.emp,
     occupations: D.occupationTree.length,
@@ -4975,10 +5084,10 @@ function paintHero() {
     years: state.years.length === YEARS.length
       ? YEARS[0] + " – " + YEARS[YEARS.length - 1]
       : state.years.slice().sort().join(" · "),
-    labels: { total: "إجمالي الخريجين · Graduates",
-              employed: "المتوظفون · Employed",
-              occupations: "المهن · Occupations",
-              majors: "التخصصات · Specializations" }
+    labels: { total: T("إجمالي الخريجين · Graduates"),
+              employed: T("المتوظفون · Employed"),
+              occupations: T("المهن · Occupations"),
+              majors: T("التخصصات · Specializations") }
   });
 }
 var HERO_HEADLINE = "مسار الكفاءات الوطنية إلى قطاع الصناعة والتعدين";
@@ -5021,6 +5130,8 @@ function route() {
   else { markTab("overview"); viewOverview(); }
 
   paintHero();
+  translateTree(document.body);
+  retranslateCharts();
   /* Last, and only now: the views above look their own nodes up by id and hand
      them to ECharts, and hydrating re-parents those nodes. Running after them
      means every chart has already measured the box it keeps. */
@@ -5028,6 +5139,9 @@ function route() {
     u0.hydrate(document.getElementById("view"));
     var win = document.getElementById("specWin");
     if (win) u0.hydrate(win);
+    /* Anything an island drew itself has only now appeared, the section bar
+       among them: it rewrites its own list on every route. */
+    translateTree(document.body);
   }
 }
 
@@ -5088,9 +5202,25 @@ function buildFilters() {
 /* The masthead title, the English line, the notice button and the footer note
    are part of the shell, not of any view, so they are hydrated once here and
    are never taken down by the router. */
+applyLang();
+translateTree(document.body);
 (function () {
   var u = ui();
   if (u) u.hydrateOnce(document.body);
+})();
+
+(function () {
+  var btn = document.getElementById("langBtn");
+  if (!btn) return;
+  btn.addEventListener("click", function () {
+    LANG = LANG === "en" ? "ar" : "en";
+    applyLang();
+    /* Re-routing rebuilds the view from the data, which is still Arabic, and
+       the translation pass at the end of route() renders it in the language
+       just chosen. Charts are disposed and drawn again with it. */
+    route();
+    translateTree(document.body);
+  });
 })();
 
 buildFilters();

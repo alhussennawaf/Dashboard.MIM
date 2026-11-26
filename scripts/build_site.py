@@ -61,6 +61,8 @@ PUBLISHED = [
     # The National Information Center extract behind بيانات العاملين,
     # aggregated by scripts/parse_center_workforce.py.
     "data/center-workforce.js",
+    # The English dictionary read by the language toggle.
+    "data/i18n.js",
     # The self-hosted faces the brand's fallback stacks name. Without these the
     # pages fall through to Times New Roman and Tahoma, which is where they
     # landed on almost every visit before they were vendored.

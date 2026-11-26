@@ -583,6 +583,72 @@ async function main() {
   }
 
   /* ---------------------------------------------------------------------
+     ENGLISH: the language toggle, the direction it flips, and the text the
+     React islands draw on their own schedule
+     --------------------------------------------------------------------- */
+  console.log('\nENGLISH');
+  {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const page = await context.newPage();
+    const noise = [];
+    page.on('pageerror', e => noise.push('pageerror: ' + e.message));
+    page.on('console', m => { if (m.type() === 'error') noise.push('console: ' + m.text()); });
+
+    /* A shared link has to land in English on its own, without a click: the
+       nav and the hero are islands that render after the page script runs,
+       so they are handed translated text rather than translated afterwards. */
+    await page.goto(PAGE + '?lang=en#overview', { waitUntil: 'load' });
+    await page.waitForTimeout(3500);
+
+    const dir = await page.evaluate(() => document.documentElement.dir);
+    const lang = await page.evaluate(() => document.documentElement.lang);
+    check('a ?lang=en link lands in English, laid out left to right',
+          dir === 'ltr' && lang === 'en', `dir=${dir} lang=${lang}`);
+
+    const ARABIC = /[\u0600-\u06FF]/;
+    const tabs = await page.evaluate(() =>
+      [...document.querySelectorAll('.gooey-nav-container nav ul li a')]
+        .map(a => a.textContent.replace(/\s*[\d,]+\s*$/, '').trim()));
+    check('the section bar is in English, islands and all',
+          tabs.length === 10 && !tabs.some(t => ARABIC.test(t)),
+          tabs.filter(t => ARABIC.test(t)).join(' | ') || `${tabs.length} tabs`);
+
+    const h1 = (await page.locator('h1').innerText()).trim();
+    check('the masthead title is English, not Arabic words running the wrong way',
+          !ARABIC.test(h1), h1.slice(0, 50));
+
+    const labels = await page.locator('#view .kpi .label').allInnerTexts();
+    const titles = await page.locator('#view .card > h2').allInnerTexts();
+    const left = [...labels, ...titles].filter(t => ARABIC.test(t));
+    check('the stat row and every card title are in English',
+          left.length === 0, left.join(' | '));
+
+    /* The charts are canvas, so their text is handed to ECharts rather than
+       translated in the DOM. The regions are the ones with a Saudi name. */
+    const regionAxis = await page.evaluate(() => {
+      const el = document.getElementById('oRegion');
+      return el ? el.getAttribute('aria-label') : '';
+    });
+    check('the charts still drew after the language changed',
+          (await page.locator('#view .chart canvas').count()) === 6,
+          String(await page.locator('#view .chart canvas').count()));
+
+    /* Back again: the toggle has to restore Arabic completely, not leave the
+       page half translated. */
+    await page.locator('#langBtn').click();
+    await page.waitForTimeout(3000);
+    const backDir = await page.evaluate(() => document.documentElement.dir);
+    const backTab = (await page.locator('.gooey-nav-container nav ul li a').first()
+                      .innerText()).replace(/\s*[\d,]+\s*$/, '').trim();
+    check('switching back restores Arabic and the right-to-left layout',
+          backDir === 'rtl' && backTab === 'نظرة عامة', `${backDir} · ${backTab}`);
+
+    check('no console or page errors across the language change',
+          noise.length === 0, noise.slice(0, 4).join(' | '));
+    await context.close();
+  }
+
+  /* ---------------------------------------------------------------------
      WORKER DATA: the National Information Center tab, its filters, and the
      one figure on it that cannot honestly follow a filter
      --------------------------------------------------------------------- */
