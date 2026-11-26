@@ -4879,12 +4879,6 @@ var CW_SCOPE = CW
     " مهنة في " + fmt(CW.meta.establishments) + " منشأة. المصدر " + CW.meta.source +
     " عن " + CW.meta.period + "."
   : "";
-/* Said once, plainly: this tab and العاملون في سوق العمل count different
-   things, and a reader who meets the two totals side by side deserves to be
-   told why before they ask. */
-var CW_VS = "هذا التبويب لا يطابق تبويب «العاملون في سوق العمل» ولا يُقارن به: " +
-  "ذاك يغطي المهن المعتمدة في إطار الصناعة والتعدين خلال الربع الثالث 2026، " +
-  "وهذا يغطي كل المهن المسجّلة في المنشآت الصناعية خلال شهر واحد.";
 
 /* Filters. The spec asks for الجنسية and نوع الجنس on every indicator; the rest
    are page-level and narrow the cube for all of the charts at once. */
@@ -5090,7 +5084,6 @@ function viewCenter() {
       exportBar("cw", "تصدير بيانات العاملين (CSV)") +
     '</div>' +
     '<p class="scope-note"><strong>نطاق البيانات:</strong> ' + esc(CW_SCOPE) + '</p>' +
-    '<p class="scope-note"><strong>لا يقارَن بتبويب العاملين:</strong> ' + esc(CW_VS) + '</p>' +
     '<div class="browse-head" style="margin-bottom:14px">' +
       cwSelect("cwfNat", "الجنسية", d.nat, "nat") +
       cwSelect("cwfSex", "الجنس", d.sex, "sex") +
