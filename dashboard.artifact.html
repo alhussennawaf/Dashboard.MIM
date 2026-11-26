@@ -2237,12 +2237,12 @@ function viewVocBrowse() {
     '<div class="browse-head">' +
       '<input type="search" id="qVoc" placeholder="بحث في التخصصات المهنية…" ' +
         'autocomplete="off" value="' + esc(vocFilter.q) + '">' +
-      '<select id="vocTrack"><option value="">كل أنواع الجهات التعليمية</option>' +
+      '<select id="vocTrack"><option value="">نوع الجهة التعليمية</option>' +
         TRACKS.map(function (t) {
           return '<option value="' + esc(t[0]) + '"' +
                  (vocFilter.track === t[0] ? ' selected' : '') + '>' + esc(t[1]) + '</option>';
         }).join("") + '</select>' +
-      '<select id="vocRegion"><option value="">كل المناطق</option>' +
+      '<select id="vocRegion"><option value="">المنطقة</option>' +
         regions.map(function (n) {
           return '<option value="' + esc(n) + '"' +
                  (vocFilter.region === n ? ' selected' : '') + '>' + esc(n) + '</option>';
@@ -2579,12 +2579,12 @@ function viewOccBrowse() {
       'لا بجانبها.</p>' +
     '<div class="browse-head">' +
       '<input type="search" id="qOcc" placeholder="بحث بالاسم العربي أو الإنجليزي أو الرمز أو التخصص…" autocomplete="off">' +
-      '<select id="fOccGroup"><option value="">كل المجموعات الرئيسية</option>' +
+      '<select id="fOccGroup"><option value="">المجموعة الرئيسية</option>' +
         groups.map(function (g) { return '<option>' + esc(g) + '</option>'; }).join("") + '</select>' +
-      '<select id="fOccNqf"><option value="">كل مستويات الإطار</option>' +
+      '<select id="fOccNqf"><option value="">مستوى الإطار</option>' +
         levels.map(function (l) { return '<option value="' + l + '">' + esc(nqfName(l)) + '</option>'; }).join("") +
       '</select>' +
-      '<select id="fOccSector"><option value="">كل القطاعات</option>' +
+      '<select id="fOccSector"><option value="">القطاع</option>' +
         L.sectors.map(function (s, i) { return '<option value="' + i + '">' + esc(s) + '</option>'; }).join("") +
       '</select>' +
       '<span class="result-count" id="cOcc"></span>' +
@@ -3013,11 +3013,11 @@ function viewWorkforce() {
         "صفّه بنوع المهنة ومستوى المهارة، ورتّبه بالضغط على رأس أي عمود · " +
         "اضغط صفًا لفتح صفحة المهنة",
         '<div class="browse-head" style="margin-bottom:10px">' +
-          '<select id="wfCritical"><option value="">كل الأنواع</option>' +
+          '<select id="wfCritical"><option value="">نوع المهنة</option>' +
             ["أساسية", "أساسية داعمة"].map(function (n) {
               return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join("") +
           '</select>' +
-          '<select id="wfSkill"><option value="">كل مستويات المهارة</option>' +
+          '<select id="wfSkill"><option value="">مستوى المهارة</option>' +
             ["مهارات عالية", "مهارات متوسطة"].map(function (n) {
               return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join("") +
           '</select>' +
@@ -3247,19 +3247,19 @@ function viewSupplyDemand() {
   var html =
     '<div class="browse-head">' +
       '<input type="search" id="sdQ" placeholder="بحث في المهن…" autocomplete="off" value="' + esc(sdFilter.q) + '">' +
-      '<select id="sdSector"><option value="">كل القطاعات الصناعية</option>' +
+      '<select id="sdSector"><option value="">القطاع الصناعي</option>' +
         SECTORS.map(function (n, i) {
           return '<option value="' + i + '"' + (sdFilter.sector === String(i) ? ' selected' : '') +
                  '>' + esc(n) + '</option>'; }).join("") + '</select>' +
-      '<select id="sdSkill"><option value="">كل مستويات المهارة</option>' +
+      '<select id="sdSkill"><option value="">مستوى المهارة</option>' +
         ["مهارات عالية", "مهارات متوسطة"].map(function (n) {
           return '<option value="' + esc(n) + '"' + (sdFilter.skill === n ? ' selected' : '') +
                  '>' + esc(n) + '</option>'; }).join("") + '</select>' +
-      '<select id="sdIsced"><option value="">كل مستويات المؤهل</option>' +
+      '<select id="sdIsced"><option value="">مستوى المؤهل</option>' +
         iscedList.map(function (n) {
           return '<option value="' + esc(n) + '"' + (sdFilter.isced === n ? ' selected' : '') +
                  '>' + esc(n) + '</option>'; }).join("") + '</select>' +
-      '<select id="sdRegion"><option value="">كل المناطق (العرض فقط)</option>' +
+      '<select id="sdRegion"><option value="">المنطقة (العرض فقط)</option>' +
         regions.map(function (n) {
           return '<option value="' + esc(n) + '"' + (sdFilter.region === n ? ' selected' : '') +
                  '>' + esc(n) + '</option>'; }).join("") + '</select>' +
