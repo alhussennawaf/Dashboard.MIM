@@ -4846,7 +4846,7 @@ function cwPlaceFilters() {
   return ["reg", "size", "nit", "sta"].filter(cwOn);
 }
 var CW_FILTER_AR = { reg: "المنطقة", size: "حجم المنشأة", nit: "النطاق",
-                     sta: "حالة المنشأة", nat: "الجنسية", sex: "نوع الجنس" };
+                     sta: "حالة المنشأة", nat: "الجنسية", sex: "الجنس" };
 
 function cwPass(r) {
   if (cwF.nat !== "" && r[CWX.nat] !== +cwF.nat) return false;
@@ -5010,12 +5010,12 @@ function viewCenter() {
     '<p class="scope-note"><strong>نطاق البيانات:</strong> ' + esc(CW_SCOPE) + '</p>' +
     '<p class="scope-note"><strong>لا يقارَن بتبويب العاملين:</strong> ' + esc(CW_VS) + '</p>' +
     '<div class="browse-head" style="margin-bottom:14px">' +
-      cwSelect("cwfNat", "كل الجنسيات", d.nat, "nat") +
-      cwSelect("cwfSex", "كل الأجناس", d.sex, "sex") +
-      cwSelect("cwfReg", "كل المناطق", d.region, "reg") +
-      cwSelect("cwfSize", "كل الأحجام", d.size, "size") +
-      cwSelect("cwfNit", "كل النطاقات", d.nitaq, "nit") +
-      cwSelect("cwfSta", "كل الحالات", d.status, "sta") +
+      cwSelect("cwfNat", "الجنسية", d.nat, "nat") +
+      cwSelect("cwfSex", "الجنس", d.sex, "sex") +
+      cwSelect("cwfReg", "المنطقة", d.region, "reg") +
+      cwSelect("cwfSize", "الحجم", d.size, "size") +
+      cwSelect("cwfNit", "النطاق", d.nitaq, "nit") +
+      cwSelect("cwfSta", "الحالة", d.status, "sta") +
       '<button id="cwReset" class="chip">مسح الفلاتر</button>' +
     '</div>' +
     notHonoured +
