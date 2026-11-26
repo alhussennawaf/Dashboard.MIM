@@ -1002,13 +1002,26 @@ var LANG = (function () {
   catch (e) { return "ar"; }
 })();
 
+/* ٠١٢٣٤٥٦٧٨٩ are the same numbers, written in the other script. Converting
+   them is not translating them, and it was being done by hand: three entries
+   in the dictionary whose two sides differed only in the digits, covering the
+   three percentage bands somebody happened to list. Anything of that shape now
+   converts because it is a number, and needs no entry at all. */
+var AR_DIGITS = /[\u0660-\u0669]/;
+function arabicDigits(s) {
+  var out = s.replace(/[\u0660-\u0669]/g, function (d) {
+    return String(d.charCodeAt(0) - 0x0660);
+  });
+  /* ٪ is a letter-width percent sign. It only becomes % where nothing else of
+     the Arabic is left to read, so it is never swapped inside a sentence that
+     is still in Arabic. */
+  return /^[\d\s%٪.,:\u2013\u2014+()/-]+$/.test(out) ? out.replace(/٪/g, "%") : out;
+}
+
 function T(str) {
   if (LANG !== "en" || str == null) return str;
   var t = String(str).trim();
-  if (!t || !AR_CHAR.test(t)) {
-    var direct = EN[t];
-    if (direct) return direct;
-  }
+  if (!t) return str;
   var hit = EN[t];
   if (hit) return hit;
   for (var i = 0; i < EN_PAT.length; i++) {
@@ -1019,6 +1032,12 @@ function T(str) {
        rules after it and finally to the Arabic. */
     var out = EN_PAT[i][1](m);
     if (out) return out;
+  }
+  /* Last: a string nobody translated that is only a number reads the same in
+     either language once its digits do. */
+  if (AR_DIGITS.test(t)) {
+    var num = arabicDigits(t);
+    if (num !== t) return num;
   }
   return str;
 }
