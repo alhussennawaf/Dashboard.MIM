@@ -949,3 +949,178 @@ Object.assign(window.MIM_EN, {
   "عامل تنظيف مركبات": "Vehicle Cleaner",
   "أخصائي رقابة عمليات": "Operations Control Specialist"
 });
+
+/* ======================================================================== */
+/*  Universities and cities                                                 */
+/*  Proper nouns, in the English the institutions and the Kingdom use.      */
+/* ======================================================================== */
+Object.assign(window.MIM_EN, {
+  "جامعة الأمير سطام بن عبدالعزيز": "Prince Sattam bin Abdulaziz University",
+  "جامعة الملك سعود": "King Saud University",
+  "جامعة الملك فيصل": "King Faisal University",
+  "جامعة أم القرى": "Umm Al-Qura University",
+  "جامعة الإمام عبدالرحمن بن فيصل": "Imam Abdulrahman bin Faisal University",
+  "جامعة الملك عبدالعزيز": "King Abdulaziz University",
+  "جامعة المجمعة": "Majmaah University",
+  "جامعة تبوك": "University of Tabuk",
+  "جامعة الملك خالد": "King Khalid University",
+  "جامعة طيبة": "Taibah University",
+  "جامعة الجوف": "Al-Jouf University",
+  "جامعة الملك فهد للبترول والمعادن": "King Fahd University of Petroleum and Minerals",
+  "جامعة جازان": "Jazan University",
+  "جامعة الإمام محمد بن سعود الإسلامية": "Imam Mohammad ibn Saud Islamic University",
+  "جامعة حفر الباطن": "University of Hafr Al-Batin",
+  "جامعة الباحة": "Al-Baha University",
+  "جامعة جدة": "University of Jeddah",
+  "جامعة القصيم": "Qassim University",
+  "جامعة الأميرة نورة بنت عبدالرحمن": "Princess Nourah bint Abdulrahman University",
+  "جامعة شقراء": "Shaqra University",
+  "جامعة الطائف": "Taif University",
+  "الجامعة الإسلامية": "Islamic University of Madinah",
+  "جامعة نجران": "Najran University",
+  "جامعة حائل": "University of Ha'il",
+  "جامعة بيشة": "University of Bisha",
+  "جامعة الحدود الشمالية": "Northern Border University",
+
+  "جدة": "Jeddah",
+  "الدمام": "Dammam",
+  "الجبيل": "Jubail",
+  "الخرج": "Al-Kharj",
+  "بريدة": "Buraidah",
+  "ينبع": "Yanbu",
+  "خميس مشيط": "Khamis Mushait",
+  "الاحساء": "Al-Ahsa",
+  "رابغ": "Rabigh",
+  "راس الخير": "Ras Al-Khair",
+  "حوطة سدير": "Hawtat Sudair",
+  "يبرين / الرياض": "Yabrin / Riyadh",
+  "الخبر": "Khobar",
+  "المجمعه": "Majmaah",
+  "حفر الباطن": "Hafr Al-Batin",
+  "عنيزة": "Unaizah",
+  "بحرة": "Bahrah",
+  "القطيف": "Qatif",
+  "ملهم": "Malham",
+  "الحاير": "Al-Hair",
+  "الرس": "Ar Rass",
+  "الطائف": "Taif",
+  "الظهران": "Dhahran",
+  "البدائع": "Al-Badayea",
+  "ابقيق": "Abqaiq",
+  "المزاحمية": "Al-Muzahimiyah",
+  "العيون": "Al-Oyun",
+  "الدلم": "Al-Dilam",
+  "عسفان": "Usfan",
+  "الهفوف": "Hofuf",
+  "شقراء": "Shaqra",
+  "ابها": "Abha",
+  "سدير الصناعية": "Sudair Industrial City",
+  "روضة سدير": "Rawdat Sudair",
+  "حريملاء": "Huraymila",
+  "الزلفي": "Zulfi",
+  "ابن هشبل": "Ibn Hashbal",
+  "الليث": "Al-Lith",
+  "سكاكا": "Sakaka",
+  "بيشه": "Bisha",
+  "بلقرن": "Balqarn",
+  "طريف": "Turaif",
+  "المجارده": "Al-Majardah",
+  "القرينه": "Al-Qarinah",
+  "تبراك": "Tabrak",
+  "وادي الدواسر": "Wadi Al-Dawasir",
+  "هيت": "Heet",
+  "خليص": "Khulais",
+  "الدوادمي": "Dawadmi",
+  "تاروت": "Tarout",
+  "بسيطاء": "Busaita",
+  "رياض الخبراء": "Riyadh Al-Khabra",
+  "سيهات": "Saihat"
+});
+
+/* ======================================================================== */
+/*  Technical colleges and industrial institutes                            */
+/*  Named by a formula: a kind, then بـ or في, then a place. Two hundred     */
+/*  near-identical entries would say the same thing worse, so the kind and   */
+/*  the place are translated and the rule puts them back together. A place   */
+/*  with no entry keeps its Arabic rather than being transliterated blind.   */
+/* ======================================================================== */
+window.MIM_INST_KIND = {
+  "الكلية التقنية": "Technical College",
+  "الكليه التقنيه": "Technical College",
+  "الكلية التقنيه": "Technical College",
+  "الكلية التقنية في": "Technical College",
+  "الكلية التقنية للبنات": "Technical College for Girls",
+  "الكلية التقنية للبنات في": "Technical College for Girls",
+  "فرع الكلية التقنية": "Technical College Branch",
+  "فرع الكلية التقنيه": "Technical College Branch",
+  "فرع الكلية التقنية في": "Technical College Branch",
+  "فرع الكلية التقنية للبنات": "Technical College for Girls Branch",
+  "الكلية التقنية التطبيقية": "Applied Technical College",
+  "الكلية التقنية التطبيقية للبنات": "Applied Technical College for Girls",
+  "الكلية التقنية الرقمية للبنات": "Digital Technical College for Girls",
+  "الكلية التقنية للسياحة والفندقة": "Technical College of Tourism and Hospitality",
+  "الكلية التقنية للإتصالات والمعلومات": "Technical College of Telecommunications and Information",
+  "الكلية التقنية لعلوم البيئة": "Technical College of Environmental Sciences",
+  "المعهد الصناعي الثانوي": "Secondary Industrial Institute",
+  "المعهد الصناعي الثانوي الاول": "First Secondary Industrial Institute",
+  "المعهد الصناعي الثانوي الأول": "First Secondary Industrial Institute",
+  "المعهد الصناعي الثانوي الثاني": "Second Secondary Industrial Institute",
+  "المعهد الصناعي الثانوي الثالث": "Third Secondary Industrial Institute",
+  "المعهد الملكي الصناعي الثانوي": "Royal Secondary Industrial Institute",
+  "المعهد الصناعي الثانوي وفرع الكلية التقنية":
+    "Secondary Industrial Institute and Technical College Branch",
+  "الكلية التقنية والمعهد الصناعي الثانوي":
+    "Technical College and Secondary Industrial Institute",
+  "معهد العمارة والتشييد الثانوي": "Secondary Institute of Architecture and Construction",
+  "كلية محمد الخضير التقنية": "Mohammed Al-Khudair Technical College"
+};
+
+/* Places that name a college or an institute. */
+Object.assign(window.MIM_EN, {
+  "أبها": "Abha", "أبوعريش": "Abu Arish", "أضم": "Adham", "احد رفيدة": "Ahad Rafidah",
+  "الأفلاج": "Al-Aflaj", "الافلاج": "Al-Aflaj", "الإحساء": "Al-Ahsa",
+  "الارطاوية": "Al-Artawiyah", "الاسياح": "Al-Asyah", "الباحة": "Al-Baha",
+  "الجموم": "Al-Jumum", "الجوف": "Al-Jouf", "الحائط": "Al-Hait",
+  "الحريضة": "Al-Huraidhah", "الحريق": "Al-Hariq", "الحناكية": "Al-Hanakiyah",
+  "الدائر": "Al-Dayer", "الدرب": "Al-Darb", "السليل": "As-Sulayyil",
+  "الشنان": "Ash-Shinan", "العارضة": "Al-Ardah", "العلا": "AlUla",
+  "العيدابي": "Al-Aidabi", "العيص": "Al-Ais", "الفرشة": "Al-Farshah",
+  "القريات": "Qurayyat", "القصيم": "Qassim", "القنفذة": "Al-Qunfudhah",
+  "القوز": "Al-Qoz", "القويعية": "Al-Quwaiiyah", "المجمعة": "Majmaah",
+  "المخواة": "Al-Makhwah", "المخواه": "Al-Makhwah", "المذنب": "Al-Mithnab",
+  "المندق": "Al-Mandaq", "المهد": "Mahd Adh Dhahab", "النماص": "An-Namas",
+  "الوجه": "Al-Wajh", "املج": "Umluj", "بدر": "Badr", "بقعاء": "Baqaa",
+  "بيشة": "Bisha", "تثليث": "Tathlith", "تربة": "Turabah", "تنومة": "Tanumah",
+  "تيماء": "Tayma", "ثادق": "Thadiq", "جده": "Jeddah", "حقل": "Haql",
+  "حوطة بني تميم": "Hawtat Bani Tamim", "خيبر": "Khaybar",
+  "دومة الجندل": "Dumat Al-Jandal", "رجال المع": "Rijal Almaa",
+  "رفحاء": "Rafha", "رماح": "Rumah", "رنية": "Ranyah", "سراة عبيدة": "Sarat Abidah",
+  "شرورة": "Sharurah", "شروره": "Sharurah", "صامطة": "Samtah", "صبيا": "Sabya",
+  "ضباء": "Duba", "طبرجل": "Tabarjal", "ظهران الجنوب": "Dhahran Al-Janub",
+  "عرعر": "Arar", "عفيف": "Afif", "فرسان": "Farasan", "لجرشي": "Al-Jarashi",
+  "لقرن": "Al-Qarn", "محائل عسير": "Mahayil Asir", "محايل عسير": "Mahayil Asir",
+  "مكة": "Makkah", "ميسان": "Maysan", "يدمه": "Yadamah", "يشة": "Bisha",
+  "حبونا": "Habuna"
+});
+
+/* "<kind> ب<place>" and "<kind> في <place>". The source sometimes repeats the
+   whole name after a slash; only the part before it is the place. */
+window.MIM_EN_PATTERNS.push([/^(.+?)\s+(?:ب|في\s+)(.+)$/, function (m) {
+  var kind = window.MIM_INST_KIND[m[1]];
+  if (!kind) return null;
+  var place = m[2].split("/")[0].trim();
+  var en = window.MIM_T(place);
+  return kind + " in " + en;
+}]);
+
+/* Places whose own name begins with ب, which the rule's preposition strips.
+   «بلجرشي» survives as «لجرشي» and «بلقرن» as «لقرن», so both spellings point
+   at the same town rather than at an invented one. */
+Object.assign(window.MIM_EN, {
+  "بلجرشي": "Baljurashi",
+  "لجرشي": "Baljurashi",
+  "بلقرن": "Balqarn",
+  "لقرن": "Balqarn",
+  "بيشه": "Bisha",
+  "يشة": "Bisha"
+});

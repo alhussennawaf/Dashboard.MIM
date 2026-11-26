@@ -1013,7 +1013,12 @@ function T(str) {
   if (hit) return hit;
   for (var i = 0; i < EN_PAT.length; i++) {
     var m = EN_PAT[i][0].exec(t);
-    if (m) return EN_PAT[i][1](m);
+    if (!m) continue;
+    /* A rule may decline: the institution rule matches any "<kind> ب<place>"
+       and only answers for a kind it knows, so the rest fall through to the
+       rules after it and finally to the Arabic. */
+    var out = EN_PAT[i][1](m);
+    if (out) return out;
   }
   return str;
 }

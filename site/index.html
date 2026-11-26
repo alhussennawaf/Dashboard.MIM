@@ -946,7 +946,7 @@ footer code { font-size: 11px; background: var(--mim-black-200); padding: 2px 6p
 <script src="assets/reactbits.js?v=fae178f1d8"></script>
 <script src="data/dashboard-data.js?v=678503208a"></script>
 <script src="data/center-workforce.js?v=ef5aa1f920"></script>
-<script src="data/i18n.js?v=912a5f6192"></script>
+<script src="data/i18n.js?v=9299d0ebb6"></script>
 <script>
 (function () {
 "use strict";
@@ -1013,7 +1013,12 @@ function T(str) {
   if (hit) return hit;
   for (var i = 0; i < EN_PAT.length; i++) {
     var m = EN_PAT[i][0].exec(t);
-    if (m) return EN_PAT[i][1](m);
+    if (!m) continue;
+    /* A rule may decline: the institution rule matches any "<kind> ب<place>"
+       and only answers for a kind it knows, so the rest fall through to the
+       rules after it and finally to the Arabic. */
+    var out = EN_PAT[i][1](m);
+    if (out) return out;
   }
   return str;
 }
